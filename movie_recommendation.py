@@ -4,27 +4,34 @@ from typing import Set, List
 
 
 class MovieRecommendation:
-    def __init__(self, k: int, n: int, b: float, sim_type: str = "inner", matrix_path: str = None):
+    def __init__(self, k: int = None, n: int = None, b: float = 1, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5):
         """
         Inputs:
         - k: number of users
         - n: number of movies
         - b: budget
         """
-        self.num_users = k
-        self.num_movies = n
-        self.budget = b
-        self.movies = [i for i in range(self.num_movies)]
-        self.similarity_type = sim_type  # or cosine
         if matrix_path is None:
             # self.M[i][j] denotes the rating of user i for movie j
+            self.num_users = k
+            self.num_movies = n
             self.M = np.random.random(size=(k, n))
         else:
             self.M = self.load_matrix(matrix_path)
+            self.num_users, self.num_movies = self.M.shape
+        self.budget = b
+        self.movies = [i for i in range(self.num_movies)]
+        self.similarity_type = sim_type  # or cosine
 
         avg_ratings = np.average(self.M, axis=0)
-        assert min(avg_ratings) >= 0 and max(avg_ratings) <= 10, "Average rating should lie in [0, 10]"
-        self.costs_obj = [10 - avg_ratings[i] for i in range(self.movies)]
+        assert min(avg_ratings) >= 0 and max(
+            avg_ratings) <= 10, "Average rating should lie in [0, 10]"
+        self.costs_obj = 10 - avg_ratings
+
+        # factor in objective
+        self.llambda = llambda
+        assert 0. <= self.llambda <= 1.
+
 
     @property
     def ground_set(self):
@@ -53,27 +60,41 @@ class MovieRecommendation:
         else:
             raise ValueError("Unsupported similarity type.")
 
-    def objective(self, S: Set[int], llambda: float):
+    def objective(self, S: List[int]):
         """
         Inputs:
         - S: solution set
         - llambda: coefficient which lies in [0,1]
         """
-        assert 0. <= llambda <= 1.
         first = 0.
         second = 0.
+        S = set(S)
         for v in S:
             for u in self.ground_set:
                 s_uv = self.similarity(u, v)
                 first += s_uv
-                if u in S:  # TODO: search time
+                if u in S:  # search time: O(1)
                     second += s_uv
 
-        return first - llambda * second
+        return first - self.llambda * second
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[x] for x in S)
-    
+
     def cost_of_singleton(self, singleton: int):
-        assert singleton < len(self.costs_obj), "Singleton: {}".format(singleton)
+        assert singleton < len(
+            self.costs_obj), "Singleton: {}".format(singleton)
         return self.costs_obj[singleton]
+
+
+def main():
+    model = MovieRecommendation(matrix_path="/home/tong030/Projects/SubOpt/dataset/movie/user_by_movies_small_rating.npy")
+
+    S = [0, 1, 2, 3, 4]
+    print("S =", S)
+    print("f(S) =", model.objective(S))
+    print("c(S) =", model.cost_of_set(S))
+
+
+if __name__ == "__main__":
+    main()
