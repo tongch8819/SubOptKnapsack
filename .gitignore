@@ -3,6 +3,9 @@ misc/
 test.py
 dataset/revenue/*txt
 dataset/image/cifar*
+log/
+*.sh
+*tmp*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

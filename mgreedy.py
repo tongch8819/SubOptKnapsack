@@ -13,7 +13,7 @@ def modified_greedy(model):
         for e in remaining_elements:
             # e is an object
             ds = model.density(e, sol)
-            if ds > max_density:
+            if u is None or ds > max_density:
                 u, max_density = e, ds
         # TODO: filter out violating elements
         assert u is not None
@@ -33,7 +33,7 @@ def modified_greedy(model):
         return {
             'S': [v_star],
             'f(S)': v_star_fv,
-            'c(S)': model.cost_obj[v_star],
+            'c(S)': model.costs_obj[v_star],
         }
     else:
         return {
@@ -58,7 +58,7 @@ def modified_greedy_ub1(model):
         for e in remaining_elements:
             # e is an object
             ds = model.density(e, sol)
-            if ds > max_density:
+            if u is None or ds > max_density:
                 u, max_density = e, ds
         # TODO: filter out violating elements
         assert u is not None
@@ -67,7 +67,7 @@ def modified_greedy_ub1(model):
             cur_cost += model.costs_obj[u]
             # update data-dependent upper-bound
             lambda_capital = min(lambda_capital, model.objective(
-                sol) + marginal_delta(sol, remaining_elements, model))
+                sol) + marginal_delta(sol, remaining_elements - {u}, model))
         remaining_elements.remove(u)
 
     v_star, v_star_fv = None, -1
@@ -82,7 +82,7 @@ def modified_greedy_ub1(model):
         return {
             'S': [v_star],
             'f(S)': v_star_fv,
-            'c(S)': model.cost_obj[v_star],
+            'c(S)': model.costs_obj[v_star],
             'Lambda': lambda_capital,
             'AF': v_star_fv / lambda_capital,
         }
@@ -111,7 +111,7 @@ def modified_greedy_ub2(model):
         for e in remaining_elements:
             # e is an object
             ds = model.density(e, sol)
-            if ds > max_density:
+            if u is None or ds > max_density:
                 u, max_density = e, ds
         # TODO: filter out violating elements
         assert u is not None
@@ -120,7 +120,7 @@ def modified_greedy_ub2(model):
             cur_cost += model.costs_obj[u]
             # update data-dependent upper-bound
             lambda_capital = min(lambda_capital, model.objective(
-                sol) + marginal_delta_version2(sol, remaining_elements, ground_set, model))
+                sol) + marginal_delta_version2(sol, remaining_elements - {u}, ground_set, model))
         remaining_elements.remove(u)
 
     v_star, v_star_fv = None, -1
@@ -138,7 +138,7 @@ def modified_greedy_ub2(model):
         return {
             'S': [v_star],
             'f(S)': v_star_fv,
-            'c(S)': model.cost_obj[v_star],
+            'c(S)': model.costs_obj[v_star],
             'Lambda': lambda_capital,
             'AF': v_star_fv / lambda_capital,
         }
@@ -167,7 +167,7 @@ def modified_greedy_ub3(model):
         for e in remaining_elements:
             # e is an object
             ds = model.density(e, sol)
-            if ds > max_density:
+            if u is None or ds > max_density:
                 u, max_density = e, ds
         # TODO: filter out violating elements
         assert u is not None
@@ -176,7 +176,7 @@ def modified_greedy_ub3(model):
             cur_cost += model.costs_obj[u]
             # update data-dependent upper-bound
             lambda_capital = min(lambda_capital, model.objective(
-                sol) + marginal_delta_version3(sol, remaining_elements, ground_set, model))
+                sol) + marginal_delta_version3(sol, remaining_elements - {u}, ground_set, model))
         remaining_elements.remove(u)
 
     v_star, v_star_fv = None, -1
@@ -194,7 +194,7 @@ def modified_greedy_ub3(model):
         return {
             'S': [v_star],
             'f(S)': v_star_fv,
-            'c(S)': model.cost_obj[v_star],
+            'c(S)': model.costs_obj[v_star],
             'Lambda': lambda_capital,
             'AF': v_star_fv / lambda_capital,
         }

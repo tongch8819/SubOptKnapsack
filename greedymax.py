@@ -18,7 +18,7 @@ def greedy_max_ub1(model):
         s, max_marginal_gain = None, -1
         for e in remaining_elements:
             mg = model.marginal_gain(e, G)
-            if mg > max_marginal_gain:
+            if s is None or mg > max_marginal_gain:
                 s, max_marginal_gain = e, mg
         assert s is not None
         tmp_G = deepcopy(G)
@@ -26,14 +26,14 @@ def greedy_max_ub1(model):
         if model.objective(S) < model.objective(tmp_G) and model.cost_of_set(tmp_G) <= model.budget:
             S = tmp_G
             # update data-dependent upper-bound
-            lambda_capital = min(lambda_capital, model.objective(S) + marginal_delta(S, remaining_elements, model))
+            lambda_capital = min(lambda_capital, model.objective(S) + marginal_delta(S, remaining_elements - {s}, model))
 
         # argmax density
         a, max_density = None, -1.
         for e in remaining_elements:
             # e is an object
             ds = model.density(e, G)
-            if ds > max_density:
+            if a is None or ds > max_density:
                 a, max_density = e, ds
         # TODO: filter out violating elements
         assert a is not None
@@ -85,7 +85,7 @@ def greedy_max_ub2(model):
         if model.objective(S) < model.objective(tmp_G) and model.cost_of_set(tmp_G) <= model.budget:
             S = tmp_G
             # update data-dependent upper-bound
-            lambda_capital = min(lambda_capital, model.objective(S) + marginal_delta_version2(S, remaining_elements, set(model.ground_set), model))
+            lambda_capital = min(lambda_capital, model.objective(S) + marginal_delta_version2(S, remaining_elements - {s}, set(model.ground_set), model))
 
         # argmax density
         a, max_density = None, -1.
@@ -145,6 +145,8 @@ def greedy_max_ub3(model):
         if model.objective(S) < model.objective(tmp_G) and model.cost_of_set(tmp_G) <= model.budget:
             S = tmp_G
             # update data-dependent upper-bound
+            remaining_elements.remove(s)
+            
             lambda_capital = min(lambda_capital, model.objective(S) + marginal_delta_version3(S, remaining_elements, set(model.ground_set), model))
 
         # argmax density
@@ -152,7 +154,7 @@ def greedy_max_ub3(model):
         for e in remaining_elements:
             # e is an object
             ds = model.density(e, G)
-            if ds > max_density:
+            if a is None or ds > max_density:
                 a, max_density = e, ds
         # TODO: filter out violating elements
         assert a is not None

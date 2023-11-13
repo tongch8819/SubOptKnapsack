@@ -1,25 +1,35 @@
+from base_task import BaseTask
 import os
 import numpy as np
 from typing import List, Set
 
 
-class ImageSummarization:
+class ImageSummarization(BaseTask):
     """
     The goal is to identify a representative subset S from a large collection V of images under a limited budget
 
     Make sure image is normalized before loading.
     """
 
-    def __init__(self, n: int, image_path: str):
-        self._objects = [i for i in range(n)]
+    def __init__(self, image_path: str, budget: float, max_num : int = None):
         self.images = self.load_images(image_path)
+        if max_num is not None:
+            self.images = self.images[:max_num, :]
+        n = self.images.shape[0]
+        self._objects = [i for i in range(n)]
+
         assert self.images.shape == (n, 3072)
 
         self.costs_obj = [1 / self._rms_contrast(i) for i in range(n)]
+        self.b = budget
 
     @property
     def ground_set(self):
         return self._objects
+    
+    @property
+    def budget(self):
+        return self.b
 
     def _rms_contrast(self, u: int):
         # The RMS contrast is defined as the standard deviation of the normalized pixel intensity values.
@@ -34,6 +44,8 @@ class ImageSummarization:
     def objective(self, S: List[int]):
         # t1: coverage
         # t2: penalty factor
+        if len(S) == 0:
+            return 0.
         t1 = t2 = 0.
         for u in self.ground_set:
             max_s = max([
@@ -54,24 +66,18 @@ class ImageSummarization:
             (np.linalg.norm(u_img_vec) * np.linalg.norm(v_img_vec))
         return cos_sim
 
-    def cost_of_set(self, S: List[int]):
-        return sum(self.costs_obj[x] for x in S)
-
-    def cost_of_singleton(self, singleton: int):
-        assert singleton < len(
-            self.costs_obj), "Singleton: {}".format(singleton)
-        return self.costs_obj[singleton]
-
+    
 
 def main():
 
     model = ImageSummarization(
-        n=500, image_path="dataset/image/500_cifar10_sample.npy")
+        image_path="dataset/image/500_cifar10_sample.npy", budget=10.0)
 
     S = [0, 1, 2, 3, 4]
     print("S =", S)
     print("f(S) =", model.objective(S))
     print("c(S) =", model.cost_of_set(S))
+
 
 
 if __name__ == "__main__":

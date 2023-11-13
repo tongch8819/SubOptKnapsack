@@ -10,7 +10,7 @@ def greedy(model):
             # mg = marginal_gain(objective, e, sol)
             # density = (mg * 100) / (costs_obj[e] * 100)  # cost may be too small
             ds = model.density(e, sol)
-            if ds > max_density:
+            if u is None or ds > max_density:
                 u, max_density = e, ds
         #TODO: filter out violating elements
         assert u is not None

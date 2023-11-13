@@ -1,10 +1,11 @@
+from base_task import BaseTask
 import numpy as np
 import os
 from typing import Set, List
 
 
-class MovieRecommendation:
-    def __init__(self, k: int = None, n: int = None, b: float = 1, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5):
+class MovieRecommendation(BaseTask):
+    def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5):
         """
         Inputs:
         - k: number of users
@@ -18,8 +19,8 @@ class MovieRecommendation:
             self.M = np.random.random(size=(k, n))
         else:
             self.M = self.load_matrix(matrix_path)
+            self.M = self.M[:k, :n]   # use k and n to truncate
             self.num_users, self.num_movies = self.M.shape
-        self.budget = b
         self.movies = [i for i in range(self.num_movies)]
         self.similarity_type = sim_type  # or cosine
 
@@ -32,6 +33,7 @@ class MovieRecommendation:
         self.llambda = llambda
         assert 0. <= self.llambda <= 1.
 
+        self.b = budget
 
     @property
     def ground_set(self):
@@ -88,7 +90,7 @@ class MovieRecommendation:
 
 
 def main():
-    model = MovieRecommendation(matrix_path="/home/tong030/Projects/SubOpt/dataset/movie/user_by_movies_small_rating.npy")
+    model = MovieRecommendation(matrix_path="dataset/movie/user_by_movies_small_rating.npy", budget=1.0)
 
     S = [0, 1, 2, 3, 4]
     print("S =", S)
