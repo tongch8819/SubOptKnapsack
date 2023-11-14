@@ -20,6 +20,7 @@ class ImageSummarization(BaseTask):
 
         assert self.images.shape == (n, 3072)
 
+        # the costs are normalized s.t. the average cost is 1/10
         self.costs_obj = [1 / self._rms_contrast(i) for i in range(n)]
         self.b = budget
 
@@ -55,10 +56,15 @@ class ImageSummarization(BaseTask):
         for u in S:
             for v in S:
                 t2 += self.similarity(u, v)
-
-        return t1 - 1 / len(self.ground_set) * t2
+        t3 = 1 / len(self.ground_set) * t2
+        # print(f"S: {S}, t1: {t1}, t3: {t3}")
+        return t1 - t3
 
     def similarity(self, u: int, v: int):
+        """
+        The similarity s(u,v) is computed as the cosine similarity of the 
+        3072-dimensional pixel vectors of image u and image v.
+        """
         u_img_vec, v_img_vec = self.images[u], self.images[v]
         # u_img_vec = np.flatten(u_img)
         # v_img_vec = np.flatten(v_img)
@@ -71,13 +77,16 @@ class ImageSummarization(BaseTask):
 def main():
 
     model = ImageSummarization(
-        image_path="dataset/image/500_cifar10_sample.npy", budget=10.0)
+        image_path="/home/ctong/Projects/SubOptKnapsack/dataset/image/500_cifar10_sample.npy", budget=10.0, max_num=10)
 
-    S = [0, 1, 2, 3, 4]
-    print("S =", S)
-    print("f(S) =", model.objective(S))
-    print("c(S) =", model.cost_of_set(S))
+    # S = [0, 1, 2, 3, 4]
+    # print("S =", S)
+    # print("f(S) =", model.objective(S))
+    # print("c(S) =", model.cost_of_set(S))
 
+    for i in model.ground_set:
+        fs = model.cutout_marginal_gain(i, set(model.ground_set))
+        print(f"f( {i} | V) = {fs}")
 
 
 if __name__ == "__main__":

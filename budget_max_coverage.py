@@ -17,7 +17,7 @@ class IdealMaxCovModel(BaseTask):
         random.seed(1)
 
         words = [i for i in range(n1)]
-        self.objects = [i for i in range(n2)]
+        self.objects = [i for i in range(n2)]  # immutable tuple
         edges = []
         self.obj2words = defaultdict(set)
 

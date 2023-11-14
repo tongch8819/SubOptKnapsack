@@ -39,7 +39,7 @@ class BaseTask(ABC):
 
     def cutout_marginal_gain(self, singleton: int, base: Set[int]):
         assert singleton in base
-        assert type(base) is set
+        assert type(base) is set, "{} is not set".format(type(base))
         base2 = deepcopy(base)
         base2.remove(singleton)  # no return value
         fS2, fS1 = self.objective(base), self.objective(base2)
