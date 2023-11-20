@@ -172,8 +172,11 @@ def marginal_delta_version3(base_set: Set[int], remaining_set: Set[int], model: 
     csc_outside, ele_outside = outside_cumsum_costs()
     csc_inside, ele_inside = inside_cumsum_costs()
 
-    endpoints = csc_outside[:bisect.bisect_right(csc_outside, model.budget)]
+    endpoints = [0.]
+    tt = csc_outside[bisect.bisect_right(csc_outside, c1):bisect.bisect_right(csc_outside, model.budget)]
+    endpoints += [x - c1 for x in tt]
     endpoints += csc_inside[:bisect.bisect_right(csc_inside, cost_base_set)]
+    endpoints += [cost_base_set]
     endpoints.sort()
 
     delta = 0.

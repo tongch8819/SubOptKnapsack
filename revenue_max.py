@@ -12,6 +12,8 @@ class RevenueMax(BaseTask):
     Select a set of users in a social network to advertise a product to maximize the revenue.
 
     Model social network as undirected graph.
+
+    The objective is a non-monotone submodular function.
     """
 
     def __init__(self, budget: float, m: int = None, edges: List[List[int]] = None, pckl_path: str = None, seed=1):

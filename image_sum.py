@@ -9,6 +9,8 @@ class ImageSummarization(BaseTask):
     The goal is to identify a representative subset S from a large collection V of images under a limited budget
 
     Make sure image is normalized before loading.
+
+    The objective is non-negative and non-monotone.
     """
 
     def __init__(self, image_path: str, budget: float, max_num : int = None):
@@ -71,6 +73,9 @@ class ImageSummarization(BaseTask):
         cos_sim = np.dot(u_img_vec, v_img_vec) / \
             (np.linalg.norm(u_img_vec) * np.linalg.norm(v_img_vec))
         return cos_sim
+
+        # maximum absolute difference
+        # return np.max(np.abs(u_img_vec - v_img_vec))
 
     
 
