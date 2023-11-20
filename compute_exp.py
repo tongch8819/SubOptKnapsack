@@ -1,4 +1,6 @@
 from budget_max_coverage import IdealMaxCovModel
+from dblp_graph_coverage import DblpGraphCoverage
+from facebook_graph_coverage import FacebookGraphCoverage
 from image_sum import ImageSummarization
 from movie_recommendation import MovieRecommendation
 from revenue_max import RevenueMax
@@ -106,6 +108,49 @@ def compute_movie_recom(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print("Done: ", save_path)
 
+def compute_dblp(root_dir, skip_mode=False):
+    interval = 1
+    num_points = 20
+    start_point = 1
+    end_point = start_point + (num_points - 1) * interval
+    bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+    for budget in bds:
+        model = DblpGraphCoverage(
+            budget=budget, n=5000, graph_path="./dataset/com-dblp/com-dblp.top5000.cmty.txt")
+        for up in upper_bounds:
+            for algo in algos:
+                save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                    algo, up, model.__class__.__name__, budget))
+                func_call = eval(algo + "_" + up)
+                res = func_call(model)  # dict
+                if skip_mode and os.path.exists(save_path):
+                    print("Skip: ", save_path)
+                    continue
+                with open(save_path, "wb") as wrt:
+                    pickle.dump(res, wrt)
+                print("Done: ", save_path)
+
+def compute_facebook(root_dir, skip_mode=False):
+    interval = 5
+    num_points = 20
+    start_point = 5
+    end_point = start_point + (num_points - 1) * interval
+    bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+    for budget in bds:
+        model = FacebookGraphCoverage(
+            budget=budget, n=5000, graph_path="./dataset/facebook/facebook_combined.txt")
+        for up in upper_bounds:
+            for algo in algos:
+                save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                    algo, up, model.__class__.__name__, budget))
+                func_call = eval(algo + "_" + up)
+                res = func_call(model)  # dict
+                if skip_mode and os.path.exists(save_path):
+                    print("Skip: ", save_path)
+                    continue
+                with open(save_path, "wb") as wrt:
+                    pickle.dump(res, wrt)
+                print("Done: ", save_path)
 
 def compute_revenue_max(root_dir, skip_mode=False):
     # budget = 1
@@ -124,7 +169,7 @@ def compute_revenue_max(root_dir, skip_mode=False):
     model = RevenueMax(budget=1.0, pckl_path="dataset/revenue/25_youtube_top5000.pkl")
 
     for budget in bds:
-        model.b = budget    
+        model.b = budget
         for up in upper_bounds:
             for algo in algos:
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
@@ -153,7 +198,7 @@ if __name__ == "__main__":
     root_dir = "./result"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("task_num", type=int, help="0,1,2,3")
+    parser.add_argument("task_num", type=int, help="0,1,2,3,4")
     args = parser.parse_args()
 
     if args.task_num == 0:
@@ -164,5 +209,9 @@ if __name__ == "__main__":
         compute_movie_recom(root_dir)
     elif args.task_num == 3:
         compute_revenue_max(root_dir)
+    elif args.task_num == 4:
+        compute_dblp(root_dir)
+    elif args.task_num == 5:
+        compute_facebook(root_dir)
 
     # run_multiple_exps(root_dir, True)
