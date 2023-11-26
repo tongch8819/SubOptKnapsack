@@ -8,8 +8,7 @@ import numpy as np
 
 def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
-    assert len(
-        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
 
     t = list(remaining_set)
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)

@@ -128,12 +128,13 @@ def compute_dblp(root_dir, skip_mode=False):
                     continue
                 with open(save_path, "wb") as wrt:
                     pickle.dump(res, wrt)
+                print(res)
                 print("Done: ", save_path)
 
 def compute_facebook(root_dir, skip_mode=False):
-    interval = 5
+    interval = 1
     num_points = 20
-    start_point = 5
+    start_point = 1
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:

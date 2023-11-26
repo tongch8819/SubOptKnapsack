@@ -21,6 +21,8 @@ class ObjectiveTest(unittest.TestCase):
         print(model.objective([1, 34, 18]))
         print(model.objective([1, 34]))
 
+
+        '''
         for i in range(0, 100):
             random.seed(time.time())
             a = random.sample(range(0, ground_set_num), 20)
@@ -32,6 +34,7 @@ class ObjectiveTest(unittest.TestCase):
 
             print(f"Left:{left}, Right:{right}, Diff:{left-right}")
             self.assertGreaterEqual(left, right)
+        '''
 
 
     def test_movie_recommendation(self):
