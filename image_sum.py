@@ -9,6 +9,8 @@ class ImageSummarization(BaseTask):
     The goal is to identify a representative subset S from a large collection V of images under a limited budget
 
     Make sure image is normalized before loading.
+
+    The objective is non-negative and non-monotone.
     """
 
     def __init__(self, image_path: str, budget: float, max_num : int = None):
@@ -72,16 +74,8 @@ class ImageSummarization(BaseTask):
             (np.linalg.norm(u_img_vec) * np.linalg.norm(v_img_vec))
         return cos_sim
 
-    def similarity_dist(self, u: int, v: int):
-        """
-        The similarity s(u,v) is computed as the cosine similarity of the
-        3072-dimensional pixel vectors of image u and image v.
-        """
-        u_img_vec, v_img_vec = self.images[u], self.images[v]
-        # u_img_vec = np.flatten(u_img)
-        # v_img_vec = np.flatten(v_img)
-        dist_sim = np.linalg.norm(u_img_vec - v_img_vec)
-        return dist_sim
+        # maximum absolute difference
+        # return np.max(np.abs(u_img_vec - v_img_vec))
 
     
 

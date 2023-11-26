@@ -11,6 +11,8 @@ class MovieRecommendation(BaseTask):
         - k: number of users
         - n: number of movies
         - b: budget
+
+        The objective is non-negative and non-monotone.
         """
         if matrix_path is None:
             # self.M[i][j] denotes the rating of user i for movie j

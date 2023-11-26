@@ -25,7 +25,8 @@ class BaseTask(ABC):
         if len(base) == 0:
             base2 = [single]
         else:
-            base2 = list(set(list(base) + [single]))
+            base = list(base)
+            base2 = list(set(base + [single]))
         fS1 = self.objective(base)
         fS2 = self.objective(base2)
         res = fS2 - fS1
@@ -38,8 +39,10 @@ class BaseTask(ABC):
         return (mg * 100) / (cost * 100)
 
     def cutout_marginal_gain(self, singleton: int, base: Set[int]):
+        if type(base) is not set:
+            base = set(base)
         assert singleton in base
-        assert type(base) is set, "{} is not set".format(type(base))
+        # assert type(base) is set, "{} is not set".format(type(base))
         base2 = deepcopy(base)
         base2.remove(singleton)  # no return value
         fS2, fS1 = self.objective(base), self.objective(base2)
