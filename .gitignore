@@ -170,3 +170,5 @@ cython_debug/
 .idea/
 output_ego.png
 output_mgreedy3.png
+output_dblp.png
+output_dblp_mgreedy.png
