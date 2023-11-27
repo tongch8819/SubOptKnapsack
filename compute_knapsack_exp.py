@@ -196,7 +196,7 @@ def run_multiple_exps(root_dir, skip_mode):
     
 
 if __name__ == "__main__":
-    root_dir = "/home/ctong/Projects/SubOptKnapsack/result"
+    root_dir = "./result"
 
     parser = argparse.ArgumentParser()
     parser.add_argument("task_num", type=int, help="0,1,2,3,4")
