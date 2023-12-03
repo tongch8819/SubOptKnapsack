@@ -191,3 +191,88 @@ def marginal_delta_version3(base_set: Set[int], remaining_set: Set[int], model: 
         assert g_minus >= 0., f"G_minus({y}) = {g_minus}"
         delta = max(delta, g_plus - g_minus)
     return delta
+
+def f_slice(x: float, model: BaseTask, base_set: Set[int], cumsum_costs: List[float], elements: List[int], slice_length: float):
+    """
+    Inputs:
+    - base_set: starting base set of cut out marginal gain
+
+    Difference between G_plus and G_minus
+    G_plus            G_minus
+    desending         ascending
+    density           cutout_density
+    marginal_gain     cutout_marginal_gain
+    """
+    assert x + slice_length <= cumsum_costs[len(cumsum_costs) - 1]
+
+    # cumsum_costs[i] = sum(costs[:i])  exclusive
+    idx = bisect.bisect_left(cumsum_costs, x)
+    # cumsum_costs[:idx]: x < b
+    # cumsum_costs[idx:]: x >= b
+    # r1 = bisect.bisect_right(cumsum_costs, x)
+    # cumsum_costs[:idx]: x <= b
+    # cumsum_costs[idx:]: x > b
+    G = 0.
+    while slice_length > 0:
+        if x + slice_length <= cumsum_costs[idx]:
+            G += model.cutout_density(elements[idx], base_set) * slice_length
+            break
+        else:
+            ele_cost = model.cost_of_singleton(idx)
+
+            G += model.cutout_density(elements[idx], base_set) * (model.cost_of_singleton(idx) - x)
+
+            slice_length -= ele_cost
+            x += ele_cost
+            idx = idx + 1
+    return G
+
+
+def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], ground_set: Set[int], model: BaseTask):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    cost_base_set = model.cost_of_set(base_set)
+    c1 = model.budget - cost_base_set
+
+    def outside_cumsum_costs():
+        t = list(remaining_set)
+        # sort density in descending order
+        t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+        costs = [model.cost_of_singleton(x) for x in t]
+        cumsum_costs = list(accumulate(costs, initial=None))
+        return cumsum_costs, t
+
+    n = len(remaining_set)
+
+    slice_length = c1 / n
+
+    csc_outside, ele_outside = outside_cumsum_costs()
+
+    endpoints = csc_outside[:bisect.bisect_right(csc_outside, c1)]
+    endpoints.sort()
+
+    delta = 0.
+    i_j = slice_length
+    i_j_right_idx = bisect.bisect_right(csc_outside, i_j)
+    prev_right = 0
+
+    for j in range(0, n):
+        v_j = 0.
+        while True:
+            left = G_plus(i_j, model, remaining_set,
+                            base_set, csc_outside, ele_outside) - delta
+            right = f_slice(i_j - slice_length, model,base_set, csc_outside, ele_outside, slice_length)
+            if left - right >= 0:
+                i_j_right_idx = i_j_right_idx - 1
+                left_k = model.cutout_density(i_j_right_idx, base_set)
+                right_k = (right - prev_right)/slice_length
+                # right - right_k * x = left - left_k * x
+                i_star = i_j - (left - right)/(left_k - right_k)
+                v_j = f_slice(i_star - slice_length, model,base_set, csc_outside, ele_outside, slice_length)
+                break
+            prev_right = right
+            i_j = csc_outside[i_j_right_idx]
+            i_j_right_idx = i_j_right_idx + 1
+
+        delta += v_j
+    return delta
