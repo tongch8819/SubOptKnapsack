@@ -6,8 +6,8 @@ from movie_recommendation import MovieRecommendation
 from revenue_max import RevenueMax
 
 from greedy import greedy
-from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3
-from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3
+from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4
+from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,10 +17,11 @@ import multiprocessing as mp
 import argparse
 
 
-upper_bounds = ["ub1", "ub3"]
-# upper_bounds = ["ub3"]
+#upper_bounds = ["ub1", "ub3"]
+upper_bounds = ["ub3", "ub4"]
+# upper_bounds = ["ub4"]
 # algos = ["greedy_max", "modified_greedy"]
-algos = ["greedy_max", "modified_greedy"]
+algos = ["greedy_max"]
 
 def compute_max_cov(root_dir, skip_mode=False):
     interval = 0.3
@@ -94,7 +95,7 @@ def compute_movie_recom(root_dir, skip_mode=False):
 
     for budget in bds:
         model = MovieRecommendation(
-            matrix_path="/home/ctong/Projects/SubOptKnapsack/dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=50)
+            matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=50)
         for up in upper_bounds:
             for algo in algos:
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(

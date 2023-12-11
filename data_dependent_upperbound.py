@@ -192,47 +192,16 @@ def marginal_delta_version3(base_set: Set[int], remaining_set: Set[int], model: 
         delta = max(delta, g_plus - g_minus)
     return delta
 
-def f_slice(x: float, model: BaseTask, base_set: Set[int], cumsum_costs: List[float], elements: List[int], slice_length: float):
-    """
-    Inputs:
-    - base_set: starting base set of cut out marginal gain
-
-    Difference between G_plus and G_minus
-    G_plus            G_minus
-    desending         ascending
-    density           cutout_density
-    marginal_gain     cutout_marginal_gain
-    """
-    assert x + slice_length <= cumsum_costs[len(cumsum_costs) - 1]
-
-    # cumsum_costs[i] = sum(costs[:i])  exclusive
-    idx = bisect.bisect_left(cumsum_costs, x)
-    # cumsum_costs[:idx]: x < b
-    # cumsum_costs[idx:]: x >= b
-    # r1 = bisect.bisect_right(cumsum_costs, x)
-    # cumsum_costs[:idx]: x <= b
-    # cumsum_costs[idx:]: x > b
-    G = 0.
-    while slice_length > 0:
-        if x + slice_length <= cumsum_costs[idx]:
-            G += model.cutout_density(elements[idx], base_set) * slice_length
-            break
-        else:
-            ele_cost = model.cost_of_singleton(idx)
-
-            G += model.cutout_density(elements[idx], base_set) * (model.cost_of_singleton(idx) - x)
-
-            slice_length -= ele_cost
-            x += ele_cost
-            idx = idx + 1
-    return G
-
-
-def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], ground_set: Set[int], model: BaseTask):
+def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
     cost_base_set = model.cost_of_set(base_set)
     c1 = model.budget - cost_base_set
+
+    def local_density(base_set, ele, model: BaseTask):
+        if ele == -1:
+            return 0
+        return model.density(ele, base_set)
 
     def outside_cumsum_costs():
         t = list(remaining_set)
@@ -242,37 +211,84 @@ def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], ground_
         cumsum_costs = list(accumulate(costs, initial=None))
         return cumsum_costs, t
 
+    def G_over_N(base_set: Set[int], csc: List[float], ele,  val: List[float], x: float, model: BaseTask):
+        idx = bisect.bisect_right(csc, x) - 1
+        if idx == -1:
+            return local_density(base_set, ele[0], model) * x
+        else:
+            return val[idx] + local_density(base_set, ele[idx], model) * (x - csc[idx])
+
+    def f_s(base_set: Set[int], csc: List[float], ele, start: float, slice_len: float, model: BaseTask):
+        start_idx = bisect.bisect_right(csc, start)
+        stop_idx = bisect.bisect_left(csc, start+slice_len)
+
+        if start_idx >= len(ele):
+            return 0
+
+        if start_idx == stop_idx:
+            return local_density(base_set, ele[start_idx], model) * slice_len
+        else:
+            cur_idx = start_idx
+            slice_1_len = csc[start_idx] - start
+            val = local_density(base_set, ele[start_idx], model) * slice_1_len
+            while cur_idx < stop_idx:
+                val += local_density(base_set, ele[cur_idx], model) * model.cost_of_singleton(ele[cur_idx])
+                cur_idx += 1
+            if stop_idx < len(ele):
+                slice_2_len = slice_len - slice_1_len
+                val += local_density(base_set, ele[stop_idx], model) * slice_2_len
+
+            return val
+
     n = len(remaining_set)
 
     slice_length = c1 / n
 
     csc_outside, ele_outside = outside_cumsum_costs()
 
+    csc_outside.append(c1)
+
+    val_outside = [model.objective([ele]) for ele in ele_outside]
+
+    val_outside.append(0)
+
+    val_outside = list(accumulate(val_outside, initial=None))
+
+    ele_outside.append(-1)
+
     endpoints = csc_outside[:bisect.bisect_right(csc_outside, c1)]
     endpoints.sort()
 
     delta = 0.
-    i_j = slice_length
-    i_j_right_idx = bisect.bisect_right(csc_outside, i_j)
-    prev_right = 0
+    i_j_right_idx = 0
 
     for j in range(0, n):
         v_j = 0.
+
         while True:
-            left = G_plus(i_j, model, remaining_set,
-                            base_set, csc_outside, ele_outside) - delta
-            right = f_slice(i_j - slice_length, model,base_set, csc_outside, ele_outside, slice_length)
+            left = G_over_N(base_set,
+                            csc_outside,
+                            ele_outside,
+                            val_outside,
+                            csc_outside[i_j_right_idx], model) - delta
+
+            right = f_s(base_set, csc_outside, ele_outside, csc_outside[i_j_right_idx] - slice_length, slice_length, model)
+
             if left - right >= 0:
-                i_j_right_idx = i_j_right_idx - 1
-                left_k = model.cutout_density(i_j_right_idx, base_set)
-                right_k = (right - prev_right)/slice_length
-                # right - right_k * x = left - left_k * x
-                i_star = i_j - (left - right)/(left_k - right_k)
-                v_j = f_slice(i_star - slice_length, model,base_set, csc_outside, ele_outside, slice_length)
+                left_k = local_density(base_set, ele_outside[i_j_right_idx], model)
+                right_k = 0.
+                if i_j_right_idx == 0:
+                    right_k = right / csc_outside[0]
+                else:
+                    prev_right = f_s(base_set, csc_outside, ele_outside, csc_outside[i_j_right_idx-1] - slice_length, slice_length, model)
+                    right_k = (right - prev_right) / (csc_outside[i_j_right_idx] - csc_outside[i_j_right_idx-1])
+
+                i_star = csc_outside[i_j_right_idx] - (left - right)/(left_k - right_k)
+
+                v_j = f_s(base_set, csc_outside, ele_outside, i_star - slice_length, slice_length, model)
                 break
-            prev_right = right
-            i_j = csc_outside[i_j_right_idx]
-            i_j_right_idx = i_j_right_idx + 1
+            else:
+                i_j_right_idx += 1
 
         delta += v_j
     return delta

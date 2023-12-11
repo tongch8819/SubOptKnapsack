@@ -2,6 +2,7 @@ from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta
 from data_dependent_upperbound import marginal_delta_version2
 from data_dependent_upperbound import marginal_delta_version3
+from data_dependent_upperbound import marginal_delta_version4
 from copy import deepcopy
 
 
@@ -43,6 +44,12 @@ def greedy_max(model: BaseTask, upb: str = None):
                         S, remaining_elements - {s}, model)
                     fs = model.objective(S)
                     lambda_capital = min(lambda_capital, fs + delta)
+                elif upb == 'ub4':
+                    delta  = marginal_delta_version4(
+                        S, remaining_elements - {s}, model
+                    )
+                    fs = model.objective(S)
+                    lambda_capital = min(lambda_capital, fs + delta)
                 else:
                     raise ValueError("Unsupported Upperbound")
 
@@ -57,7 +64,29 @@ def greedy_max(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
-
+            if upb is not None:
+                if upb == "ub1":
+                    delta = marginal_delta(G, remaining_elements - {a}, model)
+                    fs = model.objective(G)
+                    lambda_capital = min(lambda_capital, fs + delta)
+                elif upb == "ub2":
+                    delta = marginal_delta_version2(
+                        G, remaining_elements - {a}, model)
+                    fs = model.objective(G)
+                    lambda_capital = min(lambda_capital, fs + delta)
+                elif upb == "ub3":
+                    delta = marginal_delta_version3(
+                        G, remaining_elements - {a}, model)
+                    fs = model.objective(G)
+                    lambda_capital = min(lambda_capital, fs + delta)
+                elif upb == 'ub4':
+                    delta  = marginal_delta_version4(
+                        G, remaining_elements - {a}, model
+                    )
+                    fs = model.objective(G)
+                    lambda_capital = min(lambda_capital, fs + delta)
+                else:
+                    raise ValueError("Unsupported Upperbound")
         remaining_elements.remove(a)
         # filter out violating elements
         to_remove = set()
@@ -96,3 +125,6 @@ def greedy_max_ub2(model):
 
 def greedy_max_ub3(model):
     return greedy_max(model, "ub3")
+
+def greedy_max_ub4(model):
+    return greedy_max(model, "ub4")

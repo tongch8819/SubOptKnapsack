@@ -1,6 +1,6 @@
 from base_task import BaseTask
 
-from data_dependent_upperbound import marginal_delta
+from data_dependent_upperbound import marginal_delta, marginal_delta_version4
 from data_dependent_upperbound import marginal_delta_version2
 from data_dependent_upperbound import marginal_delta_version3
 
@@ -36,6 +36,10 @@ def modified_greedy(model: BaseTask, upb : str = None):
                     lambda_capital = min(lambda_capital, fs + delta)
                 elif upb == "ub3":
                     delta = marginal_delta_version3(sol, remaining_elements - {u}, model)
+                    fs = model.objective(sol)
+                    lambda_capital = min(lambda_capital, fs + delta)
+                elif upb == 'ub4':
+                    delta = marginal_delta_version4(sol, remaining_elements - {u}, model)
                     fs = model.objective(sol)
                     lambda_capital = min(lambda_capital, fs + delta)
                 else:
@@ -86,3 +90,6 @@ def modified_greedy_ub2(model: BaseTask):
 
 def modified_greedy_ub3(model: BaseTask):
     return modified_greedy(model, "ub3")
+
+def modified_greedy_ub4(model: BaseTask):
+    return modified_greedy(model, "ub4")
