@@ -8,6 +8,8 @@ from revenue_max import RevenueMax
 from greedy import greedy
 from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4
 from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4
+from greedy_with_denstiy_threshold import gdt_ub1, gdt_ub2, gdt_ub3, gdt_ub4
+from gcg import gcg_ub1, gcg_ub2, gcg_ub3, gcg_ub4
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,11 +20,11 @@ import argparse
 
 
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub3", "ub4"]
+upper_bounds = ["ub1"]
 # upper_bounds = ["ub4"]
 # algos = ["greedy_max", "modified_greedy"]
-algos = ["greedy_max"]
-
+# algos = ["greedy_max"]
+algos = ["gcg"]
 def compute_max_cov(root_dir, skip_mode=False):
     interval = 0.3
     num_points = 20
@@ -107,6 +109,7 @@ def compute_movie_recom(root_dir, skip_mode=False):
                     continue
                 with open(save_path, "wb") as wrt:
                     pickle.dump(res, wrt)
+                print(res)
                 print("Done: ", save_path)
 
 def compute_dblp(root_dir, skip_mode=False):
@@ -132,6 +135,7 @@ def compute_dblp(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+
 def compute_facebook(root_dir, skip_mode=False):
     interval = 1
     num_points = 20
@@ -153,6 +157,7 @@ def compute_facebook(root_dir, skip_mode=False):
                 with open(save_path, "wb") as wrt:
                     pickle.dump(res, wrt)
                 print("Done: ", save_path)
+
 
 def compute_revenue_max(root_dir, skip_mode=False):
     # budget = 1

@@ -4,7 +4,6 @@ import unittest
 
 import numpy as np
 
-from compute_exp import upper_bounds
 from dblp_graph_coverage import DblpGraphCoverage
 from facebook_graph_coverage import FacebookGraphCoverage
 from image_sum import ImageSummarization
@@ -18,6 +17,7 @@ class GraphCoverageTest(unittest.TestCase):
         print(graph_task.graph)
         graph_task = FacebookGraphCoverage(1, n=5000, graph_path="../dataset/facebook/facebook_combined.txt")
         print(graph_task.costs_obj)
+        print(graph_task.objective([51]))
 
 if __name__ == '__main__':
     unittest.main()
