@@ -5,6 +5,9 @@ from copy import deepcopy
 
 class BaseTask(ABC):
 
+    def __init__(self, is_mono=True):
+        self.is_mono = is_mono
+
     @property
     def budget(self):
         return self.b
@@ -30,7 +33,8 @@ class BaseTask(ABC):
         fS1 = self.objective(base)
         fS2 = self.objective(base2)
         res = fS2 - fS1
-        assert res >= 0., f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
+        if self.is_mono:
+            assert res >= 0., f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
         return res
 
     def density(self, single: int, base: List[int]):

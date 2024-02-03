@@ -5,7 +5,7 @@ from typing import Set, List
 
 
 class MovieRecommendation(BaseTask):
-    def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5):
+    def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5, is_mono=True):
         """
         Inputs:
         - k: number of users
@@ -14,6 +14,7 @@ class MovieRecommendation(BaseTask):
 
         The objective is non-negative and non-monotone.
         """
+        super().__init__(is_mono)
         if matrix_path is None:
             # self.M[i][j] denotes the rating of user i for movie j
             self.num_users = k
