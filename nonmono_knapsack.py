@@ -54,7 +54,7 @@ def PARKNAPSACK(model: BaseTask, epsilon: float = None, alpha: float = None, p: 
     l = epsilon_hat * epsilon_hat
     epsilon_hat_inverse = epsilon_hat
     k = epsilon_hat_inverse * math.log(n)
-    S_minus = SUBMODMAX(N_minus, epsilon_hat)
+    S_minus = SUBMODMAX(N_minus, epsilon_hat, model)
 
     H = []
     for e in N_plus:
@@ -82,10 +82,19 @@ def PARKNAPSACK(model: BaseTask, epsilon: float = None, alpha: float = None, p: 
     return T
 
 
-def SUBMODMAX():
-    # TODO: assume access to unconstrained submodular maximization with epsilon AF and adaptivity
-    pass
-
+def SUBMODMAX(ground_set: List[int], epsilon: float, model: BaseTask):
+    """
+    assume access to unconstrained submodular maximization with epsilon AF and adaptivity
+    random algorithm from https://people.csail.mit.edu/mirrokni/focs07.pdf
+    
+    In asymmetric case, it has AF 1/4. In symmetric case, it has AF 1/2.
+    """
+    S = set()
+    PROB = 0.5
+    for e in ground_set:
+        if random.random() <= PROB:
+            S.add(e)
+    return S
 
 def THRESHSEQ(raw_X: List[int], tau: float, epsilon: float, l: float, B: float, model: BaseTask) -> Set[int]:
     """

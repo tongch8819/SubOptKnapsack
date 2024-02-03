@@ -82,13 +82,13 @@ class MovieRecommendation(BaseTask):
 
         return first - self.llambda * second
 
-    def cost_of_set(self, S: List[int]):
-        return sum(self.costs_obj[x] for x in S)
+    # def cost_of_set(self, S: List[int]):
+    #     return sum(self.costs_obj[x] for x in S)
 
-    def cost_of_singleton(self, singleton: int):
-        assert singleton < len(
-            self.costs_obj), "Singleton: {}".format(singleton)
-        return self.costs_obj[singleton]
+    # def cost_of_singleton(self, singleton: int):
+    #     assert singleton < len(
+    #         self.costs_obj), "Singleton: {}".format(singleton)
+    #     return self.costs_obj[singleton]
 
 
 def main():
