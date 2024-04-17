@@ -1,13 +1,86 @@
 from abc import ABC, abstractclassmethod
 from typing import List, Set
 from copy import deepcopy
+import numpy as np
 
 
 class BaseTask(ABC):
 
+    def __init__(self):
+        self.costs_obj = None
+        self.max_2_pair = None
+
+        self.max_pair_dict = None
+        self.max_pair_array = None
+
+        self.budget = None
+
+        self.c2 = None
+        self.d = None
+        self.e = None
+
+    def prepare_max_2_pair(self):
+        self.max_2_pair = {}
+
+        for i in range(0, len(self.costs_obj)):
+            maximal = 0
+            for j in range(0, len(self.costs_obj)):
+                if i != j and self.objective({i, j}) > maximal:
+                    maximal = self.objective({i, j})
+            self.max_2_pair[i] = maximal
+
+
     @property
-    def budget(self):
-        return self.b
+    def ground_set(self):
+        return None
+
+    @property
+    def curvature(self):
+        ground_value = self.objective(self.ground_set)
+
+        curvatures = [1-(ground_value-self.objective(set(self.ground_set)-set({x})))/(self.objective(set({x}))) for x in self.ground_set]
+
+        return max(curvatures)
+
+    def print_curvature(self):
+        # print(f"start print. curvature:{self.curvature}")
+
+        eles = list(self.ground_set)
+        eles.sort(key=lambda x: self.density(x, set()), reverse=True)
+        f = self.objective
+
+        c2 = 0.
+        d = []
+
+        sum = 0
+
+        for i in range(0, min(100, len(eles))):
+            sum += f({eles[i]})
+            if eles[i] >= 0:
+                prev = 0.
+                if i > 0:
+                    prev = f(set(eles[:i]))
+
+                prev_sin = 0.
+                if i > 0:
+                    prev_sin = f({eles[i-1]})
+
+                # print(f"f(A):{f(set(eles[:i+1]))},sum:{sum},sin:{f({eles[i]})},sub:{f(set(eles[:i+1])) - prev},ele:{eles[i]}, decreased:{prev_sin - f({eles[i]})} ")
+
+                c2 += f({eles[i]})/((f(set(eles[:i+1])) - prev) * (i+1))
+
+                if i > 0:
+                    d.append(prev_sin - f({eles[i]}))
+
+        d = np.sum(d)/len(d)
+
+        e = c2 * d
+
+        self.c2 = c2
+        self.d = d
+        self.e = e
+
+        print(f"c:{self.curvature}, c2:{c2}, d:{d}, e:{e}")
 
     @abstractclassmethod
     def objective(self):
@@ -38,11 +111,21 @@ class BaseTask(ABC):
         cost = self.costs_obj[single]
         return (mg * 100) / (cost * 100)
 
-    def cutout_marginal_gain(self, singleton: int, base: Set[int]):
-        if type(base) is not set:
-            base = set(base)
-        assert singleton in base
+    # def cutout_marginal_gain(self, singleton: int, base: Set[int]):
+    #     if type(base) is not set:
+    #         base = set(base)
+    #     assert singleton in base
+    #     # assert type(base) is set, "{} is not set".format(type(base))
+    #     base2 = deepcopy(base)
+    #     base2.remove(singleton)  # no return value
+    #     fS2, fS1 = self.objective(base), self.objective(base2)
+    #     res = fS2 - fS1
+    #     assert res >= 0., f"f({base}) - f({base2}) = {fS2:.2f} - {fS1:.2f}\n{base - base2}"
+    #     return res
+
+    def cutout_marginal_gain(self, singleton: int):
         # assert type(base) is set, "{} is not set".format(type(base))
+        base = set(self.ground_set)
         base2 = deepcopy(base)
         base2.remove(singleton)  # no return value
         fS2, fS1 = self.objective(base), self.objective(base2)
@@ -51,4 +134,4 @@ class BaseTask(ABC):
         return res
 
     def cutout_density(self, singleton: int, base: Set[int]):
-        return self.cutout_marginal_gain(singleton, base) / self.cost_of_singleton(singleton)
+        return self.cutout_marginal_gain(singleton) / self.cost_of_singleton(singleton)

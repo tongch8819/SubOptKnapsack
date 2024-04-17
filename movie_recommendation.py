@@ -5,7 +5,8 @@ from typing import Set, List
 
 
 class MovieRecommendation(BaseTask):
-    def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5):
+    def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None,
+                 llambda: float = 0.5, knapsack=True, prepare_max_pair=True,print_curvature=False):
         """
         Inputs:
         - k: number of users
@@ -14,6 +15,7 @@ class MovieRecommendation(BaseTask):
 
         The objective is non-negative and non-monotone.
         """
+        super().__init__()
         if matrix_path is None:
             # self.M[i][j] denotes the rating of user i for movie j
             self.num_users = k
@@ -35,7 +37,14 @@ class MovieRecommendation(BaseTask):
         self.llambda = llambda
         assert 0. <= self.llambda <= 1.
 
-        self.b = budget
+        self.budget = budget
+        self.knapsack = knapsack
+
+        if prepare_max_pair:
+            self.prepare_max_2_pair()
+
+        if print_curvature:
+            self.print_curvature()
 
     @property
     def ground_set(self):
@@ -83,11 +92,15 @@ class MovieRecommendation(BaseTask):
         return first - self.llambda * second
 
     def cost_of_set(self, S: List[int]):
+        if not self.knapsack:
+            return len(S)
         return sum(self.costs_obj[x] for x in S)
 
     def cost_of_singleton(self, singleton: int):
         assert singleton < len(
             self.costs_obj), "Singleton: {}".format(singleton)
+        if not self.knapsack:
+            return 1
         return self.costs_obj[singleton]
 
 

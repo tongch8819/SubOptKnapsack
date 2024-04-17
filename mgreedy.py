@@ -3,6 +3,7 @@ from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta, marginal_delta_version4
 from data_dependent_upperbound import marginal_delta_version2
 from data_dependent_upperbound import marginal_delta_version3
+from data_dependent_upperbound import marginal_delta_gate
 
 
 def modified_greedy(model: BaseTask, upb : str = None):
@@ -23,7 +24,10 @@ def modified_greedy(model: BaseTask, upb : str = None):
             # satisfy the knapsack constraint
             sol.add(u)
             cur_cost += model.cost_of_singleton(u)
-
+            delta = marginal_delta_gate(upb, sol, remaining_elements - {u}, model)
+            fs = model.objective(sol)
+            lambda_capital = min(lambda_capital, fs + delta)
+            '''
             # update data-dependent upper-bound
             if upb is not None:
                 if upb == "ub1":
@@ -44,6 +48,7 @@ def modified_greedy(model: BaseTask, upb : str = None):
                     lambda_capital = min(lambda_capital, fs + delta)
                 else:
                     raise ValueError("Unsupported Upperbound")
+            '''
                 
         remaining_elements.remove(u)
         # filter out violating elements
@@ -93,3 +98,12 @@ def modified_greedy_ub3(model: BaseTask):
 
 def modified_greedy_ub4(model: BaseTask):
     return modified_greedy(model, "ub4")
+
+def modified_greedy_ub5(model: BaseTask):
+    return modified_greedy(model, "ub5")
+
+def modified_greedy_ub5c(model: BaseTask):
+    return modified_greedy(model, "ub5c")
+
+def modified_greedy_ub6(model: BaseTask):
+    return modified_greedy(model, "ub6")

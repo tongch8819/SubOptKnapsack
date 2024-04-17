@@ -8,7 +8,7 @@ import networkx as nx
 
 
 class FacebookGraphCoverage(BaseTask):
-    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, graph_path: str = None):
+    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False):
         """
         Inputs:
         - n: max_nodes
@@ -28,11 +28,25 @@ class FacebookGraphCoverage(BaseTask):
         # cost parameters
         self.alpha = alpha
         self.beta = beta
-        self.costs_obj = [
-            self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-            for node in self.nodes
-        ]
-        self.b = budget
+        if knapsack:
+            self.costs_obj = [
+                self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
+                for node in self.nodes
+            ]
+        else:
+            self.costs_obj = [
+                1
+                for node in self.nodes
+            ]
+
+        self.budget = budget
+
+        if prepare_max_pair:
+            self.prepare_max_2_pair()
+
+        if print_curvature:
+            self.print_curvature()
+
 
     @property
     def ground_set(self):
@@ -53,9 +67,10 @@ class FacebookGraphCoverage(BaseTask):
         - llambda: coefficient which lies in [0,1]
         """
         neighbors = set([self.nodes[s] for s in S])
+
         for s in S:
             neighbors = neighbors | set(self.graph.neighbors(str(self.nodes[s])))
-        return len(neighbors) / len(self.nodes)
+        return 10 * len(neighbors) / len(self.nodes)
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[x] for x in S)

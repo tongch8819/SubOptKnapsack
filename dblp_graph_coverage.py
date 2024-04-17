@@ -8,12 +8,14 @@ import networkx as nx
 
 
 class DblpGraphCoverage(BaseTask):
-    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=10000, graph_path: str = None):
+    def __init__(self, budget: float, n: int = None, alpha=0.05, beta=10000, graph_path: str = None, knapsack=True,
+                 prepare_max_pair=True, print_curvature=False):
         """
         Inputs:
         - n: max_nodes
         - b: budget
         """
+        super().__init__()
         if graph_path is None:
             raise Exception("Please provide a graph.")
         np.random.seed(1)
@@ -28,11 +30,33 @@ class DblpGraphCoverage(BaseTask):
         # cost parameters
         self.alpha = alpha
         self.beta = beta
-        self.costs_obj = [
-            self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-            for node in self.nodes
-        ]
-        self.b = budget
+        if knapsack:
+            # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
+            self.costs_obj = [
+                self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
+                for node in self.nodes
+            ]
+            """
+            self.costs_obj = [
+                self.nodes[i]
+                for i in range(0, len(self.nodes))
+            ]
+            """
+
+        else:
+            # cardinality
+            self.costs_obj = [
+                1
+                for node in self.nodes
+            ]
+
+        self.budget = budget
+
+        if prepare_max_pair:
+            self.prepare_max_2_pair()
+
+        if print_curvature:
+            self.print_curvature()
 
     @property
     def ground_set(self):
@@ -55,7 +79,7 @@ class DblpGraphCoverage(BaseTask):
         neighbors = set([self.nodes[s] for s in S])
         for s in S:
             neighbors = neighbors | set(self.graph.neighbors(str(self.nodes[s])))
-        return len(neighbors) / len(self.nodes)
+        return 1000 * len(neighbors) / len(self.nodes)
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[x] for x in S)

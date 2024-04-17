@@ -175,3 +175,6 @@ output_dblp_mgreedy.png
 output_maxcov.png
 output_movie.png
 output_ub4.png
+dataset/
+output/
+*.png

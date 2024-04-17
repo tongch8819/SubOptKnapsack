@@ -3,8 +3,13 @@ from data_dependent_upperbound import marginal_delta
 from data_dependent_upperbound import marginal_delta_version2
 from data_dependent_upperbound import marginal_delta_version3
 from data_dependent_upperbound import marginal_delta_version4
+from data_dependent_upperbound import marginal_delta_gate
 from copy import deepcopy
 
+# OPT
+# 下标typo
+# it+是否可以大于it
+# it=it+清晰
 
 def greedy_max(model: BaseTask, upb: str = None):
     """
@@ -30,6 +35,12 @@ def greedy_max(model: BaseTask, upb: str = None):
             S = tmp_G
             # update data-dependent upper-bound
             if upb is not None:
+                delta = marginal_delta_gate(upb, S, remaining_elements - {s}, model)
+                fs = model.objective(S)
+                # if fs + delta < lambda_capital:
+                #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
+                lambda_capital = min(lambda_capital, fs + delta)
+                '''
                 if upb == "ub1":
                     delta = marginal_delta(S, remaining_elements - {s}, model)
                     fs = model.objective(S)
@@ -52,6 +63,7 @@ def greedy_max(model: BaseTask, upb: str = None):
                     lambda_capital = min(lambda_capital, fs + delta)
                 else:
                     raise ValueError("Unsupported Upperbound")
+                '''
 
         # argmax density
         a, max_density = None, -1.
@@ -64,6 +76,13 @@ def greedy_max(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
+            delta = marginal_delta_gate(upb, G, remaining_elements - {a}, model)
+            fs = model.objective(G)
+            # if fs + delta < lambda_capital:
+            #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
+            lambda_capital = min(lambda_capital, fs + delta)
+
+            '''
             if upb is not None:
                 if upb == "ub1":
                     delta = marginal_delta(G, remaining_elements - {a}, model)
@@ -87,6 +106,7 @@ def greedy_max(model: BaseTask, upb: str = None):
                     lambda_capital = min(lambda_capital, fs + delta)
                 else:
                     raise ValueError("Unsupported Upperbound")
+            '''
         remaining_elements.remove(a)
         # filter out violating elements
         to_remove = set()
@@ -128,3 +148,16 @@ def greedy_max_ub3(model):
 
 def greedy_max_ub4(model):
     return greedy_max(model, "ub4")
+
+def greedy_max_ub4c(model):
+    return greedy_max(model, "ub4c")
+
+def greedy_max_ub5(model):
+    return greedy_max(model, "ub5")
+
+def greedy_max_ub5c(model):
+    return greedy_max(model, "ub5c")
+
+def greedy_max_ub6(model):
+    return greedy_max(model, "ub6")
+
