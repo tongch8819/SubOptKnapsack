@@ -1,3 +1,5 @@
+import time
+
 from base_task import BaseTask
 
 from typing import Set, List
@@ -898,6 +900,381 @@ def marginal_delta_version5(base_set: Set[int], remaining_set: Set[int], model: 
 
     return ub #max(M_plus_gain)
 
+def marginal_delta_version5_p(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    base_set_value = model.objective(base_set)
+
+    eps = min([model.cost_of_singleton(ele) for ele in remaining_set])/2
+
+    def inside_cumsum_costs():
+        s = list(base_set)
+        # sort density in ascending order, default sort has ascending order
+        s.sort(key=lambda x: model.cutout_density(x, base_set), reverse=False)
+        costs = [model.cost_of_singleton(x) for x in s]
+        cumsum_costs = list(accumulate(costs, initial=None))
+        return cumsum_costs, s
+
+    def local_f(S):
+        S = list(S)
+        while S.count(-1) > 0:
+            S.remove(-1)
+        return model.objective(S)
+
+    def local_c(S):
+        S = list(S)
+        ept = S.count(-1) * eps
+        while S.count(-1) > 0:
+            S.remove(-1)
+        return ept + model.cost_of_set(S)
+
+    def local_c_singelton(ele: int):
+        if ele == -1:
+            return eps
+        return model.cost_of_singleton(ele)
+
+    def local_density(f, base, ele):
+        return (f(base | {ele}) - f(base)) / model.cost_of_singleton(ele)
+
+    total_utility = model.objective(model.ground_set)
+
+    def f_over_base(s):
+        return local_f(base_set | s) - base_set_value
+
+    def method3(f, b):
+        def outside_cumsum_costs(f):
+            eles = list(remaining_set)
+            # sort density in descending order
+            eles.sort(key=lambda x: local_density(f, set(), x), reverse=True)
+            costs = [model.cost_of_singleton(x) for x in eles]
+
+            cur_idx = 1
+            for i in range(0, len(eles)):
+                eles.insert(cur_idx, -1)
+                cur_idx = cur_idx + 2
+
+            cur_idx = 1
+            for i in range(0, len(costs)):
+                costs.insert(cur_idx, eps)
+                cur_idx = cur_idx + 2
+
+            cumsum_costs = list(accumulate(costs, initial=None))
+            return cumsum_costs, eles
+
+        csc_outside, ele_outside = outside_cumsum_costs(f)
+
+        """
+        sum = 0
+        for i in range(0, min(100, len(ele_outside))):
+            sum += f({ele_outside[i]})
+            if ele_outside[i] >= 0:
+                prev = 0.
+                if i > 0:
+                    prev = f(set(ele_outside[:i-1]))
+                print(f"f(A):{f(set(ele_outside[:i+1]))},sum:{sum},sin:{f({ele_outside[i]})},sub:{f(set(ele_outside[:i+1])) - prev},ele:{ele_outside[i]}")
+        """
+
+        def G_over_N(x: float):
+            idx = bisect.bisect_right(csc_outside, x) - 1
+            if idx == -1:
+                return local_density(f, set(), ele_outside[0]) * x
+            else:
+                return f(set(ele_outside[:idx])) \
+                       + local_density(f, set(ele_outside[:idx]), ele_outside[idx]) * (x - csc_outside[idx])
+
+        def f_s(start: float):
+            ks = bisect.bisect_right(csc_outside, start)
+            if ks >= len(ele_outside):
+                return 0
+
+            slice_len = min(csc_outside[ks] - start, eps)
+            val = local_density(f, set(), ele_outside[ks]) * slice_len
+
+            return val
+
+        delta = 0.
+
+        start_from_new_ele = False
+
+        ele_idx = 0
+        prev_i_star = 0
+
+        result = []
+
+        budget_consumed = 0
+
+        # print(f"new turn, csc:{csc_outside[:10]}")
+
+        while budget_consumed < b - eps*0.01:
+            v_j = 0.
+
+            rbd = 0.
+
+            if budget_consumed + eps <= b:
+                # first, check the start point
+                if start_from_new_ele:
+                    ele_idx = ele_idx + 2
+                    if ele_idx >= len(csc_outside) - 1:
+                        break
+                    stp_idx = csc_outside[ele_idx-1] + eps
+                else:
+                    stp_idx = prev_i_star + eps
+
+                if ele_idx >= len(csc_outside) - 1:
+                    break
+
+                stp_left = f_s(stp_idx - eps)
+                stp_right = G_over_N(stp_idx) - delta
+
+                stp_value = min(stp_left, stp_right)
+                stp_for_cur_ele = csc_outside[ele_idx]
+
+                check_subsequent_elements = False
+
+                rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+
+                if stp_left <= stp_right and stp_idx < stp_for_cur_ele:
+                    v_j = stp_value
+                    prev_i_star = stp_idx
+                    start_from_new_ele = False
+                    # print(f"stop at -1, ele {ele_idx}, left {stp_left}, right {stp_right}, v j {v_j}, idx:{stp_idx}, c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]}) / 1}")
+                elif stp_left <= stp_right and stp_idx >= stp_for_cur_ele:
+                    v_j = stp_value
+                    prev_i_star = stp_idx
+                    start_from_new_ele = True
+                    check_subsequent_elements = True
+                    # print(f"update at -1, ele {ele_idx}, left {stp_left}, right {stp_right}, v j {v_j}, idx:{stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]}) / 1}")
+                else:
+                    # second, check the point where f sin = G N in this element
+                    cur_marginal_density = local_density(f, set(ele_outside[:ele_idx]), ele_outside[ele_idx])
+                    t_delta = (stp_left - stp_right) / cur_marginal_density
+                    if stp_idx + t_delta <= stp_for_cur_ele:
+                        # subsequent elements cannot bring higher value
+                        v_j = stp_right + cur_marginal_density * t_delta
+                        stp_idx = stp_idx + t_delta
+                        prev_i_star = stp_idx
+                        start_from_new_ele = False
+                        rbd = eps
+                        # print(f"update at 0, ele {ele_idx}, left {stp_left}, right {stp_right}, v j {v_j}, idx:{stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]}) / 1}")
+                        # print(f"stop at 0, ele {ele_idx}, left {stp_left}, right {stp_right}, v j {v_j}, idx:{stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]}) / 1}")
+                    else:
+                        stp_for_cur_ele_left = f_s(stp_for_cur_ele - eps)
+                        stp_for_cur_ele_right = G_over_N(stp_for_cur_ele) - delta
+
+                        cur_singleton_density = local_density(f, set(), ele_outside[ele_idx])
+                        t_delta = (stp_for_cur_ele_left - stp_for_cur_ele_right)/cur_singleton_density
+                        t_vj = stp_for_cur_ele_left - t_delta * cur_singleton_density
+
+                        v_j = t_vj
+                        stp_idx = stp_for_cur_ele + t_delta
+                        prev_i_star = stp_idx
+                        start_from_new_ele = True
+                        rbd = csc_outside[ele_idx] - (stp_idx - eps)
+                        # print(f"update at 1.5, ele {ele_idx}, left {stp_left}, right {stp_right}, v j {v_j}, idx:{stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]}) / 1}")
+
+                        check_subsequent_elements = True
+
+                if check_subsequent_elements:
+                    # third, check the start point and the point where f sin = G N in subsequent elements until
+                    # the element whose start point satisfying f sin <= G N
+                    while True:
+                        # start point
+                        ele_idx = ele_idx + 2
+                        if ele_idx >= len(csc_outside) - 1:
+                            # print(f"stop at 1, ele {ele_idx}, left {stp_left}, right {stp_right}, v j {v_j}, idx:{stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]})/1}")
+                            break
+
+                        t_stp_idx = csc_outside[ele_idx-1] + eps
+                        t_stp_left = f_s(t_stp_idx - eps)
+                        t_stp_right = G_over_N(t_stp_idx) - delta
+
+                        t_v_j = min(t_stp_left, t_stp_right)
+                        if t_v_j >= v_j:
+                            v_j = t_v_j
+                            stp_idx = t_stp_idx
+                            prev_i_star = stp_idx
+                            rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+                            if stp_idx + eps >= csc_outside[ele_idx]:
+                                start_from_new_ele = True
+                            else:
+                                start_from_new_ele = False
+                            #print(f"update at 2, ele {ele_idx}, left {t_stp_left}, right {t_stp_right}, v j {v_j}, idx:{t_stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]})/1}")
+
+                        if t_stp_left <= t_stp_right:
+                            #print(f"stop at 2, ele {ele_idx}, left {t_stp_left}, right {t_stp_right}, v j {v_j}, idx:{t_stp_idx},  c {csc_outside[ele_idx]}, density:{f({ele_outside[ele_idx]})/1}")
+                            break
+
+                        # balance point
+                        cur_marginal_density = local_density(f, set(ele_outside[:ele_idx]), ele_outside[ele_idx])
+                        stp_for_cur_ele = csc_outside[ele_idx]
+
+                        t_delta = (t_stp_left - t_stp_right) / cur_marginal_density
+                        if t_stp_idx + t_delta <= stp_for_cur_ele:
+                            # subsequent elements cannot bring higher value
+                            t_v_j = t_stp_right + cur_marginal_density * t_delta
+
+                            v_j = t_v_j
+                            stp_idx = t_stp_idx
+                            prev_i_star = stp_idx
+                            rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+                            if stp_idx + eps >= csc_outside[ele_idx]:
+                                start_from_new_ele = True
+                            else:
+                                start_from_new_ele = False
+                            break
+                        else:
+                            stp_for_cur_ele_left = f_s(stp_for_cur_ele - eps)
+                            stp_for_cur_ele_right = G_over_N(stp_for_cur_ele) - delta
+
+                            cur_singleton_density = local_density(f, set(), ele_outside[ele_idx])
+                            t_delta = (stp_for_cur_ele_left - stp_for_cur_ele_right) / cur_singleton_density
+                            t_vj = stp_for_cur_ele_left - t_delta * cur_singleton_density
+
+                            v_j = t_vj
+                            stp_idx = stp_for_cur_ele + t_delta
+                            rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+                            prev_i_star = stp_idx
+                            start_from_new_ele = True
+
+            else:
+                # start point
+                # check the zero point of each element
+                # if left > right , check balance point, update forward to next element
+                # else update, terminate
+                c_eps = b - budget_consumed
+                if ele_idx >= len(csc_outside) - 1:
+                    break
+                # first, check the start point
+                if start_from_new_ele:
+                    ele_idx = ele_idx + 2
+                    if ele_idx >= len(csc_outside) - 1:
+                        break
+
+                v_j = c_eps * f_s(csc_outside[ele_idx] - eps)/eps
+                rbd = c_eps
+
+                # stp_left = f_s(stp_idx - eps)
+                # stp_right = G_over_N(stp_idx) - delta
+                #
+                # stp_value = min(stp_left, stp_right)
+                # stp_for_cur_ele = csc_outside[ele_idx]
+                #
+                # rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+                #
+                # if stp_left <= stp_right:
+                #     v_j = stp_value
+                #     prev_i_star = stp_idx
+                # else:
+                #     # check the point where f sin = G N in this element
+                #     stp_for_cur_ele_left = f_s(stp_for_cur_ele - eps)
+                #     stp_for_cur_ele_right = G_over_N(stp_for_cur_ele) - delta
+                #
+                #     cur_singleton_density = local_density(f, set(), ele_outside[ele_idx])
+                #     t_delta = (stp_for_cur_ele_left - stp_for_cur_ele_right)/cur_singleton_density
+                #     t_vj = stp_for_cur_ele_left - t_delta * cur_singleton_density
+                #     if t_vj >= v_j:
+                #         v_j = t_vj
+                #         stp_idx = stp_for_cur_ele + t_delta
+                #         prev_i_star = stp_idx
+                #         rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+                #
+                # while True:
+                #     ele_idx = ele_idx + 2
+                #     if ele_idx >= len(csc_outside) - 1:
+                #         break
+                #
+                #     t_stp_idx = csc_outside[ele_idx] - c_eps + eps
+                #     t_stp_left = f_s(t_stp_idx - eps)
+                #     t_stp_right = G_over_N(t_stp_idx) - delta
+                #
+                #     t_v_j = min(t_stp_left, t_stp_right)
+                #     if t_v_j >= v_j:
+                #         v_j = t_v_j
+                #         stp_idx = t_stp_idx
+                #         prev_i_star = stp_idx
+                #         rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+                #
+                #     if t_stp_left <= t_stp_right:
+                #         break
+                #
+                #     # balance point
+                #     stp_for_cur_ele_left = f_s(stp_for_cur_ele - eps)
+                #     stp_for_cur_ele_right = G_over_N(stp_for_cur_ele) - delta
+                #
+                #     cur_singleton_density = local_density(f, set(), ele_outside[ele_idx])
+                #     t_delta = (stp_for_cur_ele_left - stp_for_cur_ele_right) / cur_singleton_density
+                #     t_vj = stp_for_cur_ele_left - t_delta * cur_singleton_density
+                #     if t_vj >= v_j:
+                #         v_j = t_vj
+                #         stp_idx = stp_for_cur_ele + t_delta
+                #         prev_i_star = stp_idx
+                #         rbd = min(csc_outside[ele_idx], stp_idx) - (stp_idx - eps)
+
+            delta += v_j
+            budget_consumed += rbd
+
+            #print(f"cur bd:{budget_consumed},rbd:{rbd},  vj:{v_j}, delta:{delta}, i star:{prev_i_star}, ele {ele_idx}")
+
+            result.append((budget_consumed, delta))
+
+        #print(f"Method 3 completes with delta:{delta}")
+
+        return result
+
+    ub = 0
+
+    M_plus_res = method3(f_over_base, model.budget)
+
+    M_plus_budget = [x[0] for x in M_plus_res]
+    M_plus_gain = [x[1] for x in M_plus_res]
+
+    #return max(M_plus_gain)
+
+    def M_plus(x):
+        idx = bisect.bisect_left(M_plus_budget, x) - 1
+        if idx < 0:
+            return x * M_plus_gain[0] / M_plus_budget[0]
+        elif idx >= len(M_plus_gain)-1:
+            return M_plus_gain[len(M_plus_gain)-1]
+        else:
+            return M_plus_gain[idx] + (x - M_plus_budget[idx]) * (M_plus_gain[idx + 1] - M_plus_gain[idx]) / (
+                        M_plus_budget[idx + 1] - M_plus_budget[idx])
+
+
+    endpoints_plus = [x[0] for x in M_plus_res]
+
+    minimal_budget = model.budget - model.cost_of_set(base_set)
+    cost_baseset = model.cost_of_set(base_set)
+
+    endpoints = [0.]
+
+    csc_inside, ele_inside = inside_cumsum_costs()
+    endpoints_minus = csc_inside[:bisect.bisect_right(csc_inside, cost_baseset)]
+    endpoints_minus = [x + minimal_budget for x in endpoints_minus]
+
+    endpoints += list(set(endpoints_plus) | set(endpoints_minus))
+
+    endpoints.append(model.budget)
+
+    endpoints = list(set(endpoints))
+
+    endpoints.sort()
+
+    for i in range(0, len(endpoints)):
+        if endpoints[i] >= minimal_budget:
+            g_minus = G_minus(endpoints[i] - minimal_budget, model, set(model.ground_set), csc_inside, ele_inside)
+            t_ub = M_plus(endpoints[i]) - g_minus
+            # print(f"t ub is:{t_ub}, g minus is:{g_minus}, y is:{endpoints[i] - model.budget + base_budget},t:{model.budget-base_budget},b:{base_budget}")
+            if t_ub > ub:
+                ub = t_ub
+
+    # print(f"delta is:{ub}, max budget:{max(M_plus_budget)}")
+
+    return ub #max(M_plus_gain)
+
 def marginal_delta_version6(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -1360,10 +1737,8 @@ def marginal_delta_version4_c(base_set: Set[int], remaining_set: Set[int], model
                             prev_left = G_over_N(ele_idx-1) - delta
                             if prev_left > right:
                                 i_star = ele_idx - 1
-                                #print(f"updated 1:{v_j}, left:{left},right:{right},ele:{ele_idx}, prev_left:{prev_left}")
                                 v_j = prev_left
                             else:
-                                #print(f"updated 2:{v_j}, left:{left},right:{right},ele:{ele_idx}, prev_left:{prev_left}")
                                 i_star = ele_idx
                                 v_j = right
 
@@ -1776,6 +2151,8 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta = marginal_delta_version5(base_set, remaining_set, model)
         elif upb == 'ub5c':
             delta = marginal_delta_version5_c(base_set, remaining_set, model)
+        elif upb == 'ub5p':
+            delta = marginal_delta_version5_p(base_set, remaining_set, model)
         elif upb == 'ub6':
             delta = marginal_delta_version6_c(base_set, remaining_set, model)
         elif upb == 'ub7c':

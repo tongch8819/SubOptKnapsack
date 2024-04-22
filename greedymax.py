@@ -158,6 +158,9 @@ def greedy_max_ub5(model):
 def greedy_max_ub5c(model):
     return greedy_max(model, "ub5c")
 
+def greedy_max_ub5p(model):
+    return greedy_max(model, "ub5p")
+
 def greedy_max_ub6(model):
     return greedy_max(model, "ub6")
 

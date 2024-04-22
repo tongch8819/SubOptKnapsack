@@ -1,4 +1,5 @@
 import json
+import time
 
 from budget_max_coverage import IdealMaxCovModel
 from dblp_graph_coverage import DblpGraphCoverage
@@ -10,7 +11,7 @@ from custom_coverage import CustomCoverage
 
 from greedy import greedy
 from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4,  modified_greedy_ub5
-from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4, greedy_max_ub4c, greedy_max_ub5, greedy_max_ub5c, greedy_max_ub6
+from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4, greedy_max_ub4c, greedy_max_ub5, greedy_max_ub5c, greedy_max_ub6, greedy_max_ub5p
 from greedy_with_denstiy_threshold import gdt_ub1, gdt_ub2, gdt_ub3, gdt_ub4
 from gcg import gcg_ub1, gcg_ub2, gcg_ub3, gcg_ub4
 
@@ -23,7 +24,7 @@ import argparse
 
 
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub3", "ub5"]
+upper_bounds = ["ub3", "ub5p"]
 #upper_bounds = ["ub4"]
 # algos = ["greedy_max", "modified_greedy"]
 # algos = ["modified_greedy"]
@@ -99,8 +100,8 @@ def compute_movie_recom(root_dir, skip_mode=False):
     # print(res)
 
     interval = 2
-    num_points = 1
-    start_point = 100
+    num_points = 10
+    start_point = 9
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -147,9 +148,9 @@ def compute_dblp(root_dir, skip_mode=False):
 
 
 def compute_facebook(root_dir, skip_mode=False):
-    interval = 1
-    num_points = 1
-    start_point = 5
+    interval = 10
+    num_points = 10
+    start_point = 60
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
@@ -238,7 +239,7 @@ def run_multi_custom_exps(config_path: str):
             config_s = config_s + c
         config_s.replace("\n", "")
 
-    coverage_dir = "custom-coverage-k"
+    coverage_dir = "custom-coverage-k-t"
 
     graphs_path = "dataset/custom-graph/kgraphs"
 
@@ -249,7 +250,7 @@ def run_multi_custom_exps(config_path: str):
                                knapsack=knapsack, prepare_max_pair=prepare_2_pair,
                                print_curvature=print_curvature)
         interval = 1
-        num_points = 10
+        num_points = 5
         start_point = 1
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -257,17 +258,28 @@ def run_multi_custom_exps(config_path: str):
         algo = "greedy_max"
 
         AF_3 = 0.
+        AF_3_time = 0.
+
         AF_5 = 0.
+        AF_5_time = 0.
+
         for budget in bds:
             model.budget = budget
 
-            func_call = eval(algo + "_ub3")
+            start_time = time.time()
+
+            func_call = eval(algo + "_ub5p")
             res = func_call(model)  # dict
-            AF_3 += min(res["AF"], 1.0)
+            AF_3 += res["AF"]
+
+            AF_3_time += time.time() - start_time
+            start_time = time.time()
 
             func_call = eval(algo + "_ub5")
             res = func_call(model)  # dict
-            AF_5 += min(res["AF"], 1.0)
+            AF_5 += res["AF"]
+
+            AF_5_time += time.time() - start_time
 
         MDAF = (AF_5 * 100 - AF_3*100)/num_points
 
@@ -289,8 +301,10 @@ def run_multi_custom_exps(config_path: str):
             "d": d,
             "e": e,
 
-            "MDAF": MDAF,
+            "MDAF": AF_3_time/AF_5_time,
         }
+
+        print(f"AF_3_time:{AF_3_time}, AF_5_time:{AF_5_time}")
 
         save_path = os.path.join(root_dir, coverage_dir, "{}-{}-{}-{}-{}-{}.pckl".format(
             model.__class__.__name__, alpha, beta, gamma, n, seed))
@@ -299,7 +313,7 @@ def run_multi_custom_exps(config_path: str):
             pickle.dump(res, wrt)
 
         print(res)
-        print(f"Done: alpha:{alpha}, beta:{beta}, gamma:{gamma}, seed:{seed}, MDAF:{MDAF}")
+        print(f"Done: alpha:{alpha}, beta:{beta}, gamma:{gamma}, seed:{seed}, MDAF:{AF_3_time/AF_5_time}")
 
 
 def run_multiple_exps(root_dir, skip_mode):

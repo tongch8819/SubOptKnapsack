@@ -105,5 +105,8 @@ def modified_greedy_ub5(model: BaseTask):
 def modified_greedy_ub5c(model: BaseTask):
     return modified_greedy(model, "ub5c")
 
+def modified_greedy_ub5p(model: BaseTask):
+    return modified_greedy(model, "ub5p")
+
 def modified_greedy_ub6(model: BaseTask):
     return modified_greedy(model, "ub6")
