@@ -15,6 +15,7 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
         return 0
 
     t = list(remaining_set)
+    # print(f"r:{remaining_set}")
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
     costs = [model.cost_of_singleton(x) for x in t]
     # # cumsum_costs[i] = sum(costs[:i+1])

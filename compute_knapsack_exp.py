@@ -27,7 +27,7 @@ import argparse
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub7", "ub7m"]
+upper_bounds = ["ub1", "ub7", "ub7m"]
 #upper_bounds = ["ub4"]
 # algos = ["greedy_max", "modified_greedy"]
 # algos = ["modified_greedy"]
@@ -306,17 +306,19 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult(root_dir, skip_mode=False):
-    model = AdultIncomeFeatureSelection(0, 100, "./dataset/adult-income", knapsack=True, construct_graph=False)
+    n = 100
+    sample_count = 100
+    model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True, construct_graph=False)
     interval = 1
-    num_points = 5
-    start_point = 16
+    num_points = 20
+    start_point = 1
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir, "archive", "adult", f"{sample_count}", f"ub177m-{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict

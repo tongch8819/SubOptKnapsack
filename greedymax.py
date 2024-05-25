@@ -23,6 +23,7 @@ def greedy_max(model: BaseTask, upb: str = None):
 
     G, S = set(), set()
     remaining_elements = set(model.ground_set)
+    # print(f"l:{len(remaining_elements)},s:{remaining_elements}")
     cur_cost = 0.
     if upb is not None:
         delta = marginal_delta_gate(upb, set({}), remaining_elements, model)

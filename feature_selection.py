@@ -12,7 +12,7 @@ import networkx as nx
 
 class AdultIncomeFeatureSelection(BaseTask):
     def __init__(self, budget: float, n: int = None, data_path: str = None, knapsack=True, seed = 0,
-                 prepare_max_pair=True, print_curvature=False, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal"):
+                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix=""):
         """
         Inputs:
         - n: max_nodes
@@ -28,38 +28,79 @@ class AdultIncomeFeatureSelection(BaseTask):
 
         # printed = False
 
-        with open(data_path + "/" + "binary_data.txt", "r") as f:
-            while True:
-                line = f.readline()
-                if line != "":
-                    sample = list(line.rstrip("\n").split(" "))
-                    sample.remove("")
-                    # if not printed:
-                    #     print(line)
-                    #     print("*************")
-                    #     print(sample[112])
-                    #     print("**********")
-                    #     printed = True
-                    self.samples.append(sample)
-                else:
-                    break
+        # prepare graph
+        if construct_graph:
+            with open(os.path.join(data_path, "binary_data.txt"), "r") as f:
+                while True:
+                    line = f.readline()
+                    if line != "":
+                        sample = list(line.rstrip("\n").split(" "))
+                        sample.remove("")
+                        self.samples.append(sample)
+                    else:
+                        break
 
-        self.samples = random.sample(self.samples, n)
+            self.samples = random.sample(self.samples, sample_count)
+            self.samples = np.array(self.samples)
 
-        self.samples = np.array(self.samples)
+            binary_data_path = os.path.join(data_path, f"binary_data-{sample_count}.txt")
+            with open(binary_data_path, "w") as f:
+                for sample in self.samples:
+                    ss = ""
+                    for i in range(0, len(sample)):
+                        if i < len(sample)-1:
+                            ss = ss + f"{sample[i]} "
+                        else:
+                            ss = ss + f"{sample[i]}\n"
+                    f.write(ss)
 
-        self.objs = list(range(0, self.samples.shape[1] - 1))
-        self.feature_count = len(self.objs)
+            self.objs = list(range(0, self.samples.shape[1] - 1))
+            self.objs = random.sample(self.objs, n)
 
-        self.x = self.samples[:, :self.feature_count]
-        self.y = self.samples[:, self.feature_count]
+            objs_path = os.path.join(data_path, f"objs-{sample_count}-{n}.txt")
+            with open(objs_path, "w") as f:
+                for obj in self.objs:
+                    f.write(f"{obj}\n")
 
-        self.y = self.y.astype(float)
+            self.feature_count = len(self.objs)
 
+            self.x = self.samples[:, :self.feature_count]
+            self.y = self.samples[:, self.feature_count]
+            self.y = self.y.astype(float)
+
+            self.total_samples = len(self.samples)
+        else:
+            binary_data_path = os.path.join(data_path, f"binary_data-{sample_count}.txt")
+            with open(binary_data_path, "r") as f:
+                while True:
+                    line = f.readline()
+                    if line != "":
+                        sample = list(line.rstrip("\n").split(" "))
+                        if "" in sample:
+                            sample.remove("")
+                        self.samples.append(sample)
+                    else:
+                        break
+
+            self.samples = np.array(self.samples)
+
+            objs_path = os.path.join(data_path, f"objs-{sample_count}-{n}.txt")
+            self.objs = []
+            with open(objs_path, "r") as f:
+                for i in range(0, n):
+                    self.objs.append(int(f.readline().rstrip("\n")))
+
+            self.feature_count = len(self.objs)
+
+            self.x = self.samples[:, :self.feature_count]
+            self.y = self.samples[:, self.feature_count]
+            self.y = self.y.astype(float)
+
+            self.total_samples = len(self.samples)
+
+        # prepare costs
         self.costs_obj = []
-
-        self.total_samples = len(self.samples)
-        cost_name = "costs.txt"
+        cost_name = f"costs-{n}.txt"
 
         # cost parameters
         if construct_graph:
@@ -102,6 +143,11 @@ class AdultIncomeFeatureSelection(BaseTask):
                         break
                     self.costs_obj.append(float(line.rstrip("\n")))
 
+        lcobjs = self.costs_obj
+        self.costs_obj = {}
+        for i in range(0, len(lcobjs)):
+            # print(f"obj:{self.objs[i]}, c:{lcobjs[i]}")
+            self.costs_obj[self.objs[i]] = lcobjs[i]
 
         self.budget = budget
 
@@ -129,8 +175,7 @@ class AdultIncomeFeatureSelection(BaseTask):
         return sum(self.costs_obj[x] for x in S)
 
     def cost_of_singleton(self, singleton: int):
-        assert singleton < len(
-            self.costs_obj), "Singleton: {}".format(singleton)
+        assert singleton in self.objs, "Singleton: {}".format(singleton)
         return self.costs_obj[singleton]
 
 

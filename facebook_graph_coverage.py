@@ -30,34 +30,6 @@ class FacebookGraphCoverage(BaseTask):
         graph_name = "graph" + graph_suffix + ".txt"
         cost_name = "costs" + graph_suffix + ".txt"
 
-        # if construct_graph:
-        #
-        # else:
-        #     if knapsack:
-        #         if cost_mode == "normal":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 (min_cost + random.random()) * factor
-        #                 for node in self.nodes
-        #             ]
-        #         elif cost_mode == "small":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 max(min_cost, random.gauss(mu=min_cost, sigma=1) * factor)
-        #                 for node in self.nodes
-        #             ]
-        #         elif cost_mode == "big":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 max(min_cost, min(min_cost + 1, random.gauss(mu=min_cost + 1, sigma=1) * factor))
-        #                 for node in self.nodes
-        #             ]
-        #     else:
-        #         self.costs_obj = [
-        #             1
-        #             for node in self.nodes
-        #         ]
-
         self.costs_obj = []
 
         if construct_graph:
@@ -168,6 +140,7 @@ class FacebookGraphCoverage(BaseTask):
         return sum(self.costs_obj[x] for x in S)
 
     def cost_of_singleton(self, singleton: int):
+        # print(f"s:{singleton}, l:{len(self.costs_obj)}")
         assert singleton < len(
             self.costs_obj), "Singleton: {}".format(singleton)
         return self.costs_obj[singleton]

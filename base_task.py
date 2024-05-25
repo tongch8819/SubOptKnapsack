@@ -108,6 +108,7 @@ class BaseTask(ABC):
 
     def density(self, single: int, base: List[int]):
         mg = self.marginal_gain(single, base)
+        # print(f"s:{single}, c:{self.costs_obj}")
         cost = self.costs_obj[single]
         return (mg * 100) / (cost * 100)
 
