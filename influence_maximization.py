@@ -63,7 +63,7 @@ class YoutubeCoverage(BaseTask):
         cost_name = "costs.txt"
 
         if construct_graph:
-            self.graph: nx.Graph = self.load_original_graph(graph_path + "/com-dblp-top5000.cmty.txt")
+            self.graph: nx.Graph = self.load_original_graph(graph_path + "/com-youtube.top5000.cmty.txt")
 
             with open(self.graph_path + "/graph.txt", "w") as f:
                 for edge in self.graph.edges:

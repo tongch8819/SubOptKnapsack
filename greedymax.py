@@ -1,3 +1,5 @@
+import time
+
 from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta
 from data_dependent_upperbound import marginal_delta_version2
@@ -17,6 +19,8 @@ def greedy_max(model: BaseTask, upb: str = None):
     # algorithm
     # implement upper bound mentioned in revisiting original paper
     """
+    start_time = time.time()
+
     G, S = set(), set()
     remaining_elements = set(model.ground_set)
     cur_cost = 0.
@@ -99,9 +103,14 @@ def greedy_max(model: BaseTask, upb: str = None):
             'f(S)': G_fv,
             'c(S)': model.cost_of_set(G),
         }
+
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+
     return res
 
 

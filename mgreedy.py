@@ -1,3 +1,5 @@
+import time
+
 from base_task import BaseTask
 
 from data_dependent_upperbound import marginal_delta, marginal_delta_version4
@@ -7,6 +9,8 @@ from data_dependent_upperbound import marginal_delta_gate
 
 
 def modified_greedy(model: BaseTask, upb : str = None):
+    start_time = time.time()
+
     sol = set()
     remaining_elements = set(model.ground_set)
     cur_cost = 0.
@@ -89,6 +93,10 @@ def modified_greedy(model: BaseTask, upb : str = None):
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+
     return res
 
 def modified_greedy_ub1(model: BaseTask):
