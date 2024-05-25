@@ -22,14 +22,14 @@ class GraphCoverageTest(unittest.TestCase):
         # #
         # sensor = SensorPlacement(1,100,"../dataset/berkley-sensor", construct_graph=True, cost_mode="big")
         #
-        youtube = YoutubeCoverage(0, 100, "../dataset/com-youtube", knapsack=True, construct_graph=True)
+        # youtube = YoutubeCoverage(0, 1000, "../dataset/com-youtube", knapsack=True, construct_graph=True)
         #
-        # cal = CalTechMaximization(0, 25, "../dataset/caltech", knapsack=True, prepare_max_pair=False, construct_graph=True, graph_suffix="-25")
+        # cal = CalTechMaximization(0, 100, "../dataset/caltech", knapsack=True, prepare_max_pair=False, construct_graph=True, graph_suffix="-100")
         # citation = CitationCoverage(0, 1000, "../dataset/cite-HepPh", knapsack=True, prepare_max_pair=False, construct_graph=True, cost_mode="big")
         #
         # nodes = random.sample(list(intact_graph.nodes), self.max_nodes)
 
-        # facebook = FacebookGraphCoverage(0, 1000, graph_path="../dataset/facebook", knapsack=True,prepare_max_pair=False,print_curvature=False, construct_graph = True, graph_suffix="")
+        facebook = FacebookGraphCoverage(0, 1000, graph_path="../dataset/facebook", knapsack=True,prepare_max_pair=False,print_curvature=False, construct_graph = True, graph_suffix="-1000")
         #
         # dblp = DblpGraphCoverage(0, n=5000, graph_path="../dataset/com-dblp", knapsack=True,prepare_max_pair=False,print_curvature=False, construct_graph = True)
 

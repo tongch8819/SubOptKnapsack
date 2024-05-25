@@ -162,15 +162,18 @@ def compute_facebook(root_dir, skip_mode=False):
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
+    n = 100
+    s = f"-{n}"
+
     model = FacebookGraphCoverage(
-        budget=0, n=1000, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
-        print_curvature=False, cost_mode=cost_mode, construct_graph=False, graph_suffix=graph_suffix)
+        budget=0, n=n, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
+        print_curvature=False, cost_mode=cost_mode, construct_graph=False, graph_suffix=s)
 
     for budget in bds:
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir, "archive-2", "facebook", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
@@ -237,7 +240,8 @@ def compute_revenue_max(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_youtube(root_dir, skip_mode=False):
-    model = YoutubeCoverage(0, 1045, "./dataset/com-youtube", knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False)
+    n = 100
+    model = YoutubeCoverage(0, n, "./dataset/com-youtube", knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False)
     interval = 1
     num_points = 30
     start_point = 1
@@ -247,7 +251,7 @@ def compute_youtube(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir,"archive-2","youtube",f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
@@ -283,9 +287,11 @@ def compute_citation(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech(root_dir, skip_mode=False):
-    model = CalTechMaximization(0, 123124, "./dataset/caltech", knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=graph_suffix)
+    n = 25
+    s = f"-{n}"
+    model = CalTechMaximization(0, 123124, "./dataset/caltech", knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=s)
     interval = 1
-    num_points = 25
+    num_points = 30
     start_point = 1
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -293,7 +299,7 @@ def compute_caltech(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir, "archive-2", "caltech", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
@@ -306,7 +312,7 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult(root_dir, skip_mode=False):
-    n = 100
+    n = 25
     sample_count = 100
     model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True, construct_graph=False)
     interval = 1
@@ -318,7 +324,7 @@ def compute_adult(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir, "archive", "adult", f"{sample_count}", f"ub177m-{n}"), "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir, "archive-2", "adult", f"{sample_count}", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict

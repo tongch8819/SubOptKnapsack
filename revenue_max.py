@@ -217,7 +217,7 @@ class CalTechMaximization(BaseTask):
 
         if self.max_nodes <= len(intact_graph.nodes):
             nodes = random.sample(list(intact_graph.nodes), self.max_nodes)
-            print(len(nodes))
+            # print(len(nodes))
             return intact_graph.subgraph(nodes)
         else:
             return intact_graph
