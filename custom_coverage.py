@@ -134,7 +134,7 @@ class CustomCoverage(BaseTask):
 
             edges.append(nodes_selected)
 
-        with open(self.graph_path + "/graph.txt", "w") as f:
+        with open(self.graph_path + "/o-graph.txt", "w") as f:
             for node in range(0, self.max_nodes):
                 for edge in edges[node]:
                     f.write(f"{node} {edge}\n")
@@ -231,7 +231,7 @@ class CustomCoverage(BaseTask):
 
             edges.append(nodes_selected)
 
-        with open(self.graph_path + "/graph.txt", "w") as f:
+        with open(self.graph_path + "/o-graph.txt", "w") as f:
             for node in range(0, self.max_nodes):
                 for edge in edges[node]:
                     f.write(f"{node} {edge}\n")

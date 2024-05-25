@@ -1,4 +1,5 @@
 import json
+import math
 import random
 
 from budget_max_coverage import IdealMaxCovModel
@@ -8,6 +9,7 @@ from image_sum import ImageSummarization
 from movie_recommendation import MovieRecommendation
 from revenue_max import RevenueMax
 from custom_coverage import CustomCoverage
+from influence_maximization import YoutubeCoverage, CitationCoverage
 
 from greedy import greedy
 from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4,  modified_greedy_ub5
@@ -27,6 +29,8 @@ prepare_2_pair = False
 print_curvature = True
 max_nodes = 100
 graph_path = "dataset/custom-graph/custom.txt"
+
+import pandas as pd
 
 def prepare_graphs(config_path: str):
     # run custom_coverage with different n, alpha, beta, gamma
@@ -90,9 +94,161 @@ def load_graph(path: str):
 
     return intact_graph.subgraph(nodes)
 
+def prepare_feature_selection():
+    data_path = "./dataset/adult-income/adult.csv"
+
+    df = pd.read_csv(data_path, encoding="utf-8")
+
+    data = np.array(df)
+
+    y = data[:, 14]
+
+    y = [
+        [1 if i == '>50K' else 0]
+        for i in y
+    ]
+
+    y = np.array(y)
+
+    x_s = np.ndarray(shape=(data.shape[0], 0))
+    feature_count = 0
+    # 将x拆分成binary feature
+    for i in range(0, 14):
+        x_i = data[:, i]
+        all_digit = True
+        printed = False
+        for f in x_i:
+            if not printed:
+                printed = True
+            if type(f) != int and f != '?':
+                all_digit = False
+                break
+        if all_digit:
+            max_x = max(x_i)
+            count = int(math.ceil(math.log(max_x, 2))) + 1
+            feature_count += count
+
+            x_i_binary = []
+            for s in x_i:
+                o_bin = bin(s)[2:]
+                o_bin = o_bin.rjust(count, '0')
+                o_bin = list(o_bin)
+                o_bin = [int(b) for b in o_bin]
+                x_i_binary.append(o_bin)
+
+        else:
+            t_x_i = set(x_i)
+            values = len(t_x_i)
+            count = int(math.ceil(math.log(values, 2))) + 1
+            feature_count += count
+            t_x_i = list(t_x_i)
+            binary_dict = {}
+            for idx in range(0, len(t_x_i)):
+                o_bin = bin(idx)[2:]
+                o_bin = o_bin.rjust(count, '0')
+                o_bin = list(o_bin)
+                o_bin = [int(b) for b in o_bin]
+                binary_dict[t_x_i[idx]] = o_bin
+
+            x_i_binary = []
+            for s in x_i:
+                x_i_binary.append(binary_dict[s])
+
+        x_i_binary = np.array(x_i_binary)
+        x_s = np.append(x_s, x_i_binary, axis = 1)
+
+    print(x_s.shape)
+    print(y.shape)
+
+    df = np.append(x_s, y, axis= 1)
+    print(df.shape)
+
+    with open("./dataset/adult-income/binary_data.txt", 'w') as f:
+        for i in range(0, df.shape[0]):
+            s = df[i]
+            s_str = ""
+            for feat in s:
+                s_str = s_str + f"{feat} "
+            s_str += "\n"
+            f.write(s_str)
+
+    pass
+
+# 读取每个sensor的前200行数据
+def prepare_sensor_placement(n = 1000):
+    current_sensor_idx = 1
+    current_sensor_data = n
+
+    temps = [[]]
+
+    with open("./dataset/berkley-sensor/data.txt", "r") as f:
+        while True:
+            line = f.readline()
+            if line == "":
+                # print(line)
+                # print(current_sensor_idx)
+                # print(current_sensor_data)
+                break
+            else:
+                date, time, epoch, idx, temp, humid, light, voltage = list(line.rstrip("\n").split(" "))
+                if idx.isdigit() and not temp == '':
+                    idx = int(idx)
+                    if idx == current_sensor_idx:
+                        current_sensor_data -= 1
+                        temps[idx-1].append(float(temp))
+
+                        if current_sensor_data == 0:
+                            current_sensor_idx += 1
+                            if current_sensor_idx > 51:
+                                # print("1")
+                                # print(line)
+                                # print(current_sensor_idx)
+                                # print(current_sensor_data)
+                                break
+                            current_sensor_data = n
+                            temps.append([])
+
+                            while True:
+                                line = f.readline()
+                                if line == "":
+                                    break
+                                else:
+                                    date, time, epoch, idx, temp, humid, light, voltage = list(line.rstrip("\n").split(" "))
+                                    if idx.isdigit():
+                                        idx = int(idx)
+                                        if idx == current_sensor_idx:
+                                            if not temp == '':
+                                                current_sensor_data -= 1
+                                                temps[idx - 1].append(float(temp))
+                                            break
+
+                    else:
+                        current_sensor_idx += 1
+                        if current_sensor_idx > 50:
+                            break
+                        current_sensor_data = n
+
+                        temps.append([])
+
+
+    # 5号传感器异常
+    # print(len(temps))
+    temps.remove([])
+    for i in range(0, len(temps)):
+        print(f"i:{i}, f:{len(temps[i])}")
+
+    with open("./dataset/berkley-sensor/t_data.txt", "w") as f:
+        for i in range(0, len(temps)):
+            t = ""
+            for j in range(0, len(temps[i])):
+                if j == len(temps[i]) - 1:
+                    t = t + f"{temps[i][j]}"
+                else:
+                    t = t + f"{temps[i][j]} "
+            t = t + "\n"
+            f.write(t)
+
 if __name__ == "__main__":
-
-    prepare_graphs("dataset/custom-graph/config.json")
-
+    prepare_sensor_placement()
 
     # run_multiple_exps(root_dir, True)

@@ -11,7 +11,11 @@ def modified_greedy(model: BaseTask, upb : str = None):
     remaining_elements = set(model.ground_set)
     cur_cost = 0.
     if upb is not None:
-        lambda_capital = float('inf')
+        delta = marginal_delta_gate(upb, set({}), remaining_elements, model)
+        # if fs + delta < lambda_capital:
+        #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
+        lambda_capital = delta
+
     while len(remaining_elements):
         u, max_density = None, -1.
         for e in remaining_elements:
@@ -99,6 +103,12 @@ def modified_greedy_ub3(model: BaseTask):
 def modified_greedy_ub4(model: BaseTask):
     return modified_greedy(model, "ub4")
 
+def modified_greedy_ub4c(model):
+    return modified_greedy(model, "ub4c")
+
+def modified_greedy_ub4cm(model):
+    return modified_greedy(model, "ub4cm")
+
 def modified_greedy_ub5(model: BaseTask):
     return modified_greedy(model, "ub5")
 
@@ -110,3 +120,9 @@ def modified_greedy_ub5p(model: BaseTask):
 
 def modified_greedy_ub6(model: BaseTask):
     return modified_greedy(model, "ub6")
+
+def modified_greedy_ub7(model: BaseTask):
+    return modified_greedy(model, "ub7")
+
+def modified_greedy_ub7m(model: BaseTask):
+    return modified_greedy(model, "ub7m")

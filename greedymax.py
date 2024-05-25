@@ -11,6 +11,7 @@ from copy import deepcopy
 # it+是否可以大于it
 # it=it+清晰
 
+
 def greedy_max(model: BaseTask, upb: str = None):
     """
     # algorithm
@@ -20,8 +21,23 @@ def greedy_max(model: BaseTask, upb: str = None):
     remaining_elements = set(model.ground_set)
     cur_cost = 0.
     if upb is not None:
-        lambda_capital = float('inf')
+        delta = marginal_delta_gate(upb, set({}), remaining_elements, model)
+        lambda_capital = delta
+
+    # def sort_key(x, y):
+    #     if model.objective({x}) != model.objective({y}):
+    #         return model.objective({x}) > model.objective({y})
+    #     else:
+    #         return model.cost_of_singleton(x) > model.cost_of_singleton(y)
+
     while len(remaining_elements):
+        # remaining_elements = list(remaining_elements)
+        # remaining_elements.sort(key = lambda x: model.density(x, []), reverse=True)
+        #
+        # t = [model.density(x,[]) for x in remaining_elements]
+        #
+        # print(f"r:{remaining_elements[:10]}, t:{t[:10]}")
+
         # argmax marginal gain
         s, max_marginal_gain = None, -1
         for e in remaining_elements:
@@ -35,35 +51,11 @@ def greedy_max(model: BaseTask, upb: str = None):
             S = tmp_G
             # update data-dependent upper-bound
             if upb is not None:
-                delta = marginal_delta_gate(upb, S, remaining_elements - {s}, model)
+                delta = marginal_delta_gate(upb, S, set(remaining_elements) - {s}, model)
                 fs = model.objective(S)
                 # if fs + delta < lambda_capital:
                 #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
                 lambda_capital = min(lambda_capital, fs + delta)
-                '''
-                if upb == "ub1":
-                    delta = marginal_delta(S, remaining_elements - {s}, model)
-                    fs = model.objective(S)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                elif upb == "ub2":
-                    delta = marginal_delta_version2(
-                        S, remaining_elements - {s}, model)
-                    fs = model.objective(S)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                elif upb == "ub3":
-                    delta = marginal_delta_version3(
-                        S, remaining_elements - {s}, model)
-                    fs = model.objective(S)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                elif upb == 'ub4':
-                    delta  = marginal_delta_version4(
-                        S, remaining_elements - {s}, model
-                    )
-                    fs = model.objective(S)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                else:
-                    raise ValueError("Unsupported Upperbound")
-                '''
 
         # argmax density
         a, max_density = None, -1.
@@ -72,47 +64,25 @@ def greedy_max(model: BaseTask, upb: str = None):
             ds = model.density(e, G)
             if a is None or ds > max_density:
                 a, max_density = e, ds
+
         assert a is not None
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
-            delta = marginal_delta_gate(upb, G, remaining_elements - {a}, model)
+            delta = marginal_delta_gate(upb, G, set(remaining_elements) - {a}, model)
             fs = model.objective(G)
             # if fs + delta < lambda_capital:
             #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
             lambda_capital = min(lambda_capital, fs + delta)
 
-            '''
-            if upb is not None:
-                if upb == "ub1":
-                    delta = marginal_delta(G, remaining_elements - {a}, model)
-                    fs = model.objective(G)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                elif upb == "ub2":
-                    delta = marginal_delta_version2(
-                        G, remaining_elements - {a}, model)
-                    fs = model.objective(G)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                elif upb == "ub3":
-                    delta = marginal_delta_version3(
-                        G, remaining_elements - {a}, model)
-                    fs = model.objective(G)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                elif upb == 'ub4':
-                    delta  = marginal_delta_version4(
-                        G, remaining_elements - {a}, model
-                    )
-                    fs = model.objective(G)
-                    lambda_capital = min(lambda_capital, fs + delta)
-                else:
-                    raise ValueError("Unsupported Upperbound")
-            '''
         remaining_elements.remove(a)
         # filter out violating elements
         to_remove = set()
         for v in remaining_elements:
             if model.cost_of_singleton(v) + cur_cost > model.budget:
                 to_remove.add(v)
+        # for v in to_remove:
+        #     remaining_elements.remove(v)
         remaining_elements -= to_remove
 
     S_fv = model.objective(S)
@@ -152,6 +122,9 @@ def greedy_max_ub4(model):
 def greedy_max_ub4c(model):
     return greedy_max(model, "ub4c")
 
+def greedy_max_ub4cm(model):
+    return greedy_max(model, "ub4cm")
+
 def greedy_max_ub5(model):
     return greedy_max(model, "ub5")
 
@@ -163,4 +136,10 @@ def greedy_max_ub5p(model):
 
 def greedy_max_ub6(model):
     return greedy_max(model, "ub6")
+
+def greedy_max_ub7(model):
+    return greedy_max(model, "ub7")
+
+def greedy_max_ub7m(model):
+    return greedy_max(model, "ub7m")
 

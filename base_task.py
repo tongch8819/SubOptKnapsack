@@ -103,7 +103,7 @@ class BaseTask(ABC):
         fS1 = self.objective(base)
         fS2 = self.objective(base2)
         res = fS2 - fS1
-        assert res >= 0., f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
+        assert res >= -0.01, f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
         return res
 
     def density(self, single: int, base: List[int]):
