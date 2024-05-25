@@ -30,44 +30,15 @@ class YoutubeCoverage(BaseTask):
         # cost parameters
         self.graph_path = graph_path
 
-        # if construct_graph:
-        #
-        # else:
-        #     if knapsack:
-        #         if cost_mode == "normal":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 (min_cost + random.random()) * factor
-        #                 for node in self.nodes
-        #             ]
-        #         elif cost_mode == "small":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 max(min_cost, random.gauss(mu=min_cost, sigma=1) * factor)
-        #                 for node in self.nodes
-        #             ]
-        #         elif cost_mode == "big":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 max(min_cost, min(min_cost + 1, random.gauss(mu=min_cost + 1, sigma=1) * factor))
-        #                 for node in self.nodes
-        #             ]
-        #     else:
-        #         self.costs_obj = [
-        #             1
-        #             for node in self.nodes
-        #         ]
-
         self.costs_obj = []
 
-        cost_name = "costs.txt"
+        graph_name = f"graph-{n}.txt"
+        cost_name = f"costs-{n}.txt"
 
         if construct_graph:
             self.graph: nx.Graph = self.load_original_graph(graph_path + "/com-youtube.top5000.cmty.txt")
 
-            with open(self.graph_path + "/graph.txt", "w") as f:
-                for edge in self.graph.edges:
-                    f.write(f"{edge[0]} {edge[1]}\n")
+            nx.write_adjlist(self.graph, path = os.path.join(self.graph_path, graph_name))
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
@@ -101,17 +72,16 @@ class YoutubeCoverage(BaseTask):
                     1
                     for node in self.nodes
                 ]
-            with open(self.graph_path + "/" + cost_name, "w") as f:
+            with open(os.path.join(self.graph_path, cost_name), "w") as f:
                 for node in range(0, self.max_nodes):
                     f.write(f"{self.costs_obj[node]}\n")
         else:
-            self.graph: nx.Graph = self.load_graph(graph_path + "/graph.txt")
+            self.graph: nx.Graph = self.load_graph(os.path.join(self.graph_path, graph_name))
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
             self.objs = list(range(0, len(self.nodes)))
 
-
-            with open(self.graph_path + "/" + cost_name, "r") as f:
+            with open(os.path.join(self.graph_path, cost_name), "r") as f:
                 while True:
                     line = f.readline()
                     if line == "":

@@ -17,12 +17,12 @@ from influence_maximization import YoutubeCoverage, CitationCoverage
 class GraphCoverageTest(unittest.TestCase):
     def test_load(self):
 
-        adult = AdultIncomeFeatureSelection(1,25, "../dataset/adult-income", sample_count=1000, construct_graph=True, cost_mode="normal")
+        # adult = AdultIncomeFeatureSelection(1,25, "../dataset/adult-income", sample_count=1000, construct_graph=True, cost_mode="normal")
         # # # print(len(adult.samples))
         # #
         # sensor = SensorPlacement(1,100,"../dataset/berkley-sensor", construct_graph=True, cost_mode="big")
         #
-        # youtube = YoutubeCoverage(0, 1045, "../dataset/com-youtube", knapsack=True, construct_graph=True)
+        youtube = YoutubeCoverage(0, 100, "../dataset/com-youtube", knapsack=True, construct_graph=True)
         #
         # cal = CalTechMaximization(0, 25, "../dataset/caltech", knapsack=True, prepare_max_pair=False, construct_graph=True, graph_suffix="-25")
         # citation = CitationCoverage(0, 1000, "../dataset/cite-HepPh", knapsack=True, prepare_max_pair=False, construct_graph=True, cost_mode="big")
