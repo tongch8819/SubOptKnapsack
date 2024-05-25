@@ -175,6 +175,12 @@ output_dblp_mgreedy.png
 output_maxcov.png
 output_movie.png
 output_ub4.png
-dataset/
+dataset/berkley-sensor/
+dataset/cite-HepPh/
+dataset/com-dblp/
+dataset/image/
+dataset/uber/
+dataset/adult-income/
+dataset/custom-graph/
 output/
 *.png
