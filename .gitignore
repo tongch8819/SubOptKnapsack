@@ -180,7 +180,7 @@ dataset/cite-HepPh/
 dataset/com-dblp/
 dataset/image/
 dataset/uber/
-dataset/adult-income/
+dataset/adult-income/adult.csv
 dataset/custom-graph/
 output/
 *.png
