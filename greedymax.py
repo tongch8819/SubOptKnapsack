@@ -20,13 +20,14 @@ def greedy_max(model: BaseTask, upb: str = None):
     # implement upper bound mentioned in revisiting original paper
     """
     start_time = time.time()
+    parameters = {}
 
     G, S = set(), set()
     remaining_elements = set(model.ground_set)
     # print(f"l:{len(remaining_elements)},s:{remaining_elements}")
     cur_cost = 0.
     if upb is not None:
-        delta = marginal_delta_gate(upb, set({}), remaining_elements, model)
+        delta, parameters = marginal_delta_gate(upb, set({}), remaining_elements, model)
         lambda_capital = delta
 
     # def sort_key(x, y):
@@ -56,11 +57,13 @@ def greedy_max(model: BaseTask, upb: str = None):
             S = tmp_G
             # update data-dependent upper-bound
             if upb is not None:
-                delta = marginal_delta_gate(upb, S, set(remaining_elements) - {s}, model)
+                delta, p1 = marginal_delta_gate(upb, S, set(remaining_elements) - {s}, model)
                 fs = model.objective(S)
                 # if fs + delta < lambda_capital:
                 #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
-                lambda_capital = min(lambda_capital, fs + delta)
+                if lambda_capital > fs + delta:
+                    lambda_capital = fs + delta
+                    parameters = p1
 
         # argmax density
         a, max_density = None, -1.
@@ -74,11 +77,13 @@ def greedy_max(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
-            delta = marginal_delta_gate(upb, G, set(remaining_elements) - {a}, model)
+            delta, p1 = marginal_delta_gate(upb, G, set(remaining_elements) - {a}, model)
             fs = model.objective(G)
             # if fs + delta < lambda_capital:
             #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
-            lambda_capital = min(lambda_capital, fs + delta)
+            if lambda_capital > fs + delta:
+                lambda_capital = fs + delta
+                parameters = p1
 
         remaining_elements.remove(a)
         # filter out violating elements
@@ -108,6 +113,8 @@ def greedy_max(model: BaseTask, upb: str = None):
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
+        res['ScanCount'] = parameters["ScanCount"]
+        res['MinusCount'] = parameters["MinusCount"]
 
     stop_time = time.time()
     res['Time'] = stop_time - start_time

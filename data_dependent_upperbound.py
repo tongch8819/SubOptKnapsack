@@ -6,7 +6,10 @@ from typing import Set, List
 from itertools import accumulate
 import bisect
 import numpy as np
-
+# 改图
+# setminus
+# 证明
+# binary search
 
 def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
@@ -14,36 +17,19 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     if len(remaining_set) == 0:
         return 0
 
+    parameters = {}
+
     t = list(remaining_set)
-    # print(f"r:{remaining_set}")
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
     costs = [model.cost_of_singleton(x) for x in t]
-    # # cumsum_costs[i] = sum(costs[:i+1])
     cumsum_costs = list(accumulate(costs, initial=None))
-    # # idx = bisect.bisect_left(cumsum_costs, b)
-    # # cumsum_costs[:idx]: x < b
-    # # cumsum_costs[idx:]: x >= b
-    # idx = bisect.bisect_right(cumsum_costs, model.budget)
-    # # cumsum_costs[:idx]: x <= b
-    # # cumsum_costs[idx:]: x > b
-    # r = idx
-    #
-    # delta = 0.
-    # for i in range(r):
-    #     # t[i] is a single element
-    #     delta += model.marginal_gain(t[i], base_set)
-    #
-    # # if cumsum_costs[-1] <= b, idx = len(cumsum_costs) - 1, no interpolation term
-    # if r >= 1 and r < len(cumsum_costs):
-    #     c_star = cumsum_costs[r - 1]
-    #     coefficient = (model.budget - c_star) / model.costs_obj[t[r]]
-    #     delta += model.marginal_gain(t[r], base_set) * coefficient
-
-    # G_plus(x, model, remaining_set, base_set, cumsum_costs, elements):
     delta = G_plus(model.budget, model, remaining_set,
                          base_set, cumsum_costs, t)
-    # assert abs(delta - check_delta) < 1e-6, "Inconsistency"
-    return delta
+
+    parameters["ScanCount"] = bisect.bisect_right(cumsum_costs, model.budget) + 1
+    parameters["MinusCount"] = 0
+
+    return delta, parameters
 
 
 def marginal_delta_version2(base_set: Set[int], remaining_set: Set[int], ground_set: Set[int], model: BaseTask):
@@ -495,7 +481,6 @@ def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], model: 
             return M_plus_gain[idx] + (x - M_plus_budget[idx]) * (M_plus_gain[idx + 1] - M_plus_gain[idx]) / (
                         M_plus_budget[idx + 1] - M_plus_budget[idx])
 
-
     endpoints_plus = [x[0] for x in M_plus_res]
 
     minimal_budget = model.budget - model.cost_of_set(base_set)
@@ -513,13 +498,12 @@ def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], model: 
 
     endpoints = list(set(endpoints))
 
-    endpoints.sort()
+    # endpoints.sort()
 
     for i in range(0, len(endpoints)):
         if endpoints[i] >= minimal_budget:
             g_minus = G_minus(endpoints[i] - minimal_budget, model, set(model.ground_set), csc_inside, ele_inside)
             t_ub = M_plus(endpoints[i]) - g_minus
-            #print(f"t ub is:{t_ub}, g minus is:{g_minus}, y is:{endpoints[i] - model.budget + base_budget},t:{model.budget-base_budget},b:{base_budget}")
             if t_ub > ub:
                 ub = t_ub
 
@@ -1603,6 +1587,8 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     if len(remaining_set) == 0:
         return 0
 
+    parameters = {}
+
     base_set_value = model.objective(base_set)
 
     def inside_cumsum_costs():
@@ -1647,6 +1633,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
 
         budget_consumed = 0
 
+        scan_count = 0
         while budget_consumed < b and ele_idx < len(ele_outside):
             marginal_gain = f(set(ele_outside[:ele_idx+1])) - f(set(ele_outside[:ele_idx]))
             singleton_gain = f({ele_outside[ele_idx]})
@@ -1654,6 +1641,8 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             if singleton_gain <= 0:
                 budget_consumed = b
                 result.append((budget_consumed, delta))
+                # scan_count = ele_idx
+                ele_idx += 1
                 break
 
             budget_to_use_up = (marginal_gain / singleton_gain) * model.cost_of_singleton(ele_outside[ele_idx])
@@ -1666,23 +1655,26 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
                 bd = b - budget_consumed
 
             ele_idx = ele_idx + 1
-
             delta += v_j
             budget_consumed += bd
 
             result.append((budget_consumed, delta))
 
-        return result
+        scan_count = ele_idx
+        # print(f"sc:{scan_count}, ele:{ele_idx}")
+        return result, scan_count
 
     ub = 0
 
-    M_plus_res = method3(f_over_base, model.budget)
+    M_plus_res, sc = method3(f_over_base, model.budget)
 
     M_plus_budget = [x[0] for x in M_plus_res]
     M_plus_gain = [x[1] for x in M_plus_res]
 
     if not minus:
-        return max(M_plus_gain)
+        parameters["ScanCount"] = sc
+        parameters["MinusCount"] = 0
+        return max(M_plus_gain), parameters
 
     def M_plus(x):
         idx = bisect.bisect_left(M_plus_budget, x) - 1
@@ -1713,8 +1705,6 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
 
     endpoints.sort()
 
-    # print(f"csc:{csc_inside}, S:{base_set}, 1:{model.objective(model.ground_set)}, 2:{model.objective(list(set(model.ground_set) - {41,63}))}, 3:{model.objective(model.ground_set) - model.objective(list(set(model.ground_set) - {41,63}))}, 4:{model.objective({41,63})}")
-
     for i in range(0, len(endpoints)):
         if endpoints[i] >= minimal_budget:
             g_plus = M_plus(endpoints[i])
@@ -1725,8 +1715,11 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
                 ub = t_ub
 
     # print(f"delta is:{ub}, max budget:{max(M_plus_budget)}")
+    # print(f"+:{len(endpoints_plus)}, -:{len(endpoints_minus)}, t:{len(endpoints)}, ?:{len(set(endpoints_plus))}, c:{len(list(set(endpoints_plus) | set(endpoints_minus)))}")
+    parameters["ScanCount"] = sc
+    parameters["MinusCount"] = len(endpoints)
 
-    return ub
+    return ub, parameters
 
 def marginal_delta_for_streaming_version1(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
@@ -2277,35 +2270,35 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
     remaining_set = set(model.ground_set) - set(base_set)
     if upb is not None:
         delta = 0.
+        parameters = {}
         if upb == "ub1":
-            delta = marginal_delta(base_set, remaining_set, model)
+            delta, parameters = marginal_delta(base_set, remaining_set, model)
         elif upb == "ub2":
-            delta = marginal_delta_version2(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version2(base_set, remaining_set, model)
         elif upb == "ub3":
-            delta = marginal_delta_version3(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version3(base_set, remaining_set, model)
         elif upb == 'ub4':
-            delta = marginal_delta_version4(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version4(base_set, remaining_set, model)
         elif upb == 'ub4c':
-            delta = marginal_delta_version4_c(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version4_c(base_set, remaining_set, model)
         elif upb == 'ub4cm':
-            delta = marginal_delta_version4_c(base_set, remaining_set, model, minus=True)
+            delta, parameters = marginal_delta_version4_c(base_set, remaining_set, model, minus=True)
         elif upb == 'ub5':
-            delta = marginal_delta_version5(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version5(base_set, remaining_set, model)
         elif upb == 'ub5c':
-            delta = marginal_delta_version5_c(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version5_c(base_set, remaining_set, model)
         elif upb == 'ub5p':
-            delta = marginal_delta_version5_p(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version5_p(base_set, remaining_set, model)
         elif upb == 'ub6':
-            delta = marginal_delta_version6_c(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version6_c(base_set, remaining_set, model)
         elif upb == 'ub7c':
-            delta = marginal_delta_version7_c(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version7_c(base_set, remaining_set, model)
         elif upb == 'ub7':
-            delta = marginal_delta_version7(base_set, remaining_set, model)
+            delta, parameters = marginal_delta_version7(base_set, remaining_set, model)
         elif upb == 'ub7m':
-            delta = marginal_delta_version7(base_set, remaining_set, model, minus=True)
-
+            delta, parameters = marginal_delta_version7(base_set, remaining_set, model, minus=True)
         else:
             raise ValueError("Unsupported Upperbound")
-        return delta
+        return delta, parameters
     else:
         raise ValueError("Upperbound unassigned")

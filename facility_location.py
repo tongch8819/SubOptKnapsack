@@ -40,9 +40,10 @@ class FacilityLocation(BaseTask):
         # compute maximum across all users
         return self.M[S, :].max(axis=1).sum()
 
+
 class MovieFacilityLocation(BaseTask):
     def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None,
-                 llambda: float = 0.5, knapsack=True, prepare_max_pair=True,print_curvature=False):
+                 llambda: float = 0.5, knapsack=True, prepare_max_pair=True, print_curvature=False):
         """
         Inputs:
         - k: number of users

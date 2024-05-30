@@ -173,7 +173,8 @@ def compute_facebook(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir, "archive-2", "facebook", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
+                save_dir = os.path.join(root_dir, "archive-3", "facebook", f"{n}")
+                save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
@@ -240,7 +241,7 @@ def compute_revenue_max(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_youtube(root_dir, skip_mode=False):
-    n = 100
+    n = 1000
     model = YoutubeCoverage(0, n, "./dataset/com-youtube", knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False)
     interval = 1
     num_points = 30
@@ -251,7 +252,7 @@ def compute_youtube(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir,"archive-2","youtube",f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir,"archive-3","youtube",f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
@@ -299,7 +300,7 @@ def compute_caltech(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir, "archive-2", "caltech", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir, "archive-3", "caltech", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
@@ -312,7 +313,7 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult(root_dir, skip_mode=False):
-    n = 25
+    n = 75
     sample_count = 100
     model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True, construct_graph=False)
     interval = 1
@@ -324,7 +325,7 @@ def compute_adult(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir, "archive-2", "adult", f"{sample_count}", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
+                save_path = os.path.join(os.path.join(root_dir, "archive-3", "adult", f"{sample_count}", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
