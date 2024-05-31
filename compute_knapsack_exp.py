@@ -162,7 +162,7 @@ def compute_facebook(root_dir, skip_mode=False):
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
-    n = 100
+    n = 1000
     s = f"-{n}"
 
     model = FacebookGraphCoverage(

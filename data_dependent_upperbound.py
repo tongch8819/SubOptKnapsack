@@ -1608,8 +1608,6 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     def local_density(f, base, ele):
         return (f(base | {ele}) - f(base)) / model.cost_of_singleton(ele)
 
-    total_utility = model.objective(model.ground_set)
-
     def f_over_base(s):
         return local_f(base_set | s) - base_set_value
 
@@ -1662,14 +1660,16 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
 
         scan_count = ele_idx
         # print(f"sc:{scan_count}, ele:{ele_idx}")
-        return result, scan_count
+        return result, scan_count, ele_outside
 
     ub = 0
 
-    M_plus_res, sc = method3(f_over_base, model.budget)
+    # t0 = time.time()
 
-    M_plus_budget = [x[0] for x in M_plus_res]
-    M_plus_gain = [x[1] for x in M_plus_res]
+    M_plus_res, sc, ele_outside = method3(f_over_base, model.budget)
+
+    M_plus_budget = [0] + [x[0] for x in M_plus_res]
+    M_plus_gain = [0] + [x[1] for x in M_plus_res]
 
     if not minus:
         parameters["ScanCount"] = sc
@@ -1687,37 +1687,116 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
                         M_plus_budget[idx + 1] - M_plus_budget[idx])
 
 
-    endpoints_plus = [x[0] for x in M_plus_res]
+    endpoints_plus = M_plus_budget
 
     minimal_budget = model.budget - model.cost_of_set(base_set)
     cost_baseset = model.cost_of_set(base_set)
-
-    endpoints = [minimal_budget]
 
     csc_inside, ele_inside = inside_cumsum_costs()
 
     endpoints_minus = csc_inside[:bisect.bisect_right(csc_inside, cost_baseset)]
     endpoints_minus = [x + minimal_budget for x in endpoints_minus]
 
-    endpoints += list(set(endpoints_plus) | set(endpoints_minus))
+    # t1 = time.time()
 
-    endpoints.append(model.budget)
+    # merge ept- into ept+
+    ept_p_idx = 0
+    ept_m_idx = 0
+    slopes_p = [f_over_base({e})/model.cost_of_singleton(e) for e in ele_outside]
+    slopes_m = [model.cutout_density(e, model.ground_set) for e in ele_inside]
+    slope_p = 0
+    slope_m = 0
+    # calculate initial value of ub
+    ub = max(M_plus(minimal_budget), M_plus(model.budget) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside))
 
-    endpoints.sort()
+    while True:
+        if (ept_p_idx < len(endpoints_plus) and
+                (ept_m_idx >= len(endpoints_minus) or endpoints_plus[ept_p_idx] < endpoints_minus[ept_m_idx])):
+            # ept_p = endpoints_plus[ept_p_idx]
+            # ept_m = endpoints_minus[ept_m_idx]
+            # endpoints.append(ept_p)
+            # get the slope in ept+ from ept_p_idx
+            slope_p = slopes_p[ept_p_idx]
+            if slope_p - slope_m <= 0:
+                # stop
+                if ept_p_idx == 0:
+                    break
+                ept = endpoints_plus[ept_p_idx - 1]
+                ub = max(ub,
+                         M_plus(ept) - G_minus(ept - minimal_budget, model, model.ground_set, csc_inside, ele_inside))
+                break
+            ept_p_idx += 1
+        else:
+            # endpoints.append(ept_m)
+            slope_m = slopes_m[ept_m_idx]
+            if slope_p - slope_m <= 0:
+                if ept_m_idx == 0:
+                    break
+                ept = endpoints_plus[ept_m_idx - 1]
+                ub = max(ub,
+                         M_plus(ept) - G_minus(ept - minimal_budget, model, model.ground_set, csc_inside, ele_inside))
+                break
+            ept_m_idx += 1
 
-    for i in range(0, len(endpoints)):
-        if endpoints[i] >= minimal_budget:
-            g_plus = M_plus(endpoints[i])
-            g_minus = G_minus(endpoints[i] - minimal_budget, model, set(model.ground_set), csc_inside, ele_inside)
-            t_ub = g_plus - g_minus
-            # print(f"t ub is:{t_ub}, g plus is:{g_plus}, g minus is:{g_minus}, x is:{endpoints[i]}, y is:{endpoints[i] - minimal_budget},t:{model.budget-cost_baseset},b:{cost_baseset},f(S):{model.objective(base_set)}")
-            if t_ub > ub:
-                ub = t_ub
+        if ept_p_idx >= len(endpoints_plus) and ept_m_idx >= len(endpoints_minus):
+            # stop
+            break
+
+    # ub0 = ub
+
+    # t2 = time.time()
+
+    # endpoints = [minimal_budget]
+    #
+    # endpoints += list(set(endpoints_plus) | set(endpoints_minus))
+    #
+    # endpoints.append(model.budget)
+
+    #
+    # ub = 0
+    # for i in range(0, len(endpoints)):
+    #     if endpoints[i] >= minimal_budget:
+    #         g_plus = M_plus(endpoints[i])
+    #         g_minus = G_minus(endpoints[i] - minimal_budget, model, set(model.ground_set), csc_inside, ele_inside)
+    #         t_ub = g_plus - g_minus
+    #         # print(f"t ub is:{t_ub}, g plus is:{g_plus}, g minus is:{g_minus}, x is:{endpoints[i]}, y is:{endpoints[i] - minimal_budget},t:{model.budget-cost_baseset},b:{cost_baseset},f(S):{model.objective(base_set)}")
+    #         if t_ub > ub:
+    #             ub = t_ub
+    # dM_plus = [
+    #     M_plus_gain[i+1] - M_plus_gain[i] / (M_plus_budget[i+1] - M_plus_budget[i])
+    #     for i in range(0, len(M_plus_gain) - 1)
+    # ]
+    # dG_minus = [
+    #     M_plus_gain[i+1] - M_plus_gain[i] / (M_plus_budget[i+1] - M_plus_budget[i])
+    #     for i in range(0, len(M_plus_gain) - 1)
+    # ]
+    # MG = [
+    #
+    # ]
+    # dMG = [
+    #
+    # ]
+    # for ept in endpoints""
+    # r = bisect.bisect_right(dMG, x=0, key=lambda x: -x)
+    # if r == 0:
+    #     ub = MG[0]
+    # else:
+    #     ub = MG[r-1]
+    #
+    # t3 = time.time()
 
     # print(f"delta is:{ub}, max budget:{max(M_plus_budget)}")
     # print(f"+:{len(endpoints_plus)}, -:{len(endpoints_minus)}, t:{len(endpoints)}, ?:{len(set(endpoints_plus))}, c:{len(list(set(endpoints_plus) | set(endpoints_minus)))}")
     parameters["ScanCount"] = sc
-    parameters["MinusCount"] = len(endpoints)
+    # parameters["MinusCount"] = len(endpoints)
+    # parameters["t0"] = t1 - t0
+    # parameters["t1"] = t2 - t1
+    # parameters["t2"] = t3 - t2
+    # parameters["total"] = t3 - t0
+    # parameters["ub0"] = ub0
+    # parameters["diff"] = ub - ub0
+
+    # print(f"p:{parameters}")
 
     return ub, parameters
 

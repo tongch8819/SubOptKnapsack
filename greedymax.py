@@ -113,8 +113,9 @@ def greedy_max(model: BaseTask, upb: str = None):
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
-        res['ScanCount'] = parameters["ScanCount"]
-        res['MinusCount'] = parameters["MinusCount"]
+        # res['ScanCount'] = parameters["ScanCount"]
+        # res['MinusCount'] = parameters["MinusCount"]
+        res['p'] = parameters
 
     stop_time = time.time()
     res['Time'] = stop_time - start_time
