@@ -1,3 +1,5 @@
+import random
+
 from base_task import BaseTask
 import numpy as np
 import os
@@ -42,7 +44,7 @@ class FacilityLocation(BaseTask):
 
 
 class MovieFacilityLocation(BaseTask):
-    def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None,
+    def __init__(self, budget: float, k: int = None, n: int = None, seed = 21, sim_type: str = "cosine", matrix_path: str = None,
                  llambda: float = 0.5, knapsack=True, prepare_max_pair=True, print_curvature=False):
         """
         Inputs:
@@ -52,6 +54,7 @@ class MovieFacilityLocation(BaseTask):
 
         The objective is non-negative and non-monotone.
         """
+
         super().__init__()
         if matrix_path is None:
             # self.M[i][j] denotes the rating of user i for movie j

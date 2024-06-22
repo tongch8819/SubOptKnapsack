@@ -59,7 +59,7 @@ class IdealMaxCovModel(BaseTask):
     # def density(self, single: int, base: List[int]):
     #     mg = self.marginal_gain(single, base)
     #     cost = self.costs_obj[single]
-    #     return (mg * 100) / (cost * 100)
+    #     return (mg * 100100) / (cost * 100100)
 
     # def cost_of_set(self, S: List[int]):
     #     return sum(self.costs_obj[x] for x in S)

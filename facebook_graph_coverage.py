@@ -8,7 +8,7 @@ import networkx as nx
 
 
 class FacebookGraphCoverage(BaseTask):
-    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False,construct_graph = False, cost_mode="normal", graph_suffix = ""):
+    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, seed = 0, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False,construct_graph = False, cost_mode="normal", graph_suffix = ""):
         """
         Inputs:
         - n: max_nodes
@@ -16,8 +16,10 @@ class FacebookGraphCoverage(BaseTask):
         """
         if graph_path is None:
             raise Exception("Please provide a graph.")
-        np.random.seed(1)
-        random.seed(1)
+
+        seed = int(seed)
+        np.random.seed(seed)
+        random.seed(seed)
         self.max_nodes = n
         # self.graph: nx.Graph = self.load_graph(graph_path + "/facebook_combined.txt")
 
@@ -33,7 +35,7 @@ class FacebookGraphCoverage(BaseTask):
         self.costs_obj = []
 
         if construct_graph:
-            self.graph: nx.Graph = self.load_original_graph(graph_path + "/facebook_combined.txt")
+            self.graph: nx.Graph = self.load_original_graph("./dataset/facebook/facebook_combined.txt")
 
             with open(self.graph_path + "/" + graph_name, "w") as f:
                 for edge in self.graph.edges:
@@ -41,6 +43,8 @@ class FacebookGraphCoverage(BaseTask):
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
+            # print(f"nnn:{self.nodes[:10]}")
             self.objs = list(range(0, len(self.nodes)))
 
             if knapsack:
@@ -78,8 +82,8 @@ class FacebookGraphCoverage(BaseTask):
             self.graph: nx.Graph = self.load_graph(graph_path + "/" + graph_name)
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
-
 
             with open(self.graph_path + "/" + cost_name, "r") as f:
                 while True:
@@ -96,11 +100,11 @@ class FacebookGraphCoverage(BaseTask):
                 for obj in self.objs
             ]
 
-        if prepare_max_pair:
-            self.prepare_max_2_pair()
-
-        if print_curvature:
-            self.print_curvature()
+        # if prepare_max_pair:
+        #     self.prepare_max_2_pair()
+        #
+        # if print_curvature:
+        #     self.print_curvature()
 
 
     @property
@@ -112,7 +116,8 @@ class FacebookGraphCoverage(BaseTask):
             raise OSError("File *.txt does not exist.")
         intact_graph: nx.Graph = nx.read_edgelist(path)
         nodes = random.sample(list(intact_graph.nodes), min(len(list(intact_graph.nodes)), self.max_nodes))
-
+        nodes.sort()
+        # print(f"nodes:{nodes[:10]}")
         return intact_graph.subgraph(nodes)
 
     def load_graph(self, path: str):

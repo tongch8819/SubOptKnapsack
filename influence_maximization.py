@@ -19,8 +19,8 @@ class YoutubeCoverage(BaseTask):
         super().__init__()
         if graph_path is None:
             raise Exception("Please provide a graph.")
-        np.random.seed(1)
-        random.seed(1)
+        np.random.seed(seed)
+        random.seed(seed)
         self.max_nodes = n
         # self.graph: nx.Graph = self.load_graph(graph_path + "/facebook_combined.txt")
 
@@ -42,6 +42,7 @@ class YoutubeCoverage(BaseTask):
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
             if knapsack:
@@ -79,6 +80,7 @@ class YoutubeCoverage(BaseTask):
             self.graph: nx.Graph = self.load_graph(os.path.join(self.graph_path, graph_name))
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
             with open(os.path.join(self.graph_path, cost_name), "r") as f:
@@ -150,8 +152,9 @@ class CitationCoverage(BaseTask):
         super().__init__()
         if graph_path is None:
             raise Exception("Please provide a graph.")
-        np.random.seed(1)
-        random.seed(1)
+        seed = int(seed)
+        np.random.seed(seed)
+        random.seed(seed)
         self.max_nodes = n
         # self.graph: nx.Graph = self.load_graph(graph_path + "/facebook_combined.txt")
 
@@ -160,34 +163,6 @@ class CitationCoverage(BaseTask):
 
         # cost parameters
         self.graph_path = graph_path
-
-        # if construct_graph:
-        #
-        # else:
-        #     if knapsack:
-        #         if cost_mode == "normal":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 (min_cost + random.random()) * factor
-        #                 for node in self.nodes
-        #             ]
-        #         elif cost_mode == "small":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 max(min_cost, random.gauss(mu=min_cost, sigma=1) * factor)
-        #                 for node in self.nodes
-        #             ]
-        #         elif cost_mode == "big":
-        #             self.costs_obj = [
-        #                 # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-        #                 max(min_cost, min(min_cost + 1, random.gauss(mu=min_cost + 1, sigma=1) * factor))
-        #                 for node in self.nodes
-        #             ]
-        #     else:
-        #         self.costs_obj = [
-        #             1
-        #             for node in self.nodes
-        #         ]
 
         self.costs_obj = []
 
@@ -202,6 +177,7 @@ class CitationCoverage(BaseTask):
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
             if knapsack:
@@ -240,6 +216,8 @@ class CitationCoverage(BaseTask):
             self.graph: nx.Graph = self.load_graph(graph_path + "/graph.txt")
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
+
             self.objs = list(range(0, len(self.nodes)))
 
 

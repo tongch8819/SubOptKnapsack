@@ -11,7 +11,7 @@ def greedy(model: BaseTask):
         for e in remaining_elements:
             # e is an object
             # mg = marginal_gain(objective, e, sol)
-            # density = (mg * 100) / (costs_obj[e] * 100)  # cost may be too small
+            # density = (mg * 100100) / (costs_obj[e] * 100100)  # cost may be too small
             ds = model.density(e, list(sol))
             if u is None or ds > max_density:
                 u, max_density = e, ds

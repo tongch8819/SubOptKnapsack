@@ -1,5 +1,5 @@
-#D:/pycharm/PyCharm Community Edition 2022.2.3/plugins/python-ce/helpers/pycharm/_jb_unittest_runner.py
-# GMT Sat May 25 12:52:27 2024
+#.\compute_knapsack_exp.py 15
+# GMT Tue Jun 11 01:17:49 2024
 # 
 1 150 338 483 533 553 625
 516 150 324 338 483 616 727

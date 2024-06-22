@@ -7,7 +7,7 @@ from dblp_graph_coverage import DblpGraphCoverage
 from facebook_graph_coverage import FacebookGraphCoverage
 from image_sum import ImageSummarization
 from movie_recommendation import MovieRecommendation
-from revenue_max import RevenueMax
+from revenue_max import RevenueMax, CalTechMaximization
 from custom_coverage import CustomCoverage
 from influence_maximization import YoutubeCoverage, CitationCoverage
 
@@ -248,7 +248,36 @@ def prepare_sensor_placement(n = 1000):
             t = t + "\n"
             f.write(t)
 
+def prepare_facebook():
+    facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
+                                     prepare_max_pair=False, print_curvature=False, construct_graph=True,
+                                     graph_suffix="-1000")
+
+    g1 = facebook.graph
+    c1 = facebook.costs_obj
+    g1l = list(g1.nodes)
+    g1l.sort()
+    print(f"g1:{g1l[:10]}")
+
+    facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
+                                     prepare_max_pair=False, print_curvature=False, construct_graph=True,
+                                     graph_suffix="-1000")
+
+    g2 = facebook.graph
+    c2 = facebook.costs_obj
+    g2l = list(g2.nodes)
+    g2l.sort()
+    print(f"g2:{g2l[:10]}")
+
+def prepare_caltech():
+    cal = CalTechMaximization(0, 100, "./dataset/caltech", knapsack=True, prepare_max_pair=False, construct_graph=True,
+                              graph_suffix="-100100")
+
+
+
 if __name__ == "__main__":
-    prepare_sensor_placement()
+    # prepare_facebook()
 
     # run_multiple_exps(root_dir, True)
+
+    prepare_caltech()

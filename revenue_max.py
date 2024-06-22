@@ -106,8 +106,6 @@ class CalTechMaximization(BaseTask):
         self.max_nodes = n
         self.graph_path = graph_path
 
-        # print(f"objs:{len(self.objs)}, nodes:{len(self.nodes)}, e:{self.nodes.count(94208)}")
-
         self.costs_obj = []
         self.weights = {}
 
@@ -120,9 +118,10 @@ class CalTechMaximization(BaseTask):
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
-            nx.write_adjlist(G=self.graph, path=self.graph_path + "/" + graph_name)
+            # nx.write_adjlist(G=self.graph, path=self.graph_path + "/" + graph_name)
 
             if knapsack:
                 # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
@@ -168,6 +167,7 @@ class CalTechMaximization(BaseTask):
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
+            self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
             with open(self.graph_path + "/" + cost_name, "r") as f:
@@ -241,7 +241,7 @@ class CalTechMaximization(BaseTask):
         for x in self.nodes:
             w = 0.
 
-            neighbors = set(self.graph.neighbors(str(x)))
+            neighbors = set(self.graph.neighbors(x))
             neighbors = set([int(n) for n in neighbors])
 
             for v in S:

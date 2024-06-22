@@ -190,6 +190,7 @@ class SensorPlacement(BaseTask):
         super().__init__()
         if data_path is None:
             raise Exception("Please provide a graph.")
+        seed = int(seed)
         np.random.seed(seed)
         random.seed(seed)
 
@@ -211,7 +212,7 @@ class SensorPlacement(BaseTask):
         self.sensors = np.array(self.sensors)
         self.sensors.transpose()
 
-        print(self.sensors.shape)
+        # print(self.sensors.shape)
 
         self.objs = list(range(0, len(self.sensors)))
 

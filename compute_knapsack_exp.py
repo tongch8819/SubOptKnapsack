@@ -13,7 +13,7 @@ from feature_selection import AdultIncomeFeatureSelection, SensorPlacement
 from facility_location import MovieFacilityLocation
 
 from greedy import greedy
-from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4,  modified_greedy_ub5
+from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4,  modified_greedy_ub5, modified_greedy_ub1m, modified_greedy_ub7m, modified_greedy_ub7
 from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4, greedy_max_ub4c, greedy_max_ub4cm, greedy_max_ub5, greedy_max_ub5c, greedy_max_ub6, greedy_max_ub5p, greedy_max_ub7, greedy_max_ub7m
 from greedy_with_denstiy_threshold import gdt_ub1, gdt_ub2, gdt_ub3, gdt_ub4
 from gcg import gcg_ub1, gcg_ub2, gcg_ub3, gcg_ub4
@@ -27,11 +27,11 @@ import argparse
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1", "ub7", "ub7m"]
+upper_bounds = ["ub1", "ub1m", "ub7", "ub7m"]
 #upper_bounds = ["ub4"]
 # algos = ["greedy_max", "modified_greedy"]
-# algos = ["modified_greedy"]
-algos = ["greedy_max"]
+algos = ["modified_greedy"]
+# algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
 
@@ -136,7 +136,7 @@ def compute_dblp(root_dir, skip_mode=False):
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     model = DblpGraphCoverage(
         budget=0, n=5000, graph_path="./dataset/com-dblp", knapsack=knapsack,
-        prepare_max_pair=False, print_curvature=False, cost_mode=cost_mode)
+        prepare_max_pair=False, print_curvature=False, cost_mode=cost_mode, construct_graph=True)
 
     for budget in bds:
         model.budget = budget
@@ -157,8 +157,8 @@ def compute_dblp(root_dir, skip_mode=False):
 
 def compute_facebook(root_dir, skip_mode=False):
     interval = 1
-    num_points = 30
-    start_point = 1
+    num_points = 10
+    start_point = 20
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -166,8 +166,8 @@ def compute_facebook(root_dir, skip_mode=False):
     s = f"-{n}"
 
     model = FacebookGraphCoverage(
-        budget=0, n=n, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
-        print_curvature=False, cost_mode=cost_mode, construct_graph=False, graph_suffix=s)
+        budget=0, n=n, seed=0, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
+        print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
     for budget in bds:
         model.budget = budget
@@ -186,6 +186,48 @@ def compute_facebook(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+def compute_facebook_series(root_dir, skip_mode = False):
+    n = 1000
+    seed_interval = 1
+    start_seed = 0
+    end_seed = 200
+
+    for seed in range(start_seed, end_seed, seed_interval):
+        start_time = time.time()
+
+        interval = 1
+        num_points = 5
+        start_point = 26
+        end_point = start_point + (num_points - 1) * interval
+        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+        s = f"-{n}"
+
+        model = FacebookGraphCoverage(
+            budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
+            print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
+
+        save_dir = os.path.join(root_dir, "archive-4", "facebook", f"{n}", f"{seed}")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        for budget in bds:
+            model.budget = budget
+            for up in upper_bounds:
+                for algo in algos:
+                    save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                        algo, up + suffix, model.__class__.__name__, budget))
+                    func_call = eval(algo + "_" + up)
+                    res = func_call(model)  # dict
+                    if skip_mode and os.path.exists(save_path):
+                        print("Skip: ", save_path)
+                        continue
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
+                    print("Done: ", save_path)
+
+        stop_time = time.time()
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
 
 def compute_custom(root_dir, skip_mode=False):
     model = CustomCoverage(budget=10, n=100, graph_path="./dataset/custom-graph/graphs/100--0.2--0.1--0.5--20", knapsack=False, prepare_max_pair=prepare_2_pair,print_curvature=print_curvature)
@@ -242,7 +284,7 @@ def compute_revenue_max(root_dir, skip_mode=False):
 
 def compute_youtube(root_dir, skip_mode=False):
     n = 1000
-    model = YoutubeCoverage(0, n, "./dataset/com-youtube", knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False)
+    model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=0, knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False, construct_graph=True)
     interval = 1
     num_points = 30
     start_point = 1
@@ -263,6 +305,47 @@ def compute_youtube(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print(res)
                 print("Done: ", save_path)
+
+def compute_youtube_series(root_dir, skip_mode=False):
+    n = 1000
+    seed_interval = 1
+    start_seed = 0
+    end_seed = 200
+
+    for seed in range(start_seed, end_seed, seed_interval):
+        start_time = time.time()
+
+        interval = 1
+        num_points = 6
+        start_point = 26
+        end_point = start_point + (num_points - 1) * interval
+        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+
+        model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
+                                prepare_max_pair=False, print_curvature=False, construct_graph=True)
+
+        save_dir = os.path.join(root_dir, "archive-4", "youtube", f"{n}", f"{seed}")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        for budget in bds:
+            model.budget = budget
+            for up in upper_bounds:
+                for algo in algos:
+                    save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                        algo, up + suffix, model.__class__.__name__, budget))
+                    func_call = eval(algo + "_" + up)
+                    res = func_call(model)  # dict
+                    if skip_mode and os.path.exists(save_path):
+                        print("Skip: ", save_path)
+                        continue
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
+                    print("Done: ", save_path)
+
+        stop_time = time.time()
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
 
 def compute_citation(root_dir, skip_mode=False):
     model = CitationCoverage(0, 1000, "./dataset/cite-HepPh", knapsack=knapsack, prepare_max_pair=False, cost_mode=cost_mode)
@@ -288,12 +371,12 @@ def compute_citation(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech(root_dir, skip_mode=False):
-    n = 25
+    n = 50
     s = f"-{n}"
-    model = CalTechMaximization(0, 123124, "./dataset/caltech", knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=s)
+    model = CalTechMaximization(0, n,"./dataset/caltech",seed=21, knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=s, construct_graph=True)
     interval = 1
-    num_points = 30
-    start_point = 1
+    num_points = 1
+    start_point = 12
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
@@ -312,10 +395,52 @@ def compute_caltech(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+def compute_caltech_series(root_dir, skip_mode = False):
+    n = 100
+    seed_interval = 1
+    start_seed = 0
+    end_seed = 200
+
+    for seed in range(start_seed, end_seed, seed_interval):
+        start_time = time.time()
+
+        interval = 1
+        num_points = 5
+        start_point = 26
+        end_point = start_point + (num_points - 1) * interval
+        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+        s = f"-{n}"
+
+        model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
+                                    cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
+
+        save_dir = os.path.join(root_dir, "archive-4", "caltech", f"{n}", f"{seed}")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        for budget in bds:
+            model.budget = budget
+            for up in upper_bounds:
+                for algo in algos:
+                    save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                                                 algo, up + suffix, model.__class__.__name__, budget))
+                    func_call = eval(algo + "_" + up)
+                    res = func_call(model)  # dict
+                    if skip_mode and os.path.exists(save_path):
+                        print("Skip: ", save_path)
+                        continue
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
+                    print("Done: ", save_path)
+
+        stop_time = time.time()
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+
 def compute_adult(root_dir, skip_mode=False):
-    n = 75
+    n = 100
     sample_count = 100
-    model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True, construct_graph=False)
+    model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True, construct_graph=True)
     interval = 1
     num_points = 20
     start_point = 1
@@ -336,6 +461,48 @@ def compute_adult(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print(res)
                 print("Done: ", save_path)
+
+def compute_adult_series(root_dir, skip_mode = False):
+    n = 100
+    sample_count = 100
+
+    seed_interval = 1
+    start_seed = 0
+    end_seed = 200
+
+    for seed in range(start_seed, end_seed, seed_interval):
+        start_time = time.time()
+
+        interval = 1
+        num_points = 11
+        start_point = 20
+        end_point = start_point + (num_points - 1) * interval
+        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+
+        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, construct_graph=True)
+
+        save_dir = os.path.join(root_dir, "archive-4", "adult", f"{n}-{sample_count}", f"{seed}")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        for budget in bds:
+            model.budget = budget
+            for up in upper_bounds:
+                for algo in algos:
+                    save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                                                 algo, up + suffix, model.__class__.__name__, budget))
+                    func_call = eval(algo + "_" + up)
+                    res = func_call(model)  # dict
+                    if skip_mode and os.path.exists(save_path):
+                        print("Skip: ", save_path)
+                        continue
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
+                    print("Done: ", save_path)
+
+        stop_time = time.time()
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
 
 def compute_sensor(root_dir, skip_mode=False):
     model = SensorPlacement(0, 100, "./dataset/berkley-sensor", knapsack=True, construct_graph=False,cost_mode=cost_mode)
@@ -374,7 +541,7 @@ def compute_facility(root_dir, skip_mode=False):
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
     model = MovieFacilityLocation(
-        matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=0, k=30, n=500, knapsack=True,
+        matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=0, k=30, n=1000, knapsack=True,
         prepare_max_pair=False, print_curvature=False)
 
     for budget in bds:
@@ -486,7 +653,6 @@ def run_multi_custom_exps(config_path: str):
         print(res)
         print(f"Done: alpha:{alpha}, beta:{beta}, gamma:{gamma}, seed:{seed}, MDAF:{MDAF}")
 
-
 def run_multiple_exps(root_dir, skip_mode):
     result_lst = []
     sufs = ["max_cov", "image_sum", "movie_recom", "revenue_max"]
@@ -497,6 +663,9 @@ def run_multiple_exps(root_dir, skip_mode):
             result_lst.append(result)
         [res.wait() for res in result_lst]
     
+
+
+
 
 if __name__ == "__main__":
     root_dir = "./result"
@@ -535,3 +704,11 @@ if __name__ == "__main__":
         compute_sensor(root_dir)
     elif args.task_num == 13:
         compute_facility(root_dir)
+    elif args.task_num == 14:
+        compute_facebook_series(root_dir)
+    elif args.task_num == 15:
+        compute_caltech_series(root_dir)
+    elif args.task_num == 16:
+        compute_youtube_series(root_dir)
+    elif args.task_num == 17:
+        compute_adult_series(root_dir)

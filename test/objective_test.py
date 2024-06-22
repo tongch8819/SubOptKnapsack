@@ -23,7 +23,7 @@ class ObjectiveTest(unittest.TestCase):
 
 
         '''
-        for i in range(0, 100):
+        for i in range(0, 100100):
             random.seed(time.time())
             a = random.sample(range(0, ground_set_num), 20)
             b = random.sample(range(0, ground_set_num), 20)

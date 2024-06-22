@@ -13,12 +13,16 @@ def modified_greedy(model: BaseTask, upb : str = None):
 
     sol = set()
     remaining_elements = set(model.ground_set)
+    ground_set = set(model.ground_set)
     cur_cost = 0.
+    parameters = {}
     if upb is not None:
-        delta = marginal_delta_gate(upb, set({}), remaining_elements, model)
+        delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
         # if fs + delta < lambda_capital:
         #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
         lambda_capital = delta
+        parameters = p1
+
 
     while len(remaining_elements):
         u, max_density = None, -1.
@@ -32,9 +36,11 @@ def modified_greedy(model: BaseTask, upb : str = None):
             # satisfy the knapsack constraint
             sol.add(u)
             cur_cost += model.cost_of_singleton(u)
-            delta = marginal_delta_gate(upb, sol, remaining_elements - {u}, model)
+            delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
             fs = model.objective(sol)
-            lambda_capital = min(lambda_capital, fs + delta)
+            if lambda_capital > fs + delta:
+                lambda_capital = fs + delta
+                parameters = p1
             '''
             # update data-dependent upper-bound
             if upb is not None:
@@ -78,6 +84,12 @@ def modified_greedy(model: BaseTask, upb : str = None):
 
     sol_fv = model.objective(list(sol))
     if v_star_fv > sol_fv:
+        delta, p1 = marginal_delta_gate(upb, {v_star}, ground_set - {v_star}, model)
+        fs = v_star_fv
+        if lambda_capital > fs + delta:
+            lambda_capital = fs + delta
+            parameters = p1
+
         res = {
             'S': [v_star],
             'f(S)': v_star_fv,
@@ -93,6 +105,7 @@ def modified_greedy(model: BaseTask, upb : str = None):
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
+        res['parameters'] = parameters
 
     stop_time = time.time()
     res['Time'] = stop_time - start_time
@@ -134,3 +147,6 @@ def modified_greedy_ub7(model: BaseTask):
 
 def modified_greedy_ub7m(model: BaseTask):
     return modified_greedy(model, "ub7m")
+
+def modified_greedy_ub1m(model: BaseTask):
+    return modified_greedy(model, "ub1m")
