@@ -21,6 +21,10 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 
     t = list(remaining_set)
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    # dt = [model.density(x, base_set) for x in t]
+    # ct = [model.cost_of_singleton(x) for x in t]
+
     costs = [model.cost_of_singleton(x) for x in t]
     cumsum_costs = list(accumulate(costs, initial=None))
     delta = G_plus(model.budget, model, remaining_set,
@@ -28,6 +32,8 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 
     parameters["ScanCount"] = bisect.bisect_right(cumsum_costs, model.budget) + 1
     parameters["MinusCount"] = 0
+
+    # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]},dt:{dt[:5]},ct:{ct[:5]}")
 
     return delta, parameters
 
@@ -189,12 +195,7 @@ def G_plus(x: float, model: BaseTask, remaining_set: Set[int], base_set: Set[int
     - cumsum_costs: cumsum_costs[i] = sum(costs[:i+1])
     - elements: sorted elements corresponding to cumsum_costs
     """
-    # idx = bisect.bisect_left(cumsum_costs, b)
-    # cumsum_costs[:idx]: x < b
-    # cumsum_costs[idx:]: x >= b
     r1 = bisect.bisect_right(cumsum_costs, x)
-    # cumsum_costs[:idx]: x <= b
-    # cumsum_costs[idx:]: x > b
     G = 0.
     if r1 == 0:
         return x * model.marginal_gain(elements[0], base_set) / model.cost_of_singleton(elements[0])

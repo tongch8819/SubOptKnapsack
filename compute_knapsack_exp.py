@@ -187,7 +187,7 @@ def compute_facebook(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_facebook_series(root_dir, skip_mode = False):
-    n = 1000
+    n = 2000
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -196,8 +196,8 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 5
-        start_point = 26
+        num_points = 15
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -286,8 +286,8 @@ def compute_youtube(root_dir, skip_mode=False):
     n = 1000
     model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=0, knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False, construct_graph=True)
     interval = 1
-    num_points = 30
-    start_point = 1
+    num_points = 1
+    start_point = 5
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
@@ -316,8 +316,8 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 6
-        start_point = 26
+        num_points = 15
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -405,8 +405,8 @@ def compute_caltech_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 5
-        start_point = 26
+        num_points = 23
+        start_point = 3
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -474,8 +474,8 @@ def compute_adult_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 11
-        start_point = 20
+        num_points = 15
+        start_point = 5
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
