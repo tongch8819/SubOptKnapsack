@@ -27,8 +27,9 @@ import argparse
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1", "ub1m", "ub7", "ub7m"]
+# upper_bounds = ["ub1", "ub1m", "ub7", "ub7m"]
 #upper_bounds = ["ub4"]
+upper_bounds = ["ub1", "ub7"]
 # algos = ["greedy_max", "modified_greedy"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
@@ -187,7 +188,7 @@ def compute_facebook(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_facebook_series(root_dir, skip_mode = False):
-    n = 2000
+    n = 500
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -196,8 +197,8 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 11
+        num_points = 6
+        start_point = 5
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -283,7 +284,7 @@ def compute_revenue_max(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_youtube(root_dir, skip_mode=False):
-    n = 1000
+    n = 500
     model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=0, knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False, construct_graph=True)
     interval = 1
     num_points = 1
@@ -316,8 +317,8 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 11
+        num_points = 6
+        start_point = 5
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -371,12 +372,12 @@ def compute_citation(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech(root_dir, skip_mode=False):
-    n = 50
+    n = 100
     s = f"-{n}"
     model = CalTechMaximization(0, n,"./dataset/caltech",seed=21, knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=s, construct_graph=True)
     interval = 1
     num_points = 1
-    start_point = 12
+    start_point = 25
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
@@ -405,8 +406,8 @@ def compute_caltech_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 23
-        start_point = 3
+        num_points = 6
+        start_point = 25
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -474,8 +475,8 @@ def compute_adult_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 5
+        num_points = 6
+        start_point = 25
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
