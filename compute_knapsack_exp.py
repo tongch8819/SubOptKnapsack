@@ -27,14 +27,20 @@ import argparse
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-# upper_bounds = ["ub1", "ub1m", "ub7", "ub7m"]
-#upper_bounds = ["ub4"]
-upper_bounds = ["ub1", "ub7"]
+upper_bounds = ["ub1m", "ub7m"]
+# upper_bounds = ["ub7", "ub7m"]
+# upper_bounds = ["ub1", "ub7", "ub7m"]
 # algos = ["greedy_max", "modified_greedy"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
+
+# b graph ->
+# replace with no vstar
+# feature of minus sets
+# submodular cost
+
 
 knapsack = True
 prepare_2_pair = False
@@ -197,8 +203,8 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 6
-        start_point = 5
+        num_points = 25
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -207,7 +213,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-4", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -284,11 +290,11 @@ def compute_revenue_max(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_youtube(root_dir, skip_mode=False):
-    n = 500
-    model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=0, knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False, construct_graph=True)
+    n = 1000
+    model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=1, knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False, construct_graph=True)
     interval = 1
-    num_points = 1
-    start_point = 5
+    num_points = 10
+    start_point = 20
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
@@ -317,7 +323,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 6
+        num_points = 25
         start_point = 5
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -325,7 +331,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-4", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -377,7 +383,7 @@ def compute_caltech(root_dir, skip_mode=False):
     model = CalTechMaximization(0, n,"./dataset/caltech",seed=21, knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=s, construct_graph=True)
     interval = 1
     num_points = 1
-    start_point = 25
+    start_point = 15
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
     for budget in bds:
@@ -397,7 +403,7 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech_series(root_dir, skip_mode = False):
-    n = 100
+    n = 50
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -406,8 +412,8 @@ def compute_caltech_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 6
-        start_point = 25
+        num_points = 25
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -415,7 +421,7 @@ def compute_caltech_series(root_dir, skip_mode = False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-4", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -464,7 +470,7 @@ def compute_adult(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult_series(root_dir, skip_mode = False):
-    n = 100
+    n = 50
     sample_count = 100
 
     seed_interval = 1
@@ -475,14 +481,14 @@ def compute_adult_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 6
-        start_point = 25
+        num_points = 25
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-4", "adult", f"{n}-{sample_count}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 

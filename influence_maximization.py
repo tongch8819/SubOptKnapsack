@@ -53,6 +53,7 @@ class YoutubeCoverage(BaseTask):
                         (min_cost + random.random()) * factor
                         for node in self.nodes
                     ]
+                    print(f"wtf:{np.max(self.costs_obj)}, mincost:{min_cost}")
                 elif cost_mode == "small":
                     cost_name = "small_costs.txt"
                     self.costs_obj = [
@@ -101,6 +102,15 @@ class YoutubeCoverage(BaseTask):
     @property
     def ground_set(self):
         return self.objs
+
+    def calculate_m(self):
+        ret = [self.cutout_marginal_gain(ele) for ele in self.ground_set]
+        t = 0
+        for marginal_gain in ret:
+            if marginal_gain > 0:
+                t += 1
+        print(f"t:{t}")
+        return ret
 
     def load_original_graph(self, path: str):
         if not os.path.isfile(path):

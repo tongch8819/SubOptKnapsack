@@ -82,6 +82,10 @@ class BaseTask(ABC):
 
         print(f"c:{self.curvature}, c2:{c2}, d:{d}, e:{e}")
 
+    def calculate_m(self):
+        ret = [self.cutout_marginal_gain(ele) for ele in self.ground_set]
+        return ret
+
     @abstractclassmethod
     def objective(self):
         pass

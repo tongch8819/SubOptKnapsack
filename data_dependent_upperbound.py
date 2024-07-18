@@ -74,7 +74,12 @@ def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTas
     ele_outside.sort(key=lambda x: local_density(f_over_base, set(), x), reverse=True)
     costs = [model.cost_of_singleton(x) for x in ele_outside]
     csc_outside = list(accumulate(costs, initial=None))
-    endpoints_plus = csc_outside[:bisect.bisect_right(csc_outside, model.budget)]
+
+    M_plus_budget = csc_outside[:bisect.bisect_right(csc_outside, model.budget)]
+    endpoints_plus = []
+    for ept in M_plus_budget:
+        if ept >= minimal_budget:
+            endpoints_plus.append(ept)
 
     csc_inside, ele_inside = inside_cumsum_costs()
 
@@ -89,12 +94,15 @@ def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTas
     slopes_p = [f_over_base({e})/model.cost_of_singleton(e) for e in ele_outside]
     slopes_m = [model.cutout_density(e, model.ground_set) for e in ele_inside]
     slope_p = slopes_p[ept_p_idx]
-    slope_m = slopes_p[ept_m_idx]
     # print(f"slopes_p:{slopes_p[:5]}, S:{base_set}")
     # calculate initial value of ub
     ub = max(G_plus(minimal_budget, model=model,remaining_set=remaining_set, base_set=base_set, cumsum_costs=csc_outside, elements=ele_outside),
              G_plus(model.budget, model=model,remaining_set=remaining_set, base_set=base_set, cumsum_costs=csc_outside, elements=ele_outside) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside))
     # print(f"1 0:{G_plus(minimal_budget, model=model,remaining_set=remaining_set, base_set=base_set, cumsum_costs=csc_outside, elements=ele_outside)},1:{G_plus(model.budget, model=model,remaining_set=remaining_set, base_set=base_set, cumsum_costs=csc_outside, elements=ele_outside) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside)}")
+    if len(slopes_m) <= 0:
+        return ub, parameters
+
+    slope_m = slopes_p[ept_m_idx]
     while True:
         if ept_p_idx >= len(endpoints_plus) and ept_m_idx >= len(endpoints_minus):
             # stop
@@ -195,6 +203,9 @@ def G_plus(x: float, model: BaseTask, remaining_set: Set[int], base_set: Set[int
     - cumsum_costs: cumsum_costs[i] = sum(costs[:i+1])
     - elements: sorted elements corresponding to cumsum_costs
     """
+    if x <= 0:
+        return 0
+
     r1 = bisect.bisect_right(cumsum_costs, x)
     G = 0.
     if r1 == 0:
@@ -220,7 +231,7 @@ def G_minus(x: float, model: BaseTask, base_set: Set[int], cumsum_costs: List[fl
     density           cutout_density
     marginal_gain     cutout_marginal_gain
     """
-    if x == 0:
+    if x <= 0:
         return 0
     # cumsum_costs[i] = sum(costs[:i])  exclusive
     # idx = bisect.bisect_left(cumsum_costs, b)
@@ -1772,9 +1783,9 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     M_plus_budget = [0] + [x[0] for x in M_plus_res]
     M_plus_gain = [0] + [x[1] for x in M_plus_res]
 
+    parameters["ScanCount"] = sc
+    t = max(M_plus_gain)
     if not minus:
-        parameters["ScanCount"] = sc
-        parameters["MinusCount"] = 0
         return max(M_plus_gain), parameters
 
     def M_plus(x):
@@ -1790,32 +1801,46 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
                         M_plus_budget[idx + 1] - M_plus_budget[idx])
 
 
-    endpoints_plus = M_plus_budget
+
 
     minimal_budget = model.budget - model.cost_of_set(base_set)
+
+    endpoints_plus = []
+    for ept in M_plus_budget:
+        if ept >= minimal_budget:
+            endpoints_plus.append(ept)
+
     cost_baseset = model.cost_of_set(base_set)
 
     csc_inside, ele_inside = inside_cumsum_costs()
 
     endpoints_minus = csc_inside[:bisect.bisect_right(csc_inside, cost_baseset)]
+    # print(f"???:{endpoints_minus}")
     endpoints_minus = [x + minimal_budget for x in endpoints_minus]
 
     # t1 = time.time()
-
     # merge ept- into ept+
     ept_p_idx = 0
     ept_m_idx = 0
     slopes_p = [f_over_base({e})/model.cost_of_singleton(e) for e in ele_outside]
     slopes_m = [model.cutout_density(e, model.ground_set) for e in ele_inside]
     slope_p = slopes_p[ept_p_idx]
-    slope_m = slopes_p[ept_m_idx]
-    # calculate initial value of ub
+
     ub = max(M_plus(minimal_budget), M_plus(model.budget) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside))
+    if len(slopes_m) <= 0:
+        return ub, parameters
+
+    slope_m = slopes_m[ept_m_idx]
+    # calculate initial value of ub
+    ub_start = ub
+    final_ept = 0
+
     # print(f"slopes_p:{slopes_p[:5]}, S:{base_set}")
     # print(f"7 0:{M_plus(minimal_budget)},1:{M_plus(model.budget) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside)}")
     while True:
         if ept_p_idx >= len(endpoints_plus) and ept_m_idx >= len(endpoints_minus):
             # stop
+            # print(f"s0")
             break
         if (ept_p_idx < len(endpoints_plus) and
                 (ept_m_idx >= len(endpoints_minus) or endpoints_plus[ept_p_idx] < endpoints_minus[ept_m_idx])):
@@ -1828,11 +1853,14 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
                 # stop
                 if ept_p_idx == 0:
                     # print(f"7 >:ub:{ub},ub:{ub + base_set_value} 1, S:{base_set}")
+                    # print(f"s1")
                     break
                 ept = endpoints_plus[ept_p_idx - 1]
                 ub = max(ub,
                          M_plus(ept) - G_minus(ept - minimal_budget, model, model.ground_set, csc_inside, ele_inside))
+                final_ept = ept - minimal_budget
                 # print(f"7 ept:{ept}, ub:{ub + base_set_value} 1, S:{base_set}")
+                # print(f"s2")
                 break
             ept_p_idx += 1
         else:
@@ -1841,15 +1869,22 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             if slope_p - slope_m <= 0:
                 if ept_m_idx == 0:
                     # print(f"7 >?:ub:{ub},ub:{ub + base_set_value} 1, S:{base_set}, slope p:{slope_p}, slope_m:{slope_m}, pidx:{ept_p_idx},m_idx:{ept_m_idx}")
+                    # print(f"s3")
                     break
                 ept = endpoints_minus[ept_m_idx - 1]
                 ub = max(ub,
                          M_plus(ept) - G_minus(ept - minimal_budget, model, model.ground_set, csc_inside, ele_inside))
                 # print(f"7 ept:{ept}, ub:{ub + base_set_value} 2, S:{base_set}, slope p:{slope_p}, slope_m:{slope_m}, pidx:{ept_p_idx},m_idx:{ept_m_idx}")
+                final_ept = ept - minimal_budget
+                # print(f"s4")
                 break
             ept_m_idx += 1
 
-    parameters["ScanCount"] = sc
+    # print(f"t:{t}, ub_start:{ub_start}, ub final:{ub}, final ept:{final_ept}, slopes:{slopes_m},upb:{base_set_value + ub}")
+    # if ub != ub_start:
+    #     print("!")
+
+
     # parameters["MinusCount"] = len(endpoints)
     # parameters["t0"] = t1 - t0
     # parameters["t1"] = t2 - t1

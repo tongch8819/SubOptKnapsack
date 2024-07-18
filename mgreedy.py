@@ -83,12 +83,20 @@ def modified_greedy(model: BaseTask, upb : str = None):
             v_star, v_star_fv = e, fv
 
     sol_fv = model.objective(list(sol))
+
+    # for ele in ground_set:
+    #     delta, p1 = marginal_delta_gate(upb, {ele}, ground_set - {ele}, model)
+    #     fs = model.objective({ele})
+    #     if lambda_capital > fs + delta:
+    #         lambda_capital = fs + delta
+    #         parameters = p1
+
     if v_star_fv > sol_fv:
-        delta, p1 = marginal_delta_gate(upb, {v_star}, ground_set - {v_star}, model)
-        fs = v_star_fv
-        if lambda_capital > fs + delta:
-            lambda_capital = fs + delta
-            parameters = p1
+        # delta, p1 = marginal_delta_gate(upb, {v_star}, ground_set - {v_star}, model)
+        # fs = v_star_fv
+        # if lambda_capital > fs + delta:
+        #     lambda_capital = fs + delta
+        #     parameters = p1
 
         res = {
             'S': [v_star],

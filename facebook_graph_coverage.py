@@ -111,6 +111,10 @@ class FacebookGraphCoverage(BaseTask):
     def ground_set(self):
         return self.objs
 
+    def calculate_m(self):
+        ret = [self.cutout_marginal_gain(ele) for ele in self.ground_set]
+        return ret
+
     def load_original_graph(self, path: str):
         if not os.path.isfile(path):
             raise OSError("File *.txt does not exist.")
