@@ -44,7 +44,7 @@ class ImageSummarization(BaseTask):
             raise OSError("File *.npy does not exist.")
         return np.load(path)
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         # t1: coverage
         # t2: penalty factor
         if len(S) == 0:

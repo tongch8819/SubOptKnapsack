@@ -34,7 +34,7 @@ class FacilityLocation(BaseTask):
             raise OSError("File *.npy does not exist.")
         return np.load(path)
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         if type(S) is not list:
             S = list(S)
         if len(S) == 0:
@@ -97,7 +97,7 @@ class MovieFacilityLocation(BaseTask):
         return np.load(path)
 
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         """
         Inputs:
         - S: solution set

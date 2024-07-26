@@ -68,7 +68,7 @@ class RevenueMax(BaseTask):
             t += w
         return 1 - np.exp(- mu * np.sqrt(t))
 
-    def objective(self, S):
+    def internal_objective(self, S):
         S_set = set(S)
         N_set = set(self.ground_set)
         S_complement = N_set - S_set
@@ -123,34 +123,8 @@ class CalTechMaximization(BaseTask):
 
             # nx.write_adjlist(G=self.graph, path=self.graph_path + "/" + graph_name)
 
-            if knapsack:
-                # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
-                if cost_mode == "normal":
-                    self.costs_obj = [
-                        # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-                        (min_cost + random.random()) * factor
-                        for node in self.nodes
-                    ]
-                elif cost_mode == "small":
-                    cost_name = "small_costs.txt"
-                    self.costs_obj = [
-                        # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-                        max(min_cost, random.gauss(mu=min_cost, sigma=1) * factor)
-                        for node in self.nodes
-                    ]
-                elif cost_mode == "big":
-                    cost_name = "big_costs.txt"
-                    self.costs_obj = [
-                        # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-                        min(min_cost + 1, random.gauss(mu=min_cost + 1, sigma=1) * factor)
-                        for node in self.nodes
-                    ]
-            else:
-                # cardinality
-                self.costs_obj = [
-                    1
-                    for node in self.nodes
-                ]
+            self.assign_costs(knapsack, cost_mode)
+
             with open(self.graph_path + "/" + cost_name, "w") as f:
                 for node in range(0, self.max_nodes):
                     f.write(f"{self.costs_obj[node]}\n")
@@ -230,7 +204,7 @@ class CalTechMaximization(BaseTask):
         return intact_graph
 
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         """
         Inputs:
         - S: solution set

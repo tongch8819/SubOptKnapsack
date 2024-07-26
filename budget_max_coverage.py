@@ -39,7 +39,7 @@ class IdealMaxCovModel(BaseTask):
     def budget(self):
         return self.b
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         """submodular objective"""
         res = set()
         S = list(S)

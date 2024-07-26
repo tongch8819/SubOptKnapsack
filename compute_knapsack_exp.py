@@ -1,6 +1,9 @@
 import json
 import time
 
+import dp
+import mgreedy
+from base_task import BaseTask
 from budget_max_coverage import IdealMaxCovModel
 from dblp_graph_coverage import DblpGraphCoverage
 from facebook_graph_coverage import FacebookGraphCoverage
@@ -25,22 +28,16 @@ import os
 import multiprocessing as mp
 import argparse
 
-cost_mode = "normal"
+cost_mode = "integer"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1m", "ub7m"]
-# upper_bounds = ["ub7", "ub7m"]
-# upper_bounds = ["ub1", "ub7", "ub7m"]
-# algos = ["greedy_max", "modified_greedy"]
+upper_bounds = ["ub7m"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
 
-# b graph ->
-# replace with no vstar
-# feature of minus sets
-# submodular cost
-
+# count how many upbs are calculated by empty sets
+# apply the new method on the MSMK problem
 
 knapsack = True
 prepare_2_pair = False
@@ -165,7 +162,7 @@ def compute_dblp(root_dir, skip_mode=False):
 def compute_facebook(root_dir, skip_mode=False):
     interval = 1
     num_points = 10
-    start_point = 20
+    start_point = 5
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -193,8 +190,9 @@ def compute_facebook(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+
 def compute_facebook_series(root_dir, skip_mode = False):
-    n = 500
+    n = 1000
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -203,7 +201,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 25
+        num_points = 15
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -213,7 +211,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-5", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-6", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -319,19 +317,22 @@ def compute_youtube_series(root_dir, skip_mode=False):
     start_seed = 0
     end_seed = 200
 
+    count_0 = 0
+    count_t = 0
+
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 25
-        start_point = 5
+        num_points = 15
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-5", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-6", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -349,10 +350,15 @@ def compute_youtube_series(root_dir, skip_mode=False):
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print(res)
+                    count_t += 1
+                    if not res['updated']:
+                        count_0 += 1
                     print("Done: ", save_path)
+                    print(f"count:{count_0}/{count_t}")
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+
 
 def compute_citation(root_dir, skip_mode=False):
     model = CitationCoverage(0, 1000, "./dataset/cite-HepPh", knapsack=knapsack, prepare_max_pair=False, cost_mode=cost_mode)
@@ -403,10 +409,12 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech_series(root_dir, skip_mode = False):
-    n = 50
+    n = 100
     seed_interval = 1
     start_seed = 0
     end_seed = 200
+    count_0 = 0
+    count_t = 0
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -421,7 +429,7 @@ def compute_caltech_series(root_dir, skip_mode = False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-5", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-6", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -439,7 +447,12 @@ def compute_caltech_series(root_dir, skip_mode = False):
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print(res)
+
+                    if not res['updated']:
+                        count_0 += 1
+                    count_t += 1
                     print("Done: ", save_path)
+                    print(f"count:{count_0}/{count_t}")
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
@@ -470,7 +483,7 @@ def compute_adult(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult_series(root_dir, skip_mode = False):
-    n = 50
+    n = 100
     sample_count = 100
 
     seed_interval = 1
@@ -488,7 +501,7 @@ def compute_adult_series(root_dir, skip_mode = False):
 
         model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-5", "adult", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-6", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -669,9 +682,181 @@ def run_multiple_exps(root_dir, skip_mode):
             result = pool.apply_async(func_call, [root_dir, skip_mode])
             result_lst.append(result)
         [res.wait() for res in result_lst]
-    
 
 
+def compute_mp1_empty(task:str, n):
+    root_dir = os.path.join("./result","archive-6")
+
+    start_seed = 0
+    stop_seed = 162
+
+    interval = 1
+    num_points = 15
+    start_point = 6
+    end_point = start_point + (num_points - 1) * interval
+    bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+
+    if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
+        os.mkdir(os.path.join(root_dir, task, f"{n}"))
+
+    for seed in range(start_seed, stop_seed):
+        for budget in bds:
+            start_time = time.time()
+
+            model = model_factory(task, n, seed, budget)
+            res_plain = mgreedy.modified_greedy_plain(model)
+
+            model.objective_style = "mp1_empty"
+            # res_mp1 = mgreedy.modified_greedy_plain(model)
+            res_mp1 = dp.dp(model)
+
+            stop_time = time.time()
+
+            res = {
+                "S": res_plain["S"],
+                "AF": res_plain["f(S)"]/res_mp1["f(S)"],
+                "c(S)": res_plain["c(S)"],
+                "f(S)": res_plain["f(S)"],
+                "upb": res_mp1["f(S)"],
+                "time": stop_time - start_time
+            }
+
+
+
+            save_dir = os.path.join(root_dir, task, f"{n}", f"{seed}")
+
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+
+            save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                "modified_greedy", "ubmp1p", model.__class__.__name__, budget))
+
+            with open(save_path, "wb") as wrt:
+                pickle.dump(res, wrt)
+
+            print(f"seed:{seed}/{stop_seed}, budget:{budget}/{end_point}")
+            print(res)
+
+def compute_mp1_S(task:str, n):
+    root_dir = os.path.join("./result", "archive-7")
+
+    start_seed = 0
+    stop_seed = 200
+
+    interval = 1
+    num_points = 15
+    start_point = 6
+    end_point = start_point + (num_points - 1) * interval
+    bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+
+    if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
+        os.mkdir(os.path.join(root_dir, task, f"{n}"))
+
+    for seed in range(start_seed, stop_seed):
+        for budget in bds:
+            start_time = time.time()
+
+            model = model_factory(task, n, seed, budget)
+            res_plain = mgreedy.modified_greedy_plain(model)
+
+            model.objective_style = "mp1"
+            model.set_Y(res_plain["S"])
+            res_mp1 = dp.dp(model)
+
+            stop_time = time.time()
+
+            res = {
+                "S": res_plain["S"],
+                "AF": res_plain["f(S)"]/(res_mp1["f(S)"] + model.empty_Y_value),
+                "c(S)": res_plain["c(S)"],
+                "f(S)": res_plain["f(S)"],
+                "upb": (res_mp1["f(S)"] + model.empty_Y_value),
+                "time": stop_time - start_time
+            }
+
+            save_dir = os.path.join(root_dir, task, f"{n}", f"{seed}")
+
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+
+            save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                "modified_greedy", "ubmp1s", model.__class__.__name__, budget))
+
+            with open(save_path, "wb") as wrt:
+                pickle.dump(res, wrt)
+
+            print(f"seed:{seed}/{stop_seed}, budget:{budget}/{end_point}")
+            print(res)
+
+def compute_mp1_V(task:str, n):
+    root_dir = os.path.join("./result", "archive-7")
+
+    start_seed = 0
+    stop_seed = 200
+
+    interval = 1
+    num_points = 15
+    start_point = 6
+    end_point = start_point + (num_points - 1) * interval
+    bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+
+    if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
+        os.mkdir(os.path.join(root_dir, task, f"{n}"))
+
+    for seed in range(start_seed, stop_seed):
+        for budget in bds:
+            start_time = time.time()
+
+            model = model_factory(task, n, seed, budget)
+            res_plain = mgreedy.modified_greedy_plain(model)
+
+            model.objective_style = "mp1"
+            model.set_Y(model.ground_set)
+            res_mp1 = dp.dp(model)
+
+            stop_time = time.time()
+
+            res = {
+                "S": res_plain["S"],
+                "AF": res_plain["f(S)"]/(res_mp1["f(S)"] + model.empty_Y_value),
+                "c(S)": res_plain["c(S)"],
+                "f(S)": res_plain["f(S)"],
+                "upb": (res_mp1["f(S)"] + model.empty_Y_value),
+                "time": stop_time - start_time
+            }
+
+            save_dir = os.path.join(root_dir, task, f"{n}", f"{seed}")
+
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+
+            save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
+                "modified_greedy", "ubmp1s", model.__class__.__name__, budget))
+
+            with open(save_path, "wb") as wrt:
+                pickle.dump(res, wrt)
+
+            print(f"seed:{seed}/{stop_seed}, budget:{budget}/{end_point}")
+            print(res)
+
+def model_factory(task:str, n, seed, budget) -> BaseTask:
+    model = None
+    if task == "adult":
+        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, cost_mode=cost_mode, construct_graph=True)
+    elif task == "caltech":
+        model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
+                                    cost_mode=cost_mode, print_curvature=False, construct_graph=True)
+    elif task == "facebook":
+        model = FacebookGraphCoverage(
+            budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
+            print_curvature=False, cost_mode=cost_mode, construct_graph=True)
+    elif task == "youtube":
+        model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
+                                prepare_max_pair=False, print_curvature=False, construct_graph=True)
+
+    model.budget = budget
+
+    return model
 
 
 if __name__ == "__main__":
@@ -681,41 +866,72 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("task_num", type=int, help="0,1,2,3,4")
+
+    parser.add_argument("-n", "--num", default=1000, help="size of dataset")
+    parser.add_argument("-m", default=False, help="use modified objective function")
+
+    parser.add_argument("-p", "--mp", default="empty", help="empty, S, V")
+
+    parser.add_argument("-ss", default=0, help="start of seed range")
+    parser.add_argument("-se", default=200, help="stop of seed range")
+    parser.add_argument("-c","--cost",default="normal", help = "cost mode")
+
     args = parser.parse_args()
 
-    if args.task_num == 0:
-        compute_max_cov(root_dir)
-    elif args.task_num == 1:
-        compute_image_sum(root_dir)
-    elif args.task_num == 2:
-        compute_movie_recom(root_dir)
-    elif args.task_num == 3:
-        compute_revenue_max(root_dir)
-    elif args.task_num == 4:
-        compute_dblp(root_dir)
-    elif args.task_num == 5:
-        compute_facebook(root_dir)
-    elif args.task_num == 6:
-        compute_custom(root_dir)
-    elif args.task_num == 7:
-        run_multi_custom_exps(config_path)
-    elif args.task_num == 8:
-        compute_youtube(root_dir)
-    elif args.task_num == 9:
-        compute_citation(root_dir)
-    elif args.task_num == 10:
-        compute_caltech(root_dir)
-    elif args.task_num == 11:
-        compute_adult(root_dir)
-    elif args.task_num == 12:
-        compute_sensor(root_dir)
-    elif args.task_num == 13:
-        compute_facility(root_dir)
-    elif args.task_num == 14:
-        compute_facebook_series(root_dir)
-    elif args.task_num == 15:
-        compute_caltech_series(root_dir)
-    elif args.task_num == 16:
-        compute_youtube_series(root_dir)
-    elif args.task_num == 17:
-        compute_adult_series(root_dir)
+    cost_mode = args.cost
+
+    if not args.m:
+        if args.task_num == 0:
+            compute_max_cov(root_dir)
+        elif args.task_num == 1:
+            compute_image_sum(root_dir)
+        elif args.task_num == 2:
+            compute_movie_recom(root_dir)
+        elif args.task_num == 3:
+            compute_revenue_max(root_dir)
+        elif args.task_num == 4:
+            compute_dblp(root_dir)
+        elif args.task_num == 5:
+            compute_facebook(root_dir)
+        elif args.task_num == 6:
+            compute_custom(root_dir)
+        elif args.task_num == 7:
+            run_multi_custom_exps(config_path)
+        elif args.task_num == 8:
+            compute_youtube(root_dir)
+        elif args.task_num == 9:
+            compute_citation(root_dir)
+        elif args.task_num == 10:
+            compute_caltech(root_dir)
+        elif args.task_num == 11:
+            compute_adult(root_dir)
+        elif args.task_num == 12:
+            compute_sensor(root_dir)
+        elif args.task_num == 13:
+            compute_facility(root_dir)
+        elif args.task_num == 14:
+            compute_facebook_series(root_dir)
+        elif args.task_num == 15:
+            compute_caltech_series(root_dir)
+        elif args.task_num == 16:
+            compute_youtube_series(root_dir)
+        elif args.task_num == 17:
+            compute_adult_series(root_dir)
+    else:
+        n = int(args.num)
+        mp_procedure = None
+        if args.mp == "E":
+            mp_procedure = compute_mp1_empty
+        elif args.mp == "S":
+            mp_procedure = compute_mp1_S
+        elif args.mp == "V":
+            mp_procedure = compute_mp1_V
+
+        if args.task_num == 1:
+            mp_procedure("adult", n=n)
+        elif args.task_num == 2:
+            mp_procedure("caltech", n=n)
+        elif args.task_num == 3:
+            mp_procedure("facebook", n=n)
+        elif args.task_num == 4:
+            mp_procedure("youtube", n=n)

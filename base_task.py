@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractclassmethod
 from typing import List, Set
 from copy import deepcopy
@@ -19,6 +20,17 @@ class BaseTask(ABC):
         self.d = None
         self.e = None
 
+        self.objective_style = "internal"
+        self.objective_dict = {
+            "internal": self.internal_objective,
+            "mp1_empty": self.mp1_empty_objective,
+            "mp1": self.mp1_objective
+        }
+
+        self.Y = None
+        self.Y_value = 0
+        self.empty_Y_value = 0
+
     def prepare_max_2_pair(self):
         self.max_2_pair = {}
 
@@ -29,6 +41,30 @@ class BaseTask(ABC):
                     maximal = self.objective({i, j})
             self.max_2_pair[i] = maximal
 
+    def set_modular_obj(self, Y: List[int]):
+
+        pass
+
+    def assign_costs(self, knapsack, cost_mode):
+        if knapsack:
+            # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
+            if cost_mode == "normal":
+                self.costs_obj = [
+                    (0.4 + random.random()) * 4
+                    for obj in self.ground_set
+                ]
+            elif cost_mode == "integer":
+                self.costs_obj = [
+                    random.randint(1, 5)
+                    for obj in self.ground_set
+                ]
+        else:
+            # cardinality
+            self.costs_obj = [
+                1
+                for node in self.ground_set
+            ]
+        pass
 
     @property
     def ground_set(self):
@@ -86,9 +122,38 @@ class BaseTask(ABC):
         ret = [self.cutout_marginal_gain(ele) for ele in self.ground_set]
         return ret
 
-    @abstractclassmethod
-    def objective(self):
+    def objective(self, obj: List[int]):
+        return self.objective_dict[self.objective_style](obj)
+
+    # @abstractclassmethod
+    def internal_objective(self, S: List[int]):
         pass
+
+    def mp1_empty_objective(self, S: List[int]):
+        return sum([self.internal_objective([ele]) for ele in S])
+
+    def set_Y(self, Y):
+        self.Y = Y
+        self.Y_value = self.internal_objective(self.Y)
+
+        term_2 = 0.
+        for ele in set(self.Y):
+            term_2 += self.internal_cutout_marginal_gain(ele)
+
+        self.empty_Y_value = self.Y_value - term_2
+
+    def mp1_objective(self, S: List[int]):
+        term_1 = self.Y_value
+
+        term_2 = 0.
+        for ele in set(self.Y) - set(S):
+            term_2 += self.internal_cutout_marginal_gain(ele)
+
+        term_3 = 0.
+        for ele in set(S) - set(self.Y):
+            term_3 += self.internal_marginal_gain(ele, self.Y)
+
+        return term_1 - term_2 + term_3 - self.empty_Y_value
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[x] for x in S)
@@ -106,6 +171,18 @@ class BaseTask(ABC):
             base2 = list(set(base + [single]))
         fS1 = self.objective(base)
         fS2 = self.objective(base2)
+        res = fS2 - fS1
+        assert res >= -0.01, f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
+        return res
+
+    def internal_marginal_gain(self, single: int, base: List[int]):
+        if len(base) == 0:
+            base2 = [single]
+        else:
+            base = list(base)
+            base2 = list(set(base + [single]))
+        fS1 = self.internal_objective(base)
+        fS2 = self.internal_objective(base2)
         res = fS2 - fS1
         assert res >= -0.01, f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
         return res
@@ -138,5 +215,18 @@ class BaseTask(ABC):
         assert res >= 0., f"f({base}) - f({base2}) = {fS2:.2f} - {fS1:.2f}\n{base - base2}"
         return res
 
+    def internal_cutout_marginal_gain(self, singleton: int):
+        # assert type(base) is set, "{} is not set".format(type(base))
+        base = set(self.ground_set)
+        base2 = deepcopy(base)
+        base2.remove(singleton)  # no return value
+        fS2, fS1 = self.internal_objective(base), self.internal_objective(base2)
+        res = fS2 - fS1
+        assert res >= 0., f"f({base}) - f({base2}) = {fS2:.2f} - {fS1:.2f}\n{base - base2}"
+        return res
+
     def cutout_density(self, singleton: int, base: Set[int]):
         return self.cutout_marginal_gain(singleton) / self.cost_of_singleton(singleton)
+
+    def internal_cutout_density(self, singleton: int, base: Set[int]):
+        return self.internal_cutout_marginal_gain(singleton) / self.cost_of_singleton(singleton)

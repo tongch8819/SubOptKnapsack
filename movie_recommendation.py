@@ -73,7 +73,7 @@ class MovieRecommendation(BaseTask):
         else:
             raise ValueError("Unsupported similarity type.")
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         """
         Inputs:
         - S: solution set

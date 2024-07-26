@@ -1800,9 +1800,6 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             return M_plus_gain[idx] + (x - M_plus_budget[idx]) * (M_plus_gain[idx + 1] - M_plus_gain[idx]) / (
                         M_plus_budget[idx + 1] - M_plus_budget[idx])
 
-
-
-
     minimal_budget = model.budget - model.cost_of_set(base_set)
 
     endpoints_plus = []

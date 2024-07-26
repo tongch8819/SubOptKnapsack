@@ -104,34 +104,7 @@ class AdultIncomeFeatureSelection(BaseTask):
 
         # cost parameters
         if construct_graph:
-            if knapsack:
-                # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
-                if cost_mode == "normal":
-                    self.costs_obj = [
-                        # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-                        (min_cost + random.random()) * factor
-                        for node in range(0, self.feature_count)
-                    ]
-                elif cost_mode == "small":
-                    cost_name = "small_costs.txt"
-                    self.costs_obj = [
-                        # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-                        max(min_cost, random.gauss(mu=min_cost, sigma=1) * factor)
-                        for node in range(0, self.feature_count)
-                    ]
-                elif cost_mode == "big":
-                    cost_name = "big_costs.txt"
-                    self.costs_obj = [
-                        # self.beta * (len(list(self.graph.neighbors(str(node)))) + 1 - self.alpha)/len(self.nodes)
-                        min(min_cost + 1, random.gauss(mu=min_cost + 1, sigma=1) * factor)
-                        for node in range(0, self.feature_count)
-                    ]
-            else:
-                # cardinality
-                self.costs_obj = [
-                    1
-                    for node in range(0, self.feature_count)
-                ]
+            self.assign_costs(knapsack, cost_mode)
             with open(data_path + "/" + cost_name, "w") as f:
                 for node in range(0, self.feature_count):
                     f.write(f"{self.costs_obj[node]}\n")
@@ -155,7 +128,7 @@ class AdultIncomeFeatureSelection(BaseTask):
     def ground_set(self):
         return self.objs
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         """
         Inputs:
         - S: solution set
@@ -267,7 +240,7 @@ class SensorPlacement(BaseTask):
     def ground_set(self):
         return self.objs
 
-    def objective(self, S: List[int]):
+    def internal_objective(self, S: List[int]):
         """
         Inputs:
         - S: solution set
