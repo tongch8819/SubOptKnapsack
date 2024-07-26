@@ -1,11 +1,13 @@
 result/
 misc/
 test.py
-dataset/revenue/*txt
-dataset/image/cifar*
+# dataset/revenue/*txt
+# dataset/image/cifar*
+dataset/
 log/
 *.sh
 *tmp*
+*.pckl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
