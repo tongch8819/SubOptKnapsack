@@ -30,7 +30,7 @@ import argparse
 
 cost_mode = "integer"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub7m"]
+upper_bounds = ["ub1","ub1m","ub7","ub7m"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -38,11 +38,16 @@ suffix = ""
 
 # count how many upbs are calculated by empty sets
 # apply the new method on the MSMK problem
+# explore the 10^11910010101 prolbem
 
 knapsack = True
 prepare_2_pair = False
 print_curvature = True
 graph_suffix = ""
+
+# make qe report 2 back
+# add enlonged experiments
+# add explanation to caltech
 
 def compute_max_cov(root_dir, skip_mode=False):
     interval = 0.3
@@ -192,17 +197,19 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode = False):
-    n = 1000
+    n = 500
     seed_interval = 1
-    start_seed = 0
+    start_seed = 87
     end_seed = 200
+    count_0 = 0
+    count_t = 0
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
-        interval = 1
-        num_points = 15
-        start_point = 6
+        interval = 10
+        num_points = 5
+        start_point = 36
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -211,7 +218,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-6", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -229,10 +236,16 @@ def compute_facebook_series(root_dir, skip_mode = False):
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print(res)
+                    count_t += 1
+                    if not res['updated']:
+                        count_0 += 1
                     print("Done: ", save_path)
+                    print(f"count:{count_0}/{count_t}")
+
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+
 
 def compute_custom(root_dir, skip_mode=False):
     model = CustomCoverage(budget=10, n=100, graph_path="./dataset/custom-graph/graphs/100--0.2--0.1--0.5--20", knapsack=False, prepare_max_pair=prepare_2_pair,print_curvature=print_curvature)
@@ -312,7 +325,7 @@ def compute_youtube(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 500
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -324,8 +337,8 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 6
+        num_points = 10
+        start_point = 31
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -409,7 +422,7 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech_series(root_dir, skip_mode = False):
-    n = 100
+    n = 50
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -420,8 +433,8 @@ def compute_caltech_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 25
-        start_point = 6
+        num_points = 10
+        start_point = 31
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -429,7 +442,7 @@ def compute_caltech_series(root_dir, skip_mode = False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-6", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -483,25 +496,27 @@ def compute_adult(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult_series(root_dir, skip_mode = False):
-    n = 100
+    n = 50
     sample_count = 100
 
     seed_interval = 1
     start_seed = 0
     end_seed = 200
+    count_0 = 0
+    count_t = 0
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 25
-        start_point = 6
+        num_points = 10
+        start_point = 31
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
-        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, construct_graph=True)
+        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, construct_graph=True, cost_mode=cost_mode)
 
-        save_dir = os.path.join(root_dir, "archive-6", "adult", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -519,7 +534,12 @@ def compute_adult_series(root_dir, skip_mode = False):
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print(res)
+                    count_t += 1
+                    if not res['updated']:
+                        count_0 += 1
                     print("Done: ", save_path)
+                    print(f"count:{count_0}/{count_t}")
+
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
@@ -685,10 +705,10 @@ def run_multiple_exps(root_dir, skip_mode):
 
 
 def compute_mp1_empty(task:str, n):
-    root_dir = os.path.join("./result","archive-6")
+    root_dir = os.path.join("./result", "archive-6")
 
     start_seed = 0
-    stop_seed = 162
+    stop_seed = 100
 
     interval = 1
     num_points = 15
@@ -741,7 +761,7 @@ def compute_mp1_S(task:str, n):
     root_dir = os.path.join("./result", "archive-7")
 
     start_seed = 0
-    stop_seed = 200
+    stop_seed = 3
 
     interval = 1
     num_points = 15
@@ -839,6 +859,7 @@ def compute_mp1_V(task:str, n):
             print(f"seed:{seed}/{stop_seed}, budget:{budget}/{end_point}")
             print(res)
 
+
 def model_factory(task:str, n, seed, budget) -> BaseTask:
     model = None
     if task == "adult":
@@ -870,7 +891,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num", default=1000, help="size of dataset")
     parser.add_argument("-m", default=False, help="use modified objective function")
 
-    parser.add_argument("-p", "--mp", default="empty", help="empty, S, V")
+    parser.add_argument("-p", "--mp", default="empty", help="E, S, V")
 
     parser.add_argument("-ss", default=0, help="start of seed range")
     parser.add_argument("-se", default=200, help="stop of seed range")

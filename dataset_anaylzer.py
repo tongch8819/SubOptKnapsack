@@ -80,14 +80,14 @@ def parse_m():
 def parse_m_2():
     result_dir = os.path.join("./result", "da")
 
-    # tasks_list = ["facebook", "youtube", "caltech", "adult"]
+    tasks_list = ["facebook", "youtube", "caltech", "adult"]
 
-    tasks_list = ["youtube"]
+    # tasks_list = ["youtube"]
 
     t_mm_list = []
 
-    start = 61
-    stop = 62
+    start = 0
+    stop = 10
     count = stop - start
 
     for task in tasks_list:
@@ -124,7 +124,7 @@ def parse_m_2():
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.set_ylabel("MM")
+    ax.set_ylabel(r"$f_{V \setminus \{e\}}(e)$")
 
     box_props = dict(linewidth=1.5, color="black")
     median_props = dict(linewidth=2)
