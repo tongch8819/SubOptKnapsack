@@ -7,7 +7,8 @@ def modified_greedy(model: BaseTask, upb : str = None):
     remaining_elements = set(model.ground_set)
     cur_cost = 0.
     if upb is not None:
-        lambda_capital = float('inf')
+        # upper bound should not be updated
+        lambda_capital = singleton_knapsack_fill(model)
     while len(remaining_elements):
         u, max_density = None, -1.
         for e in remaining_elements:
@@ -24,13 +25,6 @@ def modified_greedy(model: BaseTask, upb : str = None):
             # satisfy the knapsack constraint
             sol.add(u)
             cur_cost += model.cost_of_singleton(u)
-
-            # update data-dependent upper-bound
-            if upb is not None:
-                if upb == "ub1":
-                    lambda_capital = singleton_knapsack_fill(model)
-                else:
-                    raise ValueError("Unsupported Upperbound")
                 
         remaining_elements.remove(u)
         # filter out violating elements
@@ -53,7 +47,7 @@ def modified_greedy(model: BaseTask, upb : str = None):
     sol_fv = model.objective(list(sol))
     if v_star_fv > sol_fv:
         res = {
-            'S': [v_star],
+            'S': set([v_star]),
             'f(S)': v_star_fv,
             'c(S)': model.cost_of_singleton(v_star),
         }
@@ -65,10 +59,7 @@ def modified_greedy(model: BaseTask, upb : str = None):
         }
 
     if upb is not None:
-        res['Lambda'] = lambda_capital
+        res['Upb'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
     return res
-
-def modified_greedy_ub1(model: BaseTask):
-    return modified_greedy(model, "ub1")
 

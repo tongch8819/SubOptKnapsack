@@ -12,7 +12,8 @@ def greedy_max(model: BaseTask, upb: str = None):
     remaining_elements = set(model.ground_set)
     cur_cost = 0.
     if upb is not None:
-        lambda_capital = float('inf')
+        # upper bound should not be updated
+        lambda_capital = singleton_knapsack_fill(model)
     while len(remaining_elements):
         # argmax marginal gain
         s, max_marginal_gain = None, -1
@@ -24,17 +25,8 @@ def greedy_max(model: BaseTask, upb: str = None):
         tmp_G = deepcopy(G)
         tmp_G.add(s)
 
-
-       
-
         if model.objective(S) < model.objective(tmp_G) and model.cost_of_set(tmp_G) <= model.budget:
             S = tmp_G
-            # update data-dependent upper-bound
-            if upb is not None:
-                if upb == "ub1":
-                    lambda_capital = singleton_knapsack_fill(model)
-                else:
-                    raise ValueError("Unsupported Upperbound")
 
         # argmax density
         a, max_density = None, -1.
@@ -78,13 +70,11 @@ def greedy_max(model: BaseTask, upb: str = None):
             'c(S)': model.cost_of_set(G),
         }
     if upb is not None:
-        res['Lambda'] = lambda_capital
+        res['Upb'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
     return res
 
 
-def greedy_max_ub1(model):
-    return greedy_max(model, "ub1")
 
 
 

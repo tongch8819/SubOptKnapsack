@@ -7,10 +7,15 @@ class BaseTask(ABC):
 
     def __init__(self, is_mono=True):
         self.is_mono = is_mono
+        self.total_curvature = None
 
     @property
     def budget(self):
         return self.b
+    
+    @budget.setter
+    def budget(self, v):
+        self.b = v
 
     @abstractclassmethod
     def objective(self):
@@ -43,6 +48,9 @@ class BaseTask(ABC):
         return (mg * 100) / (cost * 100)
 
     def cutout_marginal_gain(self, singleton: int, base: Set[int]):
+        """
+        return f(singleton | base - singleton)
+        """
         if type(base) is not set:
             base = set(base)
         assert singleton in base
@@ -56,3 +64,18 @@ class BaseTask(ABC):
 
     def cutout_density(self, singleton: int, base: Set[int]):
         return self.cutout_marginal_gain(singleton, base) / self.cost_of_singleton(singleton)
+
+    def gen_total_curvature(self):
+        if self.total_curvature is not None:
+            return self.total_curvature
+
+        V = self.ground_set
+        min_ratio = 1
+        for e in self.ground_set:
+            nume = self.cutout_marginal_gain(e, V)
+            denom = self.objective([e])
+            assert denom >= nume
+            ratio = nume / (denom + 1e-7)
+            min_ratio = min(min_ratio, ratio)
+        self.total_curvature = 1 - min_ratio
+        return self.total_curvature

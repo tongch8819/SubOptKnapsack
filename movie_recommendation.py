@@ -41,6 +41,10 @@ class MovieRecommendation(BaseTask):
     @property
     def ground_set(self):
         return self.movies
+    
+    @ground_set.setter
+    def ground_set(self, v):
+        self.movies = v
 
     def load_matrix(self, path: str):
         if not os.path.isfile(path):
