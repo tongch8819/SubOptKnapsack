@@ -7,7 +7,8 @@ from data_dependent_upperbound import marginal_delta_version2
 from data_dependent_upperbound import marginal_delta_version3
 from data_dependent_upperbound import marginal_delta_gate
 
-def modified_greedy(model: BaseTask, upb : str = None):
+
+def modified_greedy(model: BaseTask, upb: str = None):
     start_time = time.time()
 
     sol = set()
@@ -41,7 +42,7 @@ def modified_greedy(model: BaseTask, upb : str = None):
                 lambda_capital = fs + delta
                 parameters = p1
                 updated = True
-                
+
         remaining_elements.remove(u)
         # filter out violating elements
         to_remove = set()
@@ -88,6 +89,8 @@ def modified_greedy(model: BaseTask, upb : str = None):
             'c(S)': cur_cost,
         }
 
+
+    print(model.budget)
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
@@ -98,6 +101,7 @@ def modified_greedy(model: BaseTask, upb : str = None):
     res['Time'] = stop_time - start_time
 
     return res
+
 
 def modified_greedy_plain(model: BaseTask):
     start_time = time.time()
@@ -159,41 +163,91 @@ def modified_greedy_plain(model: BaseTask):
 
     return res
 
+
 def modified_greedy_ub1(model: BaseTask):
     return modified_greedy(model, "ub1")
+
 
 def modified_greedy_ub2(model: BaseTask):
     return modified_greedy(model, "ub2")
 
+
 def modified_greedy_ub3(model: BaseTask):
     return modified_greedy(model, "ub3")
+
 
 def modified_greedy_ub4(model: BaseTask):
     return modified_greedy(model, "ub4")
 
+
 def modified_greedy_ub4c(model):
     return modified_greedy(model, "ub4c")
+
 
 def modified_greedy_ub4cm(model):
     return modified_greedy(model, "ub4cm")
 
+
 def modified_greedy_ub5(model: BaseTask):
     return modified_greedy(model, "ub5")
+
 
 def modified_greedy_ub5c(model: BaseTask):
     return modified_greedy(model, "ub5c")
 
+
 def modified_greedy_ub5p(model: BaseTask):
     return modified_greedy(model, "ub5p")
+
 
 def modified_greedy_ub6(model: BaseTask):
     return modified_greedy(model, "ub6")
 
+
 def modified_greedy_ub7(model: BaseTask):
     return modified_greedy(model, "ub7")
+
 
 def modified_greedy_ub7m(model: BaseTask):
     return modified_greedy(model, "ub7m")
 
+
 def modified_greedy_ub1m(model: BaseTask):
     return modified_greedy(model, "ub1m")
+
+
+def greedy_heuristic_for_matroid(model: BaseTask, upb: str):
+    model.enable_matroid()
+    s = set()
+    v = set(model.ground_set)
+    lc = 0
+    parameters = None
+
+    while len(v) > 0:
+        max_ele = None
+        max_marginal_value = -1
+
+        for ele in v:
+            if model.marginal_gain(ele, list(s)) > max_marginal_value:
+                max_marginal_value = model.marginal_gain(ele, list(s))
+                max_ele = ele
+
+        if model.matroid.is_legal(s | {max_ele}):
+            s = s | {max_ele}
+
+        v.remove(max_ele)
+
+    max_cardinality = len(s)
+    model.budget = max_cardinality
+    lc = modified_greedy(model, upb)["Lambda"]
+    # lc = min(2 * model.objective(s), modified_greedy(model, upb)["Lambda"])
+
+    res = {
+        "S": s,
+        "f(S)": model.objective(s),
+        "upb": lc,
+        "AF": model.objective(s)/lc
+    }
+
+    return res
+

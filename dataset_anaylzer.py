@@ -20,7 +20,7 @@ def parse_m():
     t_mm_list = []
 
     start = 0
-    stop = 50
+    stop = 20
     count = stop - start
 
     for task in tasks_list:
@@ -82,12 +82,10 @@ def parse_m_2():
 
     tasks_list = ["facebook", "youtube", "caltech", "adult"]
 
-    # tasks_list = ["youtube"]
-
     t_mm_list = []
 
     start = 0
-    stop = 10
+    stop = 200
     count = stop - start
 
     for task in tasks_list:
@@ -121,7 +119,6 @@ def parse_m_2():
 
         t_mm_list.append(mm_list)
 
-
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_ylabel(r"$f_{V \setminus \{e\}}(e)$")
@@ -141,6 +138,7 @@ def parse_m_2():
         box.set_facecolor("whitesmoke")
 
     plt.savefig(os.path.join(result_dir, f"tmm2_{count}.png"), bbox_inches="tight")
+    plt.clf()
 
     pass
 

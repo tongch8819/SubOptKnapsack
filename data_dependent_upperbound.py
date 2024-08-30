@@ -19,6 +19,8 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 
     parameters = {}
 
+    t0 = time.time()
+
     t = list(remaining_set)
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
 
@@ -30,8 +32,11 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     delta = G_plus(model.budget, model, remaining_set,
                          base_set, cumsum_costs, t)
 
+    t1 = time.time()
+
     parameters["ScanCount"] = bisect.bisect_right(cumsum_costs, model.budget) + 1
     parameters["MinusCount"] = 0
+    parameters["method3"] = t1 - t0
 
     # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]},dt:{dt[:5]},ct:{ct[:5]}")
 
@@ -1771,20 +1776,25 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             result.append((budget_consumed, delta))
 
         scan_count = ele_idx
-        # print(f"sc:{scan_count}, ele:{ele_idx}")
         return result, scan_count, ele_outside
 
     ub = 0
 
-    # t0 = time.time()
+    t0 = time.time()
 
     M_plus_res, sc, ele_outside = method3(f_over_base, model.budget)
+
+    t1 = time.time()
 
     M_plus_budget = [0] + [x[0] for x in M_plus_res]
     M_plus_gain = [0] + [x[1] for x in M_plus_res]
 
+    t2 = time.time()
+
     parameters["ScanCount"] = sc
-    t = max(M_plus_gain)
+    parameters["method3"] = t1-t0
+    parameters["retrievehighest"] = t2-t1
+
     if not minus:
         return max(M_plus_gain), parameters
 

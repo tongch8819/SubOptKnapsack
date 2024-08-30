@@ -4,6 +4,8 @@ from typing import List, Set
 from copy import deepcopy
 import numpy as np
 
+from matroid import Matroid
+
 
 class BaseTask(ABC):
 
@@ -13,6 +15,8 @@ class BaseTask(ABC):
 
         self.max_pair_dict = None
         self.max_pair_array = None
+
+        self.matroid = None
 
         self.budget = None
 
@@ -42,8 +46,10 @@ class BaseTask(ABC):
             self.max_2_pair[i] = maximal
 
     def set_modular_obj(self, Y: List[int]):
-
         pass
+
+    def enable_matroid(self):
+        self.matroid = Matroid(self.ground_set, 10, 20)
 
     def assign_costs(self, knapsack, cost_mode):
         if knapsack:
@@ -119,7 +125,7 @@ class BaseTask(ABC):
         print(f"c:{self.curvature}, c2:{c2}, d:{d}, e:{e}")
 
     def calculate_m(self):
-        ret = [self.cutout_marginal_gain(ele) for ele in self.ground_set]
+        ret = [self.cutout_density(ele, self.ground_set) for ele in self.ground_set]
         return ret
 
     def objective(self, obj: List[int]):

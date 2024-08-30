@@ -199,7 +199,6 @@ class CitationCoverage(BaseTask):
 
             self.objs = list(range(0, len(self.nodes)))
 
-
             with open(self.graph_path + "/" + cost_name, "r") as f:
                 while True:
                     line = f.readline()

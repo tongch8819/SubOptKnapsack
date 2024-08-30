@@ -15,13 +15,8 @@ from influence_maximization import YoutubeCoverage, CitationCoverage
 from feature_selection import AdultIncomeFeatureSelection, SensorPlacement
 from facility_location import MovieFacilityLocation
 
-from greedy import greedy
-from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4,  modified_greedy_ub5, modified_greedy_ub1m, modified_greedy_ub7m, modified_greedy_ub7
-from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4, greedy_max_ub4c, greedy_max_ub4cm, greedy_max_ub5, greedy_max_ub5c, greedy_max_ub6, greedy_max_ub5p, greedy_max_ub7, greedy_max_ub7m
-from greedy_with_denstiy_threshold import gdt_ub1, gdt_ub2, gdt_ub3, gdt_ub4
-from gcg import gcg_ub1, gcg_ub2, gcg_ub3, gcg_ub4
+from mgreedy import modified_greedy_ub1,modified_greedy_ub7, modified_greedy_ub1m, modified_greedy_ub7m
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
@@ -30,7 +25,7 @@ import argparse
 
 cost_mode = "integer"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1","ub1m","ub7","ub7m"]
+upper_bounds = ["ub7m"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -197,9 +192,9 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode = False):
-    n = 500
+    n = 1000
     seed_interval = 1
-    start_seed = 87
+    start_seed = 0
     end_seed = 200
     count_0 = 0
     count_t = 0
@@ -207,9 +202,9 @@ def compute_facebook_series(root_dir, skip_mode = False):
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
-        interval = 10
-        num_points = 5
-        start_point = 36
+        interval = 1
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -233,15 +228,18 @@ def compute_facebook_series(root_dir, skip_mode = False):
                     if skip_mode and os.path.exists(save_path):
                         print("Skip: ", save_path)
                         continue
-                    with open(save_path, "wb") as wrt:
-                        pickle.dump(res, wrt)
-                    print(res)
+
                     count_t += 1
                     if not res['updated']:
                         count_0 += 1
                     print("Done: ", save_path)
                     print(f"count:{count_0}/{count_t}")
+                    res["count_0"] = count_0
+                    res["count_t"] = count_t
 
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
@@ -325,7 +323,7 @@ def compute_youtube(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 500
+    n = 1000
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -337,15 +335,15 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 31
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-6", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -360,14 +358,19 @@ def compute_youtube_series(root_dir, skip_mode=False):
                     if skip_mode and os.path.exists(save_path):
                         print("Skip: ", save_path)
                         continue
-                    with open(save_path, "wb") as wrt:
-                        pickle.dump(res, wrt)
-                    print(res)
+
                     count_t += 1
                     if not res['updated']:
                         count_0 += 1
                     print("Done: ", save_path)
                     print(f"count:{count_0}/{count_t}")
+                    res["count_0"] = count_0
+                    res["count_t"] = count_t
+
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
+
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
@@ -422,7 +425,7 @@ def compute_caltech(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_caltech_series(root_dir, skip_mode = False):
-    n = 50
+    n = 100
     seed_interval = 1
     start_seed = 0
     end_seed = 200
@@ -433,8 +436,8 @@ def compute_caltech_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 31
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -457,15 +460,19 @@ def compute_caltech_series(root_dir, skip_mode = False):
                     if skip_mode and os.path.exists(save_path):
                         print("Skip: ", save_path)
                         continue
+
+                    count_t += 1
+                    if not res['updated']:
+                        count_0 += 1
+                    print("Done: ", save_path)
+                    print(f"count:{count_0}/{count_t}")
+                    res["count_0"] = count_0
+                    res["count_t"] = count_t
+
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print(res)
 
-                    if not res['updated']:
-                        count_0 += 1
-                    count_t += 1
-                    print("Done: ", save_path)
-                    print(f"count:{count_0}/{count_t}")
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
@@ -496,7 +503,7 @@ def compute_adult(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 def compute_adult_series(root_dir, skip_mode = False):
-    n = 50
+    n = 100
     sample_count = 100
 
     seed_interval = 1
@@ -509,8 +516,8 @@ def compute_adult_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 31
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -531,15 +538,18 @@ def compute_adult_series(root_dir, skip_mode = False):
                     if skip_mode and os.path.exists(save_path):
                         print("Skip: ", save_path)
                         continue
-                    with open(save_path, "wb") as wrt:
-                        pickle.dump(res, wrt)
-                    print(res)
+
                     count_t += 1
                     if not res['updated']:
                         count_0 += 1
                     print("Done: ", save_path)
                     print(f"count:{count_0}/{count_t}")
+                    res["count_0"] = count_0
+                    res["count_t"] = count_t
 
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
@@ -860,24 +870,58 @@ def compute_mp1_V(task:str, n):
             print(res)
 
 
-def model_factory(task:str, n, seed, budget) -> BaseTask:
+def model_factory(task:str, n, seed, budget, knap = True) -> BaseTask:
     model = None
     if task == "adult":
-        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, cost_mode=cost_mode, construct_graph=True)
+        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=knap, cost_mode=cost_mode, construct_graph=True)
     elif task == "caltech":
-        model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
+        model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=knap, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, construct_graph=True)
     elif task == "facebook":
         model = FacebookGraphCoverage(
-            budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
+            budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knap, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True)
     elif task == "youtube":
-        model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
+        model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knap, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
     model.budget = budget
 
     return model
+
+def compute_matroid(task:str, n):
+    root_dir = os.path.join("./result", "archive-9")
+
+    start_seed = 0
+    stop_seed = 200
+
+    if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
+        os.mkdir(os.path.join(root_dir, task, f"{n}"))
+
+    save_dir = os.path.join(root_dir, task, f'{n}')
+
+
+    for seed in range(start_seed, stop_seed):
+        start_time = time.time()
+        model = model_factory(task, n, seed, 0, False)
+
+        res = mgreedy.greedy_heuristic_for_matroid(model, 'ub1')
+
+        stop_time = time.time()
+        res["time"] = stop_time - start_time
+
+        save_path = os.path.join(save_dir, "{}-{}-{}-{}.pckl".format(
+            "modified_greedy", "ub1", seed, model.__class__.__name__))
+
+        with open(save_path, "wb") as wrt:
+            pickle.dump(res, wrt)
+
+        print(f"seed:{seed}/{stop_seed}")
+        print(res)
+
+        pass
+
+    pass
 
 
 if __name__ == "__main__":
@@ -889,7 +933,7 @@ if __name__ == "__main__":
     parser.add_argument("task_num", type=int, help="0,1,2,3,4")
 
     parser.add_argument("-n", "--num", default=1000, help="size of dataset")
-    parser.add_argument("-m", default=False, help="use modified objective function")
+    parser.add_argument("-m", default='0', help="objective mode")
 
     parser.add_argument("-p", "--mp", default="empty", help="E, S, V")
 
@@ -901,7 +945,7 @@ if __name__ == "__main__":
 
     cost_mode = args.cost
 
-    if not args.m:
+    if args.m == '0':
         if args.task_num == 0:
             compute_max_cov(root_dir)
         elif args.task_num == 1:
@@ -938,7 +982,7 @@ if __name__ == "__main__":
             compute_youtube_series(root_dir)
         elif args.task_num == 17:
             compute_adult_series(root_dir)
-    else:
+    elif args.m == '1':
         n = int(args.num)
         mp_procedure = None
         if args.mp == "E":
@@ -956,3 +1000,16 @@ if __name__ == "__main__":
             mp_procedure("facebook", n=n)
         elif args.task_num == 4:
             mp_procedure("youtube", n=n)
+    elif args.m == '2':
+        n = int(args.num)
+
+        if args.task_num == 1:
+            compute_matroid("adult", n=n)
+        if args.task_num == 2:
+            compute_matroid("caltech", n=n)
+        if args.task_num == 3:
+            compute_matroid("facebook", n=n)
+        if args.task_num == 4:
+            compute_matroid("youtube", n=n)
+
+
