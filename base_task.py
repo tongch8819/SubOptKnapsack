@@ -19,6 +19,7 @@ class BaseTask(ABC):
         self.matroid = None
 
         self.budget = None
+        self.value = None
 
         self.c2 = None
         self.d = None

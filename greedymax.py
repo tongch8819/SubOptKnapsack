@@ -161,3 +161,4 @@ def greedy_max_ub7(model):
 def greedy_max_ub7m(model):
     return greedy_max(model, "ub7m")
 
+
