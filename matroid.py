@@ -27,6 +27,15 @@ class Matroid:
                 return True
         return False
 
+    def r(self, s: Set[int]):
+        current_r = 0
+        for basis in self.bases:
+            if len(s.intersection(basis)) > current_r:
+                current_r = len(s.intersection(basis))
+        return current_r
+
+
+
 
 
 
