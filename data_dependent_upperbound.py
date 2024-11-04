@@ -42,6 +42,46 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 
     return delta, parameters
 
+def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    parameters = {}
+
+    t = list(remaining_set)
+    t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    bv = model.objective(list(base_set))
+    if bv > model.value:
+        return model.cost_of_set(base_set), parameters
+
+    def f_s(A):
+        return model.objective(list(set(A) | set(base_set))) - bv
+
+    def H_plus(x):
+        idx = 0
+        cur_cost = 0.
+        while True:
+            if x > f_s({t[idx]}):
+                x = x - f_s({t[idx]})
+                cur_cost = cur_cost + model.cost_of_singleton(t[idx])
+            else:
+                density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
+                cur_cost = cur_cost + x/density
+                print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}")
+                break
+            idx = idx + 1
+
+        # print(f"?:{cur_cost}")
+        return cur_cost
+
+    delta = H_plus(model.value - bv)
+    # print(f"d:{delta}")
+
+    return delta, parameters
+
 def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -198,6 +238,55 @@ def marginal_delta_version2(base_set: Set[int], remaining_set: Set[int], ground_
         coefficient = (model.budget - c_star) / model.costs_obj[t[r]]
         delta += model.marginal_gain(t[r], base_set) * coefficient
     return delta
+
+def marginal_delta_min_version2(base_set: Set[int], remaining_set: Set[int], ground_set: Set[int], model: BaseTask):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    parameters = {}
+
+    t = list(remaining_set)
+    t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    bv = model.objective(list(base_set))
+    if bv > model.value:
+        return bv, parameters
+
+    def f_s(A):
+        return model.objective(list(set(A) | set(base_set))) - bv
+
+    nominator = [model.marginal_gain(t[i], list(set(base_set) | set(t[:i]))) for i in range(0, len(t))]
+    denominator = [model.marginal_gain(t[i], list(base_set)) for i in range(0, len(t))]
+
+    idx = 0
+    while idx < len(denominator) and denominator[idx] > 0:
+
+        idx = idx + 1
+
+    sigma = [nominator[i]/denominator[i] for i in range(0, idx)]
+
+    def H_plus(x):
+        idx = 0
+        cur_cost = 0.
+        prev_ai = 0
+        while True:
+            if x > f_s(set(t[:idx+1])):
+                cur_cost = cur_cost + model.cost_of_singleton(t[idx]) * sigma[idx]
+                prev_ai = f_s(set(t[:idx+1]))
+            else:
+                density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
+                x = x - prev_ai
+                cur_cost = cur_cost + sigma[idx] * x/density
+                break
+            idx = idx + 1
+
+        return cur_cost
+
+    delta = H_plus(model.value - bv)
+
+    return delta, parameters
 
 
 def G_plus(x: float, model: BaseTask, remaining_set: Set[int], base_set: Set[int], cumsum_costs: List[float],
@@ -2482,6 +2571,22 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model)
         elif upb == 'ub7m':
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model, minus=True)
+        else:
+            raise ValueError("Unsupported Upperbound")
+        return delta, parameters
+    else:
+        raise ValueError("Upperbound unassigned")
+
+def marginal_delta_min_gate(upb: str, base_set, remaining_set, model:BaseTask):
+
+    remaining_set = set(model.ground_set) - set(base_set)
+    if upb is not None:
+        delta = 0.
+        parameters = {}
+        if upb == "ub0":
+            delta, parameters = marginal_delta_min(base_set, remaining_set, model)
+        elif upb == "ub2":
+            delta, parameters = marginal_delta_min_version2(base_set, remaining_set, model.ground_set, model)
         else:
             raise ValueError("Unsupported Upperbound")
         return delta, parameters
