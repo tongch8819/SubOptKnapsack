@@ -55,7 +55,7 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
 
     bv = model.objective(list(base_set))
     if bv > model.value:
-        return bv, parameters
+        return model.cost_of_set(base_set), parameters
 
     def f_s(A):
         return model.objective(list(set(A) | set(base_set))) - bv
@@ -70,12 +70,15 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
             else:
                 density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
                 cur_cost = cur_cost + x/density
+                print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}")
                 break
             idx = idx + 1
 
+        # print(f"?:{cur_cost}")
         return cur_cost
 
     delta = H_plus(model.value - bv)
+    # print(f"d:{delta}")
 
     return delta, parameters
 

@@ -19,6 +19,7 @@ def simple_greedy_min(model: BaseTask, upb=None):
     if upb is not None:
         delta, parameters = marginal_delta_min_gate(upb, set({}), remaining_elements, model)
         lambda_capital = delta
+        # print(f"l updated:{lambda_capital}, d:{delta} 1")
 
     while model.objective(list(G)) < model.value:
         s, max_marginal_gain = None, -1
@@ -32,6 +33,7 @@ def simple_greedy_min(model: BaseTask, upb=None):
             delta, parameters = marginal_delta_min_gate(upb, G, remaining_elements, model)
             if lambda_capital < delta:
                 lambda_capital = delta
+                # print(f"l updated:{lambda_capital}, d:{delta} 2")
 
         remaining_elements.remove(s)
 
