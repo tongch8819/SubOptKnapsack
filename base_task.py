@@ -13,6 +13,14 @@ class BaseTask(ABC):
         self.costs_obj = None
         self.max_2_pair = None
 
+        self.enable_packing_constraint = True
+        # cost matrix
+        self.A = None
+        # budget vector
+        self.bv = None
+        # constraint count
+        self.cc = 4
+
         self.max_pair_dict = None
         self.max_pair_array = None
 
@@ -53,25 +61,53 @@ class BaseTask(ABC):
         self.matroid = Matroid(self.ground_set, 10, 20)
 
     def assign_costs(self, knapsack, cost_mode):
-        if knapsack:
-            # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
-            if cost_mode == "normal":
+        if self.enable_packing_constraint:
+            if knapsack:
+                if cost_mode == "normal":
+                    data = []
+                    for i in range(0, self.cc):
+                        costs_obj_i = [
+                            (0.4 + random.random()) * 4
+                            for obj in self.ground_set
+                        ]
+                        data.append(costs_obj_i)
+                    self.A = np.matrix(data)
+                elif cost_mode == "integer":
+                    data = []
+                    for i in range(0, self.cc):
+                        costs_obj_i = [
+                            random.randint(1, 5)
+                            for obj in self.ground_set
+                        ]
+                        data.append(costs_obj_i)
+                    self.A = np.matrix(data)
+            else:
+                # cardinality
                 self.costs_obj = [
-                    (0.4 + random.random()) * 4
-                    for obj in self.ground_set
+                    1
+                    for node in self.ground_set
                 ]
-            elif cost_mode == "integer":
-                self.costs_obj = [
-                    random.randint(1, 5)
-                    for obj in self.ground_set
-                ]
+            pass
         else:
-            # cardinality
-            self.costs_obj = [
-                1
-                for node in self.ground_set
-            ]
-        pass
+            if knapsack:
+                # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
+                if cost_mode == "normal":
+                    self.costs_obj = [
+                        (0.4 + random.random()) * 4
+                        for obj in self.ground_set
+                    ]
+                elif cost_mode == "integer":
+                    self.costs_obj = [
+                        random.randint(1, 5)
+                        for obj in self.ground_set
+                    ]
+            else:
+                # cardinality
+                self.costs_obj = [
+                    1
+                    for node in self.ground_set
+                ]
+            pass
 
     @property
     def ground_set(self):
@@ -196,7 +232,12 @@ class BaseTask(ABC):
 
     def density(self, single: int, base: List[int]):
         mg = self.marginal_gain(single, base)
-        # print(f"s:{single}, c:{self.costs_obj}")
+        # print(f"s:{single}")
+        cost = self.costs_obj[single]
+        return (mg * 100) / (cost * 100)
+
+    def density_A(self, single: int, base: List[int]):
+        mg = self.marginal_gain(single, base)
         cost = self.costs_obj[single]
         return (mg * 100) / (cost * 100)
 

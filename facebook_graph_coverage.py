@@ -49,9 +49,9 @@ class FacebookGraphCoverage(BaseTask):
 
             self.assign_costs(knapsack, cost_mode)
 
-            with open(self.graph_path + "/" + cost_name, "w") as f:
-                for node in range(0, self.max_nodes):
-                    f.write(f"{self.costs_obj[node]}\n")
+            # with open(self.graph_path + "/" + cost_name, "w") as f:
+            #     for node in range(0, self.max_nodes):
+            #         f.write(f"{self.costs_obj[node]}\n")
         else:
             self.graph: nx.Graph = self.load_graph(graph_path + "/" + graph_name)
             self.nodes = list(self.graph.nodes)
