@@ -45,10 +45,10 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
-    if len(remaining_set) == 0:
-        return 0
 
     parameters = {}
+    if len(remaining_set) == 0:
+        return 0, parameters
 
     t = list(remaining_set)
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
@@ -64,13 +64,15 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
         idx = 0
         cur_cost = 0.
         while True:
+            if idx >= len(t):
+                break
             if x > f_s({t[idx]}):
                 x = x - f_s({t[idx]})
                 cur_cost = cur_cost + model.cost_of_singleton(t[idx])
             else:
                 density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
                 cur_cost = cur_cost + x/density
-                print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}")
+                # print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}")
                 break
             idx = idx + 1
 
@@ -78,7 +80,6 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
         return cur_cost
 
     delta = H_plus(model.value - bv)
-    # print(f"d:{delta}")
 
     return delta, parameters
 
