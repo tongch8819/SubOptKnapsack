@@ -1,9 +1,8 @@
-import argparse
+import matplotlib.pyplot as plt
 import os.path
 import time
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from facebook_graph_coverage import FacebookGraphCoverage
 from feature_selection import AdultIncomeFeatureSelection
@@ -20,7 +19,7 @@ def parse_m():
     t_mm_list = []
 
     start = 0
-    stop = 20
+    stop = 1
     count = stop - start
 
     for task in tasks_list:
@@ -82,7 +81,19 @@ def parse_m_2():
 
     tasks_list = ["facebook", "youtube", "caltech", "adult"]
 
+    label_list = {"facebook" : "ego-facebook",
+                  "youtube": "com-youtube",
+                  "caltech" : "Caltech36",
+                  "adult" : "Adult Income"}
+
     t_mm_list = []
+
+    fs = 24
+
+    font = {'family': 'normal',
+            'size': fs}
+
+    plt.rc('font', **font)
 
     start = 0
     stop = 200
@@ -119,9 +130,13 @@ def parse_m_2():
 
         t_mm_list.append(mm_list)
 
+    with open("kdkdk.txt", "w") as f:
+        for l in t_mm_list:
+            f.write(f"{l} ")
+
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.set_ylabel(r"$f_{V \setminus \{e\}}(e)$")
+    ax.set_ylabel(r"$d_{V \setminus \{e\}}(e)$")
 
     box_props = dict(linewidth=1.5, color="black")
     median_props = dict(linewidth=2)
@@ -129,19 +144,35 @@ def parse_m_2():
     flier_props = {"marker": "o", "markerfacecolor": "darkgreen", "markeredgecolor": "black"}
     whisker_props = {"color": "black"}
 
-    bp = ax.boxplot(t_mm_list, patch_artist=True, tick_labels=tasks_list,
+
+    bp = ax.boxplot(t_mm_list, patch_artist=True,
                     showmeans=True, boxprops=box_props, medianprops=median_props
                     , meanprops=mean_props, flierprops=flier_props, whiskerprops=whisker_props, capprops=whisker_props)
+
+    ax.set_xticks([i+1 for i in range(0, len(tasks_list))])
+    ax.set_xticklabels(label_list[task] for task in tasks_list)
+
     for median in bp["medians"]:
         median.set_color("black")
     for box in bp["boxes"]:
         box.set_facecolor("whitesmoke")
 
-    plt.savefig(os.path.join(result_dir, f"tmm2_{count}.png"), bbox_inches="tight")
+    plt.savefig(os.path.join(result_dir, f"tmm2_{count}.pdf"), bbox_inches="tight")
     plt.clf()
 
     pass
 
+def open_analyzer():
+    st_mm_list = []
+    with open("kdkdk.txt", "r") as f:
+        st_mm_list.append(f.readline())
+
+    print(len(st_mm_list))
+
+    t_mm_list = []
+    for l in st_mm_list:
+        l = l.lstrip('[').rstrip(']')
+        print(l)
 
 if __name__ == "__main__":
     parse_m_2()

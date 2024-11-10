@@ -38,7 +38,7 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     parameters["MinusCount"] = 0
     parameters["method3"] = t1 - t0
 
-    # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]},dt:{dt[:5]},ct:{ct[:5]}")
+    # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]}")
 
     return delta, parameters
 
