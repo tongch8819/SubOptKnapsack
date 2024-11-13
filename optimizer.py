@@ -81,7 +81,6 @@ class Optimizer:
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
         w_s = np.matmul(self.S, self.w)
-        # c_s = np.matmul(self.S, self.c)
 
         x = scipy.optimize.linprog(c=w_s, A_ub=[self.c], b_ub=[self.b], bounds=bounds).x
 
