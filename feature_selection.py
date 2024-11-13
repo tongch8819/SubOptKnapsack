@@ -26,6 +26,8 @@ class AdultIncomeFeatureSelection(BaseTask):
 
         self.samples = []
 
+        self.index_mapping = {}
+
         # printed = False
 
         # prepare graph
@@ -56,6 +58,9 @@ class AdultIncomeFeatureSelection(BaseTask):
 
             self.objs = list(range(0, self.samples.shape[1] - 1))
             self.objs = random.sample(self.objs, n)
+
+            for i in range(0, len(self.objs)):
+                self.index_mapping[i] = self.objs[i]
 
             objs_path = os.path.join(data_path, f"objs-{sample_count}-{n}.txt")
             with open(objs_path, "w") as f:
@@ -105,9 +110,9 @@ class AdultIncomeFeatureSelection(BaseTask):
         # cost parameters
         if construct_graph:
             self.assign_costs(knapsack, cost_mode)
-            with open(data_path + "/" + cost_name, "w") as f:
-                for node in range(0, self.feature_count):
-                    f.write(f"{self.costs_obj[node]}\n")
+            # with open(data_path + "/" + cost_name, "w") as f:
+            #     for node in range(0, self.feature_count):
+            #         f.write(f"{self.costs_obj[node]}\n")
         else:
             with open(data_path + "/" + cost_name, "r") as f:
                 while True:
@@ -126,7 +131,7 @@ class AdultIncomeFeatureSelection(BaseTask):
 
     @property
     def ground_set(self):
-        return self.objs
+        return range(0, len(self.objs))
 
     def internal_objective(self, S: List[int]):
         """
@@ -134,7 +139,11 @@ class AdultIncomeFeatureSelection(BaseTask):
         - S: solution set
         - llambda: coefficient which lies in [0,1]
         """
-        S = list(S)
+        # S = list(S)
+
+        # modification for A
+        S = [self.index_mapping[i] for i in S]
+
         if len(S) == 0:
             return 0
         S.append(self.feature_count)

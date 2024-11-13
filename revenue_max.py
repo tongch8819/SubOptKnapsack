@@ -125,14 +125,14 @@ class CalTechMaximization(BaseTask):
 
             self.assign_costs(knapsack, cost_mode)
 
-            with open(self.graph_path + "/" + cost_name, "w") as f:
-                for node in range(0, self.max_nodes):
-                    f.write(f"{self.costs_obj[node]}\n")
+            # with open(self.graph_path + "/" + cost_name, "w") as f:
+            #     for node in range(0, self.max_nodes):
+            #         f.write(f"{self.costs_obj[node]}\n")
 
             with open(self.graph_path + "/" + "weights" + graph_suffix + ".txt", "w") as f:
                 for edge in self.graph.edges:
                     w = random.random()
-                    f.write(f"{edge[0]} {edge[1]} {w}\n")
+                    # f.write(f"{edge[0]} {edge[1]} {w}\n")
                     self.weights[(int(edge[0]), int(edge[1]))] = w
                     self.weights[(int(edge[1]), int(edge[0]))] = w
 

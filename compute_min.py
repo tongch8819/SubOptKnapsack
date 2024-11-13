@@ -9,7 +9,7 @@ import numpy as np
 def compute_min_series(task):
     seed_start = 0
     seed_end = 100
-    n = 500
+    n = 50
     root_dir = f"./result/archive_min"
     start_value = 0.5
     num_points = 10
@@ -23,7 +23,9 @@ def compute_min_series(task):
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, 0)
+
         save_dir = os.path.join(root_dir, task, f"{n}", f"{seed}")
+
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
         for value in values:
@@ -39,5 +41,5 @@ def compute_min_series(task):
     pass
 
 if __name__ == "__main__":
-    compute_min_series("facebook")
+    compute_min_series("adult")
     pass

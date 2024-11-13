@@ -33,7 +33,6 @@ def simple_greedy_min(model: BaseTask, upb=None):
             delta, parameters = marginal_delta_min_gate(upb, G, remaining_elements, model)
             if lambda_capital < delta:
                 lambda_capital = delta
-                # print(f"l updated:{lambda_capital}, d:{delta} 2")
 
         remaining_elements.remove(s)
 
