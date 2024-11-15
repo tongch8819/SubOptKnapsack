@@ -12,7 +12,7 @@ import networkx as nx
 
 class AdultIncomeFeatureSelection(BaseTask):
     def __init__(self, budget: float, n: int = None, data_path: str = None, knapsack=True, seed = 0,
-                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix=""):
+                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix="", enable_packing = False):
         """
         Inputs:
         - n: max_nodes
@@ -23,6 +23,8 @@ class AdultIncomeFeatureSelection(BaseTask):
             raise Exception("Please provide a graph.")
         np.random.seed(seed)
         random.seed(seed)
+
+        self.enable_packing_constraint = enable_packing
 
         self.samples = []
 
@@ -147,7 +149,7 @@ class AdultIncomeFeatureSelection(BaseTask):
         p_x_s = pd.DataFrame(x_s)
         counts = p_x_s.value_counts().values/x_s.shape[0]
         ent = entropy(counts)
-        return ent * 10
+        return ent * 2
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[self.index_mapping[x]] for x in S)
