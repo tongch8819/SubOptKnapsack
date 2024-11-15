@@ -51,11 +51,12 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
         return 0, parameters
 
     t = list(remaining_set)
+
+    # print(f"t:{len(remaining_set)}")
+
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
 
     bv = model.objective(list(base_set))
-    # if bv > model.value:
-    #     return model.cost_of_set(base_set), parameters
 
     def f_s(A):
         return model.objective(list(set(A) | set(base_set))) - bv
@@ -94,8 +95,8 @@ def marginal_delta_min_version1(base_set: Set[int], remaining_set: Set[int], mod
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
 
     bv = model.objective(list(base_set))
-    if bv > model.value:
-        return model.cost_of_set(base_set), parameters
+    # if bv > model.value:
+    #     return model.cost_of_set(base_set), parameters
 
     def f_s(A):
         return model.objective(list(set(A) | set(base_set))) - bv
@@ -292,8 +293,8 @@ def marginal_delta_min_version2(base_set: Set[int], remaining_set: Set[int], gro
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
 
     bv = model.objective(list(base_set))
-    if bv > model.value:
-        return bv, parameters
+    # if bv > model.value:
+    #     return bv, parameters
 
     def f_s(A):
         return model.objective(list(set(A) | set(base_set))) - bv

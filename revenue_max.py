@@ -212,6 +212,8 @@ class CalTechMaximization(BaseTask):
         """
         ret = 0
 
+        S = list(S)
+
         for x in self.nodes:
             w = 0.
 
@@ -234,6 +236,7 @@ class CalTechMaximization(BaseTask):
         assert singleton < len(
             self.costs_obj), "Singleton: {}".format(singleton)
         return self.costs_obj[singleton]
+
 
 def main():
     model = RevenueMax(budget=1.0, pckl_path="dataset/revenue/25_youtube_top5000.pkl")

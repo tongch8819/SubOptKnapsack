@@ -8,8 +8,8 @@ import numpy as np
 
 def compute_min_series(task):
     seed_start = 0
-    seed_end = 100
-    n = 50
+    seed_end = 200
+    n = 100
     root_dir = f"./result/archive_min"
     start_value = 0.5
     num_points = 10

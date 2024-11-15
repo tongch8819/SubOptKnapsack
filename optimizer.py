@@ -1,5 +1,6 @@
 import random
 import shlex
+from typing import Set, List
 
 import numpy as np
 
@@ -95,6 +96,90 @@ class Optimizer:
             "x": fs
         }
 
+
+class UpperBoundFunction:
+    def __init__(self, f, ground: List[int]):
+        self.f = f
+        self.ground = list(ground)
+
+        self.Y = None
+        self.w = None
+        self.genre = ""
+
+        self.base_value = None
+        self.etw_dict = {}
+
+    def setY(self, Y):
+        self.Y = list(Y)
+        return self
+
+    def setType(self, genre):
+        self.genre = genre
+        return self
+
+    def oracle(self, S):
+        ret = self.base_value
+        for ele in S:
+            ret += self.w[self.etw_dict[ele]]
+        return ret
+
+    def build(self):
+        def margin(S, base):
+            item1 = set(S) | set(base)
+            v1 = self.f(list(item1))
+            item2 = set(base)
+            v2 = self.f(list(item2))
+            return v1 - v2
+
+        for ele_idx in range(0, len(self.ground)):
+            ele = self.ground[ele_idx]
+            self.etw_dict[ele] = ele_idx
+
+        Y_value = self.f(self.Y)
+        self.w = [0] * len(self.ground)
+
+        self.base_value = 0
+
+        if self.genre == 'm1+':
+            self.base_value = Y_value
+            for v in self.Y:
+                self.base_value -= margin({v}, set(self.ground) - {v})
+
+            for ele_idx in range(0, len(self.ground)):
+                ele = self.ground[ele_idx]
+                item_1 = Y_value
+
+                item_2 = 0
+                for v in self.Y - {ele}:
+                    item_2 += margin({v}, set(self.ground) - {v})
+
+                item_3 = 0
+                for v in {ele} - self.Y:
+                    item_3 += margin({v}, self.Y)
+
+                self.w[ele_idx] = item_1 - item_2 + item_3 - self.base_value
+        elif self.genre == 'm2+':
+            self.base_value = Y_value
+            for v in self.Y:
+                self.base_value -= margin({v}, self.Y - {v})
+
+            for ele_idx in range(0, len(self.ground)):
+                ele = self.ground[ele_idx]
+                item_1 = Y_value
+
+                item_2 = 0
+                for v in self.Y - {ele}:
+                    item_2 += margin({v}, self.Y - {v})
+
+                item_3 = 0
+                for v in {ele} - self.Y:
+                    item_3 += self.f({v})
+
+                self.w[ele_idx] = item_1 - item_2 + item_3 - self.base_value
+
+
+
+
 class PackingOptimizer:
     def __init__(self):
         self.A = None
@@ -107,6 +192,8 @@ class PackingOptimizer:
         self.base = set()
         self.base_value = 0
         self.remaining = None
+
+        self.upb_function = None
 
     def budget(self, b):
         self.b = b
@@ -129,8 +216,6 @@ class PackingOptimizer:
             -self.f_s([x]) for x in self.remaining
         ])
 
-
-
     def set_model(self, model: BaseTask):
         self.model = model
         self.remaining = self.model.ground_set
@@ -143,7 +228,15 @@ class PackingOptimizer:
             -model.objective([x]) for x in self.model.ground_set
         ])
 
+        self.upb_function = UpperBoundFunction(self.f_s, list(self.remaining))
+
         return self
+
+    def sample(self, n):
+        return random.sample(self.remaining, n)
+
+    def set_upper_objective_function(self, uf='normal', Y=None):
+        pass
 
     def permutation_max(self):
         diag_s = [0] * len(self.remaining)
@@ -171,10 +264,13 @@ class PackingOptimizer:
         self.S = np.diag(diag_s)
         self.diag_s = diag_s
 
+    def build(self):
+        pass
+
     def optimize(self):
         bounds = [(0, 1) for _ in range(0, len(self.remaining))]
         # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
-        w_s = np.matmul(self.S, self.w)
+        w_s = np.matmul(self.S, self.upb_function.w)
         A_s = np.matmul(self.A, self.S)
 
         x = scipy.optimize.linprog(c=w_s, A_ub=A_s, b_ub=self.b, bounds=bounds).x
