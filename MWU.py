@@ -21,12 +21,14 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+'):
     opt.setModel(model)
     opt.permutation_mode = 'none'
 
-    upb_function = UpperBoundFunction(model.objective, model.ground_set)
-    upb_function.setY(random.sample(model.ground_set, int(n/10)))
-    upb_function.setType(upb_function_mode)
-    upb_function.build()
-
-    opt.upb_function = upb_function
+    if upb_function_mode == 'none':
+        opt.upb_function = None
+    else:
+        upb_function = UpperBoundFunction(model.objective, model.ground_set)
+        upb_function.setY(random.sample(model.ground_set, int(n/10)))
+        upb_function.setType(upb_function_mode)
+        upb_function.build()
+        opt.upb_function = upb_function
 
     opt.build()
     # print(f"0 S:{opt.S.shape}")
