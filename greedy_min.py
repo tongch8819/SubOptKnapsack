@@ -21,14 +21,28 @@ def simple_greedy_min(model: BaseTask, upb=None):
         lambda_capital = delta
         # print(f"l updated:{lambda_capital}, d:{delta} 1")
 
-    while model.objective(list(G)) < model.value:
+    while model.objective(list(G)) < model.value and len(remaining_elements) > 0:
         s, max_marginal_gain = None, -1
         for e in remaining_elements:
             mg = model.marginal_gain(e, G)
             if s is None or mg > max_marginal_gain:
                 s, max_marginal_gain = e, mg
 
-        G.add(s)
+        temp_G = G | {s}
+        if model.objective(list(temp_G)) < model.value:
+            G.add(s)
+        else:
+            min_cost = model.cost_of_singleton(s)
+            min_s = s
+            for e in remaining_elements:
+                temp_G = G | {s}
+                if model.objective(list(temp_G)) >= model.value:
+                    c_e = model.cost_of_singleton(e)
+                    if c_e < min_cost:
+                        min_s = e
+                        min_cost = c_e
+            G.add(min_s)
+
         if upb is not None:
             delta, parameters = marginal_delta_min_gate(upb, G, remaining_elements, model)
             if lambda_capital < delta:

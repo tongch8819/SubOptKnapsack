@@ -12,7 +12,7 @@ import networkx as nx
 
 class AdultIncomeFeatureSelection(BaseTask):
     def __init__(self, budget: float, n: int = None, data_path: str = None, knapsack=True, seed = 0,
-                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix=""):
+                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix="", enable_packing = False):
         """
         Inputs:
         - n: max_nodes
@@ -23,6 +23,8 @@ class AdultIncomeFeatureSelection(BaseTask):
             raise Exception("Please provide a graph.")
         np.random.seed(seed)
         random.seed(seed)
+
+        self.enable_packing_constraint = enable_packing
 
         self.samples = []
 
@@ -110,9 +112,6 @@ class AdultIncomeFeatureSelection(BaseTask):
         # cost parameters
         if construct_graph:
             self.assign_costs(knapsack, cost_mode)
-            # with open(data_path + "/" + cost_name, "w") as f:
-            #     for node in range(0, self.feature_count):
-            #         f.write(f"{self.costs_obj[node]}\n")
         else:
             with open(data_path + "/" + cost_name, "r") as f:
                 while True:
@@ -124,7 +123,6 @@ class AdultIncomeFeatureSelection(BaseTask):
         lcobjs = self.costs_obj
         self.costs_obj = {}
         for i in range(0, len(lcobjs)):
-            # print(f"obj:{self.objs[i]}, c:{lcobjs[i]}")
             self.costs_obj[self.objs[i]] = lcobjs[i]
 
         self.budget = budget
@@ -151,15 +149,20 @@ class AdultIncomeFeatureSelection(BaseTask):
         p_x_s = pd.DataFrame(x_s)
         counts = p_x_s.value_counts().values/x_s.shape[0]
         ent = entropy(counts)
-        return ent
+        return ent * 2
 
     def cost_of_set(self, S: List[int]):
-        return sum(self.costs_obj[x] for x in S)
+        return sum(self.costs_obj[self.index_mapping[x]] for x in S)
 
     def cost_of_singleton(self, singleton: int):
-        assert singleton in self.objs, "Singleton: {}".format(singleton)
-        return self.costs_obj[singleton]
+        assert self.index_mapping[singleton] in self.objs, "Singleton: {}".format(singleton)
+        return self.costs_obj[self.index_mapping[singleton]]
 
+    def density(self, single: int, base: List[int]):
+        mg = self.marginal_gain(single, base)
+        # print(f"s:{single}, cobjs:{type(self.costs_obj)}")
+        cost = self.costs_obj[self.index_mapping[single]]
+        return (mg * 100) / (cost * 100)
 
 class SensorPlacement(BaseTask):
     def __init__(self, budget: float, n: int = None, data_path: str = None, knapsack=True, seed=0,

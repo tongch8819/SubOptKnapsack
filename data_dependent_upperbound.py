@@ -51,11 +51,52 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
         return 0, parameters
 
     t = list(remaining_set)
+
+    # print(f"t:{len(remaining_set)}")
+
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
 
     bv = model.objective(list(base_set))
-    if bv > model.value:
-        return model.cost_of_set(base_set), parameters
+
+    def f_s(A):
+        return model.objective(list(set(A) | set(base_set))) - bv
+
+    def H_plus(x):
+        idx = 0
+        cur_cost = 0.
+        while True:
+            if x > f_s({t[idx]}):
+                x = x - f_s({t[idx]})
+                cur_cost = cur_cost + model.cost_of_singleton(t[idx])
+            else:
+                density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
+                cur_cost = cur_cost + x/density
+                # print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}")
+                break
+            idx = idx + 1
+
+        # print(f"?:{cur_cost}")
+        return cur_cost
+
+    delta = H_plus(model.value - bv)
+    # print(f"d:{delta}")
+
+    return delta, parameters
+
+def marginal_delta_min_version1(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    parameters = {}
+
+    t = list(remaining_set)
+    t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    bv = model.objective(list(base_set))
+    # if bv > model.value:
+    #     return model.cost_of_set(base_set), parameters
 
     def f_s(A):
         return model.objective(list(set(A) | set(base_set))) - bv
@@ -252,8 +293,8 @@ def marginal_delta_min_version2(base_set: Set[int], remaining_set: Set[int], gro
     t.sort(key=lambda x: model.density(x, base_set), reverse=True)
 
     bv = model.objective(list(base_set))
-    if bv > model.value:
-        return bv, parameters
+    # if bv > model.value:
+    #     return bv, parameters
 
     def f_s(A):
         return model.objective(list(set(A) | set(base_set))) - bv
@@ -2600,6 +2641,8 @@ def marginal_delta_packing_gate(upb: str, base_set, remaining_set, model:BaseTas
         parameters = {}
         if upb == "ub0":
             delta, parameters = marginal_delta_min(base_set, remaining_set, model)
+        elif upb == "ub1":
+            delta, parameters = marginal_delta_min_version1(base_set, remaining_set, model.ground_set, model)
         elif upb == "ub2":
             delta, parameters = marginal_delta_min_version2(base_set, remaining_set, model.ground_set, model)
         else:

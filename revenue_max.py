@@ -92,7 +92,7 @@ class RevenueMax(BaseTask):
 
 class CalTechMaximization(BaseTask):
     def __init__(self, budget: float, n: int = None, graph_path: str = None, knapsack=True, seed = 0,
-                 prepare_max_pair=True, print_curvature=False, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode = "normal", graph_suffix = ""):
+                 prepare_max_pair=True, print_curvature=False, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode = "normal", graph_suffix = "", enable_packing = False):
         """
         Inputs:
         - n: max_nodes
@@ -103,6 +103,9 @@ class CalTechMaximization(BaseTask):
             raise Exception("Please provide a graph.")
         np.random.seed(seed)
         random.seed(seed)
+
+        self.enable_packing_constraint = enable_packing
+
         self.max_nodes = n
         self.graph_path = graph_path
 
@@ -212,6 +215,8 @@ class CalTechMaximization(BaseTask):
         """
         ret = 0
 
+        S = list(S)
+
         for x in self.nodes:
             w = 0.
 
@@ -234,6 +239,7 @@ class CalTechMaximization(BaseTask):
         assert singleton < len(
             self.costs_obj), "Singleton: {}".format(singleton)
         return self.costs_obj[singleton]
+
 
 def main():
     model = RevenueMax(budget=1.0, pckl_path="dataset/revenue/25_youtube_top5000.pkl")

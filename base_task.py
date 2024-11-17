@@ -13,7 +13,7 @@ class BaseTask(ABC):
         self.costs_obj = None
         self.max_2_pair = None
 
-        self.enable_packing_constraint = True
+        self.enable_packing_constraint = False
         # cost matrix
         self.A = None
         # budget vector
@@ -63,6 +63,7 @@ class BaseTask(ABC):
     def assign_costs(self, knapsack, cost_mode):
         if self.enable_packing_constraint:
             if knapsack:
+                # print(f"cost mode:{cost_mode}")
                 if cost_mode == "normal":
                     data = []
                     for i in range(0, self.cc):
@@ -232,7 +233,7 @@ class BaseTask(ABC):
 
     def density(self, single: int, base: List[int]):
         mg = self.marginal_gain(single, base)
-        # print(f"s:{single}")
+        # print(f"s:{single}, cobjs:{self.costs_obj}")
         cost = self.costs_obj[single]
         return (mg * 100) / (cost * 100)
 

@@ -8,7 +8,7 @@ import networkx as nx
 
 
 class FacebookGraphCoverage(BaseTask):
-    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, seed = 0, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False,construct_graph = False, cost_mode="normal", graph_suffix = ""):
+    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, seed = 0, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False,construct_graph = False, cost_mode="normal", graph_suffix = "", enable_packing = False):
         """
         Inputs:
         - n: max_nodes
@@ -25,6 +25,7 @@ class FacebookGraphCoverage(BaseTask):
         self.max_nodes = n
         # self.graph: nx.Graph = self.load_graph(graph_path + "/facebook_combined.txt")
 
+        self.enable_packing_constraint = enable_packing
 
         # cost parameters
         self.graph_path = graph_path
@@ -44,7 +45,6 @@ class FacebookGraphCoverage(BaseTask):
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
             self.nodes.sort()
-            # print(f"nnn:{self.nodes[:10]}")
             self.objs = list(range(0, len(self.nodes)))
 
             self.assign_costs(knapsack, cost_mode)

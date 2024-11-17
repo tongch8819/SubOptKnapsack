@@ -29,7 +29,6 @@ def find_partition_sum(model: BaseTask, A: List, f_a: List):
     # A.sort(key=lambda x: fa[x], reverse=True)  # decreasing singleton value
     cur_sum = 0.
     for j in range(1, k + 1):
-
         # binary search 
         left, right = 0, n - 1
         while left < right:
@@ -38,7 +37,7 @@ def find_partition_sum(model: BaseTask, A: List, f_a: List):
             # f(a_i) is A[i - 1]
             f_a_i = f_a[i]
             # f(A_i) is objective( A[:i] )
-            f_A_i = f( A[:i+1] )
+            f_A_i = f(A[:i+1])
             val = f_A_i - cur_sum - f_a_i
             if val >= 0:
                 right = mid - 1
