@@ -7,16 +7,15 @@ from compute_knapsack_exp import model_factory
 import numpy as np
 
 if __name__ == "__main__":
-    task = "facebook"
-    n = 100
-    seed = 0
+    task = "adult"
+    n = 50
     budget = 0
 
     root_dir = os.path.join("./result", "archive-11")
     if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
         os.mkdir(os.path.join(root_dir, task, f"{n}"))
-    upb_function_mode = 'none'
-    for seed in range(3, 200):
+    upb_function_mode = 'm1+'
+    for seed in range(198, 200):
         for budget in range(6, 20):
             start = time.time()
 
