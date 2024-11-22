@@ -7,23 +7,28 @@ from compute_knapsack_exp import model_factory
 import numpy as np
 
 if __name__ == "__main__":
-    task = "adult"
+    task = "caltech"
     n = 50
     budget = 0
 
-    root_dir = os.path.join("./result", "archive-11")
+    root_dir = os.path.join("./result", "archive-12")
     if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
         os.mkdir(os.path.join(root_dir, task, f"{n}"))
-    upb_function_mode = 'm1+'
-    for seed in range(198, 200):
+
+    opt = 'modified'
+    upb_function_mode = 's'
+
+    for seed in range(0, 200):
         for budget in range(6, 20):
             start = time.time()
 
             model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True)
             model.bv = np.array([budget] * 4)
 
+            # print(model.A)
+
             # print(f"packing:{model.enable_packing_constraint}")
-            S, upb, w = MWU(model, upb='ub0', upb_function_mode=upb_function_mode)
+            S, upb, w = MWU(model, upb='ub0', upb_function_mode=upb_function_mode, opt_type = opt)
 
             stop = time.time()
 

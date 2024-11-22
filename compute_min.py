@@ -8,9 +8,9 @@ import numpy as np
 
 
 def compute_min_series(task):
-    seed_start = 45
-    seed_end = 200
-    n = 100
+    seed_start = 30
+    seed_end = 31
+    n = 500
     root_dir = f"./result/archive_min"
     start_value = 0.5
     num_points = 10
@@ -18,7 +18,7 @@ def compute_min_series(task):
     end_value = start_value + (num_points - 1) * interval
     values = np.linspace(start=start_value, stop=end_value, num=num_points)
 
-    upb = 'ub2'
+    upb = 'ub0'
 
     worst = math.log(n, math.e)
 
@@ -42,5 +42,5 @@ def compute_min_series(task):
     pass
 
 if __name__ == "__main__":
-    compute_min_series("adult")
+    compute_min_series("youtube")
     pass

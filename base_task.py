@@ -237,9 +237,9 @@ class BaseTask(ABC):
         cost = self.costs_obj[single]
         return (mg * 100) / (cost * 100)
 
-    def density_A(self, single: int, base: List[int]):
+    def density_A(self, single: int, base: List[int], c_idx: int):
         mg = self.marginal_gain(single, base)
-        cost = self.costs_obj[single]
+        cost = self.A[c_idx, single]
         return (mg * 100) / (cost * 100)
 
     # def cutout_marginal_gain(self, singleton: int, base: Set[int]):

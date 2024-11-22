@@ -71,15 +71,15 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
             else:
                 density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
                 cur_cost = cur_cost + x/density
-                # print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}")
+                print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}, bv:{f_s({t[idx]})},{model.cost_of_singleton(t[idx])}")
                 break
             idx = idx + 1
 
-        # print(f"?:{cur_cost}")
+        print(f"?:{cur_cost}")
         return cur_cost
 
     delta = H_plus(model.value - bv)
-    # print(f"d:{delta}")
+    print(f"d:{delta}")
 
     return delta, parameters
 
@@ -169,6 +169,7 @@ def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTas
             endpoints_plus.append(ept)
 
     csc_inside, ele_inside = inside_cumsum_costs()
+
 
     endpoints_minus = csc_inside[:bisect.bisect_right(csc_inside, cost_baseset)]
     endpoints_minus = [x + minimal_budget for x in endpoints_minus]

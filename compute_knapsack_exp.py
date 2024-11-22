@@ -23,9 +23,9 @@ import os
 import multiprocessing as mp
 import argparse
 
-cost_mode = "integer"
+cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub7m"]
+upper_bounds = ["ub7"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -192,9 +192,9 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode = False):
-    n = 1000
+    n = 500
     seed_interval = 1
-    start_seed = 151
+    start_seed = 0
     end_seed = 200
     count_0 = 0
     count_t = 0
@@ -203,7 +203,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
+        num_points = 15
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
