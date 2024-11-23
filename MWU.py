@@ -20,6 +20,8 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
     opt = None
     if opt_type == 'modified':
         opt = PackingModifiedOptimizer()
+    elif opt_type == 'normal':
+        opt = PackingOptimizer()
 
     opt.setModel(model)
     opt.permutation_mode = 'none'

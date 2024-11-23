@@ -15,8 +15,10 @@ if __name__ == "__main__":
     if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
         os.mkdir(os.path.join(root_dir, task, f"{n}"))
 
-    opt = 'modified'
-    upb_function_mode = 's'
+    upb_suffix = '0'
+
+    opt = 'normal'
+    upb_function_mode = 'none'
 
     for seed in range(0, 200):
         for budget in range(6, 20):
@@ -25,9 +27,6 @@ if __name__ == "__main__":
             model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True)
             model.bv = np.array([budget] * 4)
 
-            # print(model.A)
-
-            # print(f"packing:{model.enable_packing_constraint}")
             S, upb, w = MWU(model, upb='ub0', upb_function_mode=upb_function_mode, opt_type = opt)
 
             stop = time.time()
@@ -49,7 +48,7 @@ if __name__ == "__main__":
                 os.mkdir(save_dir)
 
             save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
-                "mwu", upb_function_mode, model.__class__.__name__, budget))
+                f"mwu{upb_suffix}", upb_function_mode, model.__class__.__name__, budget))
 
             with open(save_path, "wb") as wrt:
                 pickle.dump(final_res, wrt)
