@@ -39,7 +39,7 @@ def compute_min_series(task):
             # print(f"seed:{seed}/{seed_end}, value:{value}/{end_value}, ln n:{worst}")
             # print(res)
 
-            if res['AF'] > 10:
+            if res['AF'] > 20:
                 print(f"seed:{seed}/{seed_end}, value:{value}/{end_value}, ln n:{worst}")
                 print(res)
     pass
