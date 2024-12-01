@@ -1,3 +1,4 @@
+import copy
 import random
 import shlex
 from typing import Set, List
@@ -269,7 +270,10 @@ class PackingOptimizer:
     def build(self):
         # update base
         self.remaining = self.model.ground_set
-        self.b = self.model.bv
+        self.b = np.array(self.model.bv, dtype=float)
+        for c_idx in range(0, self.b.shape[0]):
+            for ele in self.base:
+                self.b[c_idx] -= self.model.A[c_idx, ele]
 
         self.base_value = self.model.objective(list(self.base))
         self.remaining = set(self.model.ground_set) - set(self.base)
@@ -303,6 +307,16 @@ class PackingOptimizer:
             self.w = -np.array(self.upb_function.w)
 
     def optimize(self):
+        valid = True
+        for b_i in self.b:
+            if b_i < 0:
+                valid = False
+        if not valid:
+            return {
+                "upb": 10000,
+                "x": np.zeros(len(self.remaining))
+            }
+
         bounds = [(0, 1) for _ in range(0, len(self.remaining))]
         # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
         w_s = np.matmul(self.S, self.w)
@@ -318,6 +332,9 @@ class PackingOptimizer:
         for i in range(0, len(x)):
             if x[i] > 0:
                 fs[i] = float(x[i])
+
+        # print(f"v1:{-np.matmul(w_s, x)}")
+        # print(f"v2:{self.base_value}")
 
         return {
             "upb": -np.matmul(w_s, x) + self.base_value + upb_base,

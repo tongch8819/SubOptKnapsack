@@ -7,28 +7,28 @@ from compute_knapsack_exp import model_factory
 import numpy as np
 
 if __name__ == "__main__":
-    task = "caltech"
-    n = 50
+    task = "facebook"
+    n = 500
     budget = 0
 
     root_dir = os.path.join("./result", "archive-14")
     if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
         os.mkdir(os.path.join(root_dir, task, f"{n}"))
 
-    upb_suffix = '2'
+    upb_suffix = '0'
 
     opt = ''
     if upb_suffix == '0':
         opt = 'normal'
     elif upb_suffix == '2':
-        opt = 'modified2'
+        opt = 'modified'
     upb_function_mode = 'none'
     Y_p = "max"
 
     constraint_count = 4
 
-    for seed in range(100, 125):
-        for budget in range(16, 30):
+    for seed in range(125, 200):
+        for budget in range(6, 20):
             start = time.time()
 
             model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True, constraint_count = constraint_count)
@@ -37,6 +37,9 @@ if __name__ == "__main__":
             S, upb, w = MWU(model, upb='ub0', upb_function_mode=upb_function_mode, opt_type = opt)
 
             stop = time.time()
+
+            af = float(model.objective(list(S)) / upb)
+            assert af <= 1.0
 
             final_res = {
                 "S": S,
