@@ -8,7 +8,7 @@ import networkx as nx
 
 
 class FacebookGraphCoverage(BaseTask):
-    def __init__(self, budget: float, n: int = None, alpha = 0.05, beta=1000, seed = 0, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False,construct_graph = False, cost_mode="normal", graph_suffix = "", enable_packing = False):
+    def __init__(self, budget: float, n: int = None, alpha=0.05, beta=1000, seed=0, graph_path: str = None, knapsack = True, prepare_max_pair = True, print_curvature=False,construct_graph = False, cost_mode="normal", graph_suffix = "", enable_packing = False, constraint_count = 4):
         """
         Inputs:
         - n: max_nodes
@@ -26,6 +26,7 @@ class FacebookGraphCoverage(BaseTask):
         # self.graph: nx.Graph = self.load_graph(graph_path + "/facebook_combined.txt")
 
         self.enable_packing_constraint = enable_packing
+        self.cc = constraint_count
 
         # cost parameters
         self.graph_path = graph_path
@@ -74,13 +75,6 @@ class FacebookGraphCoverage(BaseTask):
                 for obj in self.objs
             ]
 
-        # if prepare_max_pair:
-        #     self.prepare_max_2_pair()
-        #
-        # if print_curvature:
-        #     self.print_curvature()
-
-
     @property
     def ground_set(self):
         return self.objs
@@ -111,6 +105,8 @@ class FacebookGraphCoverage(BaseTask):
         - S: solution set
         - llambda: coefficient which lies in [0,1]
         """
+        if type(S) == int:
+            S = [S]
         neighbors = set([self.nodes[s] for s in S])
         for s in S:
             new_neighbors = set(self.graph.neighbors(str(self.nodes[s])))

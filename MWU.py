@@ -4,10 +4,10 @@ import random
 import numpy as np
 
 from base_task import BaseTask
-from optimizer import PackingOptimizer, UpperBoundFunction
+from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer
 
 
-def MWU(model: BaseTask, upb=None, upb_function_mode='m1+'):
+def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
     S = set()
     n = len(model.ground_set)
     R = set(model.ground_set)
@@ -17,15 +17,24 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+'):
     m = A.shape[0]
     w = np.zeros(m)
 
-    opt = PackingOptimizer()
+    opt = None
+    if opt_type == 'modified':
+        opt = PackingModifiedOptimizer()
+    elif opt_type == 'modified2':
+        opt = PackingModified2Optimizer()
+    elif opt_type == 'normal':
+        opt = PackingOptimizer()
+
     opt.setModel(model)
     opt.permutation_mode = 'none'
 
     if upb_function_mode == 'none':
-        opt.upb_function = None
+        pass
     else:
         upb_function = UpperBoundFunction(model.objective, model.ground_set)
-        upb_function.setY(random.sample(model.ground_set, int(n/10)))
+        t = list(model.ground_set)
+        t.sort(key=model.objective)
+        upb_function.setY(t[:int(n/10)])
         upb_function.setType(upb_function_mode)
         upb_function.build()
         opt.upb_function = upb_function
@@ -85,6 +94,7 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+'):
         # print(f"forwarding...{S}")
         if upb == 'ub0':
             opt.setBase(S)
+            opt.build()
             temp = opt.optimize()['upb']
             if upper_bound_value > temp:
                 upper_bound_value = temp

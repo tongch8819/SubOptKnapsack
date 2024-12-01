@@ -12,7 +12,7 @@ import networkx as nx
 
 class AdultIncomeFeatureSelection(BaseTask):
     def __init__(self, budget: float, n: int = None, data_path: str = None, knapsack=True, seed = 0,
-                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix="", enable_packing = False):
+                 prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix="", enable_packing = False, constraint_count = 4):
         """
         Inputs:
         - n: max_nodes
@@ -25,6 +25,7 @@ class AdultIncomeFeatureSelection(BaseTask):
         random.seed(seed)
 
         self.enable_packing_constraint = enable_packing
+        self.cc = constraint_count
 
         self.samples = []
 
@@ -140,6 +141,8 @@ class AdultIncomeFeatureSelection(BaseTask):
         # S = list(S)
 
         # modification for A
+        if type(S) == int:
+            S = [S]
         S = [self.index_mapping[i] for i in S]
 
         if len(S) == 0:

@@ -8,8 +8,8 @@ import numpy as np
 
 
 def compute_min_series(task):
-    seed_start = 45
-    seed_end = 200
+    seed_start = 30
+    seed_end = 31
     n = 500
     root_dir = f"./result/archive_min"
     start_value = 0.5
@@ -36,12 +36,9 @@ def compute_min_series(task):
             save_path = os.path.join(save_dir, "{}-{}-{:.2f}-{}.pckl".format(upb, model.__class__.__name__, value, seed))
             with open(save_path, "wb") as wrt:
                 pickle.dump(res, wrt)
-            # print(f"seed:{seed}/{seed_end}, value:{value}/{end_value}, ln n:{worst}")
-            # print(res)
+            print(f"seed:{seed}/{seed_end}, value:{value}/{end_value}, ln n:{worst}")
+            print(res)
 
-            if res['AF'] > 20:
-                print(f"seed:{seed}/{seed_end}, value:{value}/{end_value}, ln n:{worst}")
-                print(res)
     pass
 
 if __name__ == "__main__":
