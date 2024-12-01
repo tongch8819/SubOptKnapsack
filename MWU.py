@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 from base_task import BaseTask
-from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer
+from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer
 
 
 def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
@@ -20,6 +20,8 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
     opt = None
     if opt_type == 'modified':
         opt = PackingModifiedOptimizer()
+    elif opt_type == 'modified2':
+        opt = PackingModified2Optimizer()
     elif opt_type == 'normal':
         opt = PackingOptimizer()
 
@@ -30,7 +32,9 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
         pass
     else:
         upb_function = UpperBoundFunction(model.objective, model.ground_set)
-        upb_function.setY(random.sample(model.ground_set, int(n/10)))
+        t = list(model.ground_set)
+        t.sort(key=model.objective)
+        upb_function.setY(t[:int(n/10)])
         upb_function.setType(upb_function_mode)
         upb_function.build()
         opt.upb_function = upb_function

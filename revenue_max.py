@@ -92,7 +92,7 @@ class RevenueMax(BaseTask):
 
 class CalTechMaximization(BaseTask):
     def __init__(self, budget: float, n: int = None, graph_path: str = None, knapsack=True, seed = 0,
-                 prepare_max_pair=True, print_curvature=False, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode = "normal", graph_suffix = "", enable_packing = False):
+                 prepare_max_pair=True, print_curvature=False, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode = "normal", graph_suffix = "", enable_packing = False, constraint_count = 4):
         """
         Inputs:
         - n: max_nodes
@@ -105,6 +105,7 @@ class CalTechMaximization(BaseTask):
         random.seed(seed)
 
         self.enable_packing_constraint = enable_packing
+        self.cc = constraint_count
 
         self.max_nodes = n
         self.graph_path = graph_path
@@ -213,6 +214,9 @@ class CalTechMaximization(BaseTask):
         - S: solution set
         - llambda: coefficient which lies in [0,1]
         """
+        if type(S) == int:
+            S = [S]
+
         ret = 0
 
         S = list(S)

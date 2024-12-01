@@ -25,7 +25,7 @@ import argparse
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub7"]
+upper_bounds = ["ub1"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -195,7 +195,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
     n = 500
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 10
     count_0 = 0
     count_t = 0
 
@@ -203,8 +203,8 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 6
+        num_points = 1
+        start_point = 10
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -868,20 +868,20 @@ def compute_mp1_V(task:str, n):
             print(res)
 
 
-def model_factory(task:str, n, seed, budget, knap = True, cm = cost_mode, enable_packing = False) -> BaseTask:
+def model_factory(task:str, n, seed, budget, knap = True, cm = cost_mode, enable_packing = False, constraint_count = 4) -> BaseTask:
     model = None
     if task == "adult":
-        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=knap, cost_mode=cm, construct_graph=True, enable_packing=enable_packing)
+        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=knap, cost_mode=cm, construct_graph=True, enable_packing=enable_packing, constraint_count=constraint_count)
     elif task == "caltech":
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=knap, prepare_max_pair=False,
-                                    cost_mode=cm, print_curvature=False, construct_graph=True, enable_packing=enable_packing)
+                                    cost_mode=cm, print_curvature=False, construct_graph=True, enable_packing=enable_packing, constraint_count=constraint_count)
     elif task == "facebook":
         model = FacebookGraphCoverage(
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knap, prepare_max_pair=False,
-            print_curvature=False, cost_mode=cm, construct_graph=True, enable_packing=enable_packing)
+            print_curvature=False, cost_mode=cm, construct_graph=True, enable_packing=enable_packing, constraint_count = constraint_count)
     elif task == "youtube":
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knap, cost_mode=cm,
-                                prepare_max_pair=False, print_curvature=False, construct_graph=True, enable_packing=enable_packing)
+                                prepare_max_pair=False, print_curvature=False, construct_graph=True, enable_packing=enable_packing, constraint_count = constraint_count)
 
     model.budget = budget
 

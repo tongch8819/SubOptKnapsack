@@ -11,21 +11,28 @@ if __name__ == "__main__":
     n = 50
     budget = 0
 
-    root_dir = os.path.join("./result", "archive-12")
+    root_dir = os.path.join("./result", "archive-14")
     if not os.path.exists(os.path.join(root_dir, task, f"{n}")):
         os.mkdir(os.path.join(root_dir, task, f"{n}"))
 
-    upb_suffix = '0'
+    upb_suffix = '2'
 
-    opt = 'normal'
+    opt = ''
+    if upb_suffix == '0':
+        opt = 'normal'
+    elif upb_suffix == '2':
+        opt = 'modified2'
     upb_function_mode = 'none'
+    Y_p = "max"
 
-    for seed in range(0, 200):
-        for budget in range(6, 20):
+    constraint_count = 4
+
+    for seed in range(100, 125):
+        for budget in range(16, 30):
             start = time.time()
 
-            model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True)
-            model.bv = np.array([budget] * 4)
+            model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True, constraint_count = constraint_count)
+            model.bv = np.array([budget] * constraint_count)
 
             S, upb, w = MWU(model, upb='ub0', upb_function_mode=upb_function_mode, opt_type = opt)
 
@@ -47,8 +54,8 @@ if __name__ == "__main__":
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
 
-            save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
-                f"mwu{upb_suffix}", upb_function_mode, model.__class__.__name__, budget))
+            save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}-{}.pckl".format(
+                f"mwu{upb_suffix}", upb_function_mode, model.__class__.__name__, budget, Y_p))
 
             with open(save_path, "wb") as wrt:
                 pickle.dump(final_res, wrt)

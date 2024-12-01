@@ -19,13 +19,17 @@ def test():
         for budget in range(6, 7):
             start = time.time()
 
-            model = model_factory("facebook", 500, seed, budget, cm="normal", knap=True)
+            model = model_factory("facebook", 500, seed, budget, cm="normal", knap=True, enable_packing=True, constraint_count=1)
 
-            opt: optimizer.Optimizer = optimizer.Optimizer().set_model(model)
+            opt: optimizer.PackingModified2Optimizer = optimizer.PackingModified2Optimizer()
 
+            opt.setModel(model)
+
+
+            opt.build()
             # opt.permutation_max()
 
-            opt.permutation_random(seed = seed)
+            # opt.permutation_random(seed = seed)
 
             res_opt = opt.optimize()
 
