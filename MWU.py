@@ -4,7 +4,8 @@ import random
 import numpy as np
 
 from base_task import BaseTask
-from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer
+from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer, \
+    PackingModified1Optimizer, MultilinearOptimizer
 
 
 def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
@@ -20,10 +21,14 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
     opt = None
     if opt_type == 'modified':
         opt = PackingModifiedOptimizer()
+    elif opt_type == 'modified1':
+        opt = PackingModified1Optimizer()
     elif opt_type == 'modified2':
         opt = PackingModified2Optimizer()
     elif opt_type == 'normal':
         opt = PackingOptimizer()
+    elif opt_type == 'multilinear':
+        opt = MultilinearOptimizer()
 
     opt.setModel(model)
     opt.permutation_mode = 'none'

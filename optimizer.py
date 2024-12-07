@@ -1,4 +1,5 @@
 import copy
+import math
 import random
 import shlex
 from typing import Set, List
@@ -215,15 +216,150 @@ class PackingOptimizer:
         self.base_value = self.model.objective(list(base))
         return self
 
-        # self.remaining = set(self.model.ground_set) - set(self.base)
-        # self.A = self.model.A[:, list(self.remaining)]
-        #
-        # self.S = np.identity(len(self.remaining))
-        # self.diag_s = [0] * len(self.remaining)
-        #
-        # self.w = np.array([
-        #     -self.f_s([x]) for x in self.remaining
-        # ])
+    def setModel(self, model: BaseTask):
+        self.model = model
+        self.remaining = self.model.ground_set
+        self.A = model.A
+        self.b = model.bv
+
+        self.S = np.identity(len(self.remaining))
+
+        self.w = np.array([
+            -model.objective([x]) for x in self.model.ground_set
+        ])
+        return self
+
+    def sample(self, n):
+        return random.sample(self.remaining, n)
+
+    def permutation_max(self):
+        diag_s = [0] * len(self.remaining)
+        t = self.remaining
+        t.sort(key=lambda x: self.model.density(x, list(self.base)), reverse=True)
+
+        for i in range(0, len(t)):
+            ele = t[i]
+            diag_s[ele] = self.model.marginal_gain(ele, list(set(t[:i]) | self.base)) / self.f_s([ele])
+
+        self.S = np.diag(diag_s)
+        self.diag_s = diag_s
+
+    def permutation_random(self, seed):
+        diag_s = [0] * len(self.model.ground_set)
+
+        random.seed(seed)
+        t = self.model.ground_set
+        random.shuffle(t)
+
+        for i in range(0, len(t)):
+            ele = t[i]
+            diag_s[ele] = self.model.marginal_gain(ele, t[:i]) / self.model.objective([ele])
+
+        self.S = np.diag(diag_s)
+        self.diag_s = diag_s
+
+    def build(self):
+        # update base
+        self.remaining = self.model.ground_set
+        self.b = np.array(self.model.bv, dtype=float)
+        # for c_idx in range(0, self.b.shape[0]):
+        #     for ele in self.base:
+        #         self.b[c_idx] -= self.model.A[c_idx, ele]
+
+        self.base_value = self.model.objective(list(self.base))
+        self.remaining = set(self.model.ground_set) - set(self.base)
+        self.A = self.model.A[:, list(self.remaining)]
+
+        if self.permutation_mode == 'none':
+            self.S = np.identity(len(self.remaining))
+            self.diag_s = [0] * len(self.remaining)
+        elif self.permutation_mode == 'max':
+            # update permutation
+            diag_s = [0] * len(self.remaining)
+            t = list(self.remaining)
+            t.sort(key=lambda x: self.model.density(x, list(self.base)), reverse=True)
+
+            for i in range(0, len(t)):
+                ele = t[i]
+                diag_s[ele] = self.model.marginal_gain(ele, list(set(t[:i]) | self.base)) / self.f_s([ele])
+
+            self.S = np.diag(diag_s)
+            self.diag_s = diag_s
+        if self.upb_function == None:
+            self.w = np.array([
+                -self.f_s([x]) for x in self.remaining
+            ])
+        else:
+            self.upb_function.setY(set(self.upb_function.Y) & set(self.remaining))
+            self.upb_function.setF(self.f_s)
+            self.upb_function.setGround(self.remaining)
+            self.upb_function.build()
+
+            self.w = -np.array(self.upb_function.w)
+
+    def optimize(self):
+        valid = True
+        for b_i in self.b:
+            if b_i < 0:
+                valid = False
+        if not valid:
+            return {
+                "upb": 10000,
+                "x": np.zeros(len(self.remaining))
+            }
+
+        bounds = [(0, 1) for _ in range(0, len(self.remaining))]
+        # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
+        w_s = np.matmul(self.S, self.w)
+        A_s = np.matmul(self.A, self.S)
+
+        upb_base = 0.
+        if self.upb_function is not None:
+            upb_base = self.upb_function.base_value
+
+        x = scipy.optimize.linprog(c=w_s, A_ub=A_s, b_ub=self.b, bounds=bounds).x
+
+        fs = {}
+        for i in range(0, len(x)):
+            if x[i] > 0:
+                fs[i] = float(x[i])
+
+        # print(f"v1:{-np.matmul(w_s, x)}")
+        # print(f"v2:{self.base_value}")
+
+        return {
+            "upb": -np.matmul(w_s, x) + self.base_value + upb_base,
+            "x": fs
+        }
+
+class PackingModified1Optimizer:
+    def __init__(self):
+        self.A = None
+        self.b = None
+        self.S = None
+        self.model: BaseTask = None
+
+        self.permutation_mode = 'max'
+
+        self.w = None
+        self.diag_s = None
+        self.base = set()
+        self.base_value = 0
+        self.remaining = None
+
+        self.upb_function = None
+
+    def budget(self, b):
+        self.b = b
+        return self
+
+    def f_s(self, s):
+        return self.model.objective(list(set(s) | self.base)) - self.base_value
+
+    def setBase(self, base):
+        self.base = set(base)
+        self.base_value = self.model.objective(list(base))
+        return self
 
     def setModel(self, model: BaseTask):
         self.model = model
@@ -341,7 +477,6 @@ class PackingOptimizer:
             "x": fs
         }
 
-
 class PackingModifiedOptimizer:
     def __init__(self):
         self.A = None
@@ -410,7 +545,6 @@ class PackingModifiedOptimizer:
 
     def optimize(self):
         # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
-
         m = len(self.bv)
         n = len(self.remaining)
         bounds = []
@@ -654,13 +788,11 @@ class PackingModified2Optimizer:
         # update base
         self.remaining = list(set(self.model.ground_set) - set(self.base))
         self.bv = self.model.bv
-        # update d and fA
-        m = len(self.bv)
         n = len(self.remaining)
 
         self.base_value = self.model.objective(list(self.base))
         self.remaining = list(set(self.model.ground_set) - set(self.base))
-        self.remaining.sort(key=self.f_s, reverse=True)
+        # self.remaining.sort(key=self.f_s, reverse=True)
 
         self.fA = np.zeros(n)
         for e_idx in range(0, n):
@@ -670,7 +802,6 @@ class PackingModified2Optimizer:
 
     def optimize(self):
         # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
-
         m = len(self.bv)
         n = len(self.remaining)
         bounds = []
@@ -729,82 +860,6 @@ class PackingModified2Optimizer:
 
         x = scipy.optimize.linprog(c=w, A_ub=A, b_ub=b, bounds=bounds).x
 
-        # print(f"x:{x}")
-        # print(f"d:{self.d}")
-        # print(f"A:{self.fA}")
-        # # print(f"bv:{self.model.bv}")
-        # # print(f"total budget:{np.sum(x[n: 2*n])}")
-        # print(f"r:{self.remaining}")
-        # print(f"base:{self.base}, base v:{self.base_value}")
-        # print(f"l1:{-np.matmul(w, x)}")
-        # print(f"l2:{-np.matmul(w, x)+ self.base_value}")
-
-
-        # second phase
-        vti_dict = {}
-        remaining_plus = self.remaining
-        for e_idx in range(0, n):
-            vti_dict[remaining_plus[e_idx]] = e_idx
-
-        remaining_plus = list(set(self.model.ground_set) - set(self.base))
-        remaining_plus.sort(key=lambda ele: x[vti_dict[ele]], reverse=True)
-
-        # print(f"re:{remaining_plus}, v:{[x[vti_dict[ele]] for ele in remaining_plus]}")
-
-        fA_plus = np.zeros(n)
-        for e_idx in range(0, n):
-            fA_plus[e_idx] = self.f_s(remaining_plus[:e_idx + 1])
-
-        self.A_plus = self.model.A[:, list(remaining_plus)]
-
-        # vector d
-        # vector A
-        # vector b
-
-        # the constraint matrix should be in shape (mn + n) * (n + m * n + 1)
-        A = np.zeros(shape=(m + 2 * n, 2 * n + 1))
-        b = np.zeros(shape=(m + 2 * n, 1))
-        # the vector to optimize is in the form of (v_1, v_2, ..., v_n, s^1_1, s^1_2, ..., s^1_n, ..., s^m_1, s^m_2, ..., s^m_n 1)
-
-        # the additive bit
-        additive_idx = 2 * n
-
-        # condition (ii)
-        # this type of constraints occupies the first m rows
-        for c_idx in range(0, m):
-            for e_idx in range(0, n):
-                # print(f"c:{c_idx}, e:{e_idx}, A:{self.A[c_idx, e_idx]}")
-                A[c_idx, e_idx + n] = self.A_plus[c_idx, e_idx]
-                A[c_idx, additive_idx] = -self.model.bv[c_idx]
-
-        # condition (iii)
-        # this type of constraints occupies the following n rows
-
-        for e_idx in range(0, n):
-            # row of this constraint in A
-            r = e_idx + m
-            # v_i
-            A[r, e_idx] = 1
-            # s_i
-            A[r, e_idx + n] = -self.f_s({remaining_plus[e_idx]})
-
-        # condition (iv)
-        # this type of constraints occupies the following n rows
-
-        start_row = m + n
-        for c_iii_offset in range(0, n):
-            r = start_row + c_iii_offset
-            for v_idx in range(0, c_iii_offset + 1):
-                A[r, v_idx] = 1
-            A[r][additive_idx] = -fA_plus[c_iii_offset]
-        # print(f"A:{A}")
-
-        x = scipy.optimize.linprog(c=w, A_ub=A, b_ub=b, bounds=bounds).x
-
-        # print(f"x plus:{x}")
-        # print(f"fA plus:{fA_plus}")
-        # print(f"single plus:{[self.f_s(ele) for ele in remaining_plus]}")
-
         fs = {}
         for i in range(0, len(x)):
             if x[i] > 0:
@@ -814,3 +869,203 @@ class PackingModified2Optimizer:
             "upb": -np.matmul(w, x) + self.base_value,
             "x": fs
         }
+
+        # print(f"x:{x}")
+        # print(f"d:{self.d}")
+        # print(f"A:{self.fA}")
+        # # print(f"bv:{self.model.bv}")
+        # # print(f"total budget:{np.sum(x[n: 2*n])}")
+        # print(f"r:{self.remaining}")
+        # print(f"base:{self.base}, base v:{self.base_value}")
+        # print(f"l1:{-np.matmul(w, x)+ self.base_value}")
+
+        # second phase
+        # vti_dict = {}
+        # remaining_plus = self.remaining
+        # for e_idx in range(0, n):
+        #     vti_dict[remaining_plus[e_idx]] = e_idx
+        #
+        # remaining_plus = list(set(self.model.ground_set) - set(self.base))
+        # remaining_plus.sort(key=lambda ele: x[vti_dict[ele]], reverse=True)
+        # # print(f"r:{self.remaining[:10]}, r1:{remaining_plus[:10]}")
+        #
+        # # print(f"re:{remaining_plus}, v:{[x[vti_dict[ele]] for ele in remaining_plus]}")
+        #
+        # fA_plus = np.zeros(n)
+        # for e_idx in range(0, n):
+        #     fA_plus[e_idx] = self.f_s(remaining_plus[:e_idx + 1])
+        #
+        # self.A_plus = self.model.A[:, list(remaining_plus)]
+        #
+        # # vector d
+        # # vector A
+        # # vector b
+        #
+        # # the constraint matrix should be in shape (mn + n) * (n + m * n + 1)
+        # A = np.zeros(shape=(m + 2 * n, 2 * n + 1))
+        # b = np.zeros(shape=(m + 2 * n, 1))
+        # # the vector to optimize is in the form of (v_1, v_2, ..., v_n, s^1_1, s^1_2, ..., s^1_n, ..., s^m_1, s^m_2, ..., s^m_n 1)
+        #
+        # # the additive bit
+        # additive_idx = 2 * n
+        #
+        # # condition (ii)
+        # # this type of constraints occupies the first m rows
+        # for c_idx in range(0, m):
+        #     for e_idx in range(0, n):
+        #         # print(f"c:{c_idx}, e:{e_idx}, A:{self.A[c_idx, e_idx]}")
+        #         A[c_idx, e_idx + n] = self.A_plus[c_idx, e_idx]
+        #         A[c_idx, additive_idx] = -self.model.bv[c_idx]
+        #
+        # # condition (iii)
+        # # this type of constraints occupies the following n rows
+        #
+        # for e_idx in range(0, n):
+        #     # row of this constraint in A
+        #     r = e_idx + m
+        #     # v_i
+        #     A[r, e_idx] = 1
+        #     # s_i
+        #     A[r, e_idx + n] = -self.f_s({remaining_plus[e_idx]})
+        #
+        # # condition (iv)
+        # # this type of constraints occupies the following n rows
+        #
+        # start_row = m + n
+        # for c_iii_offset in range(0, n):
+        #     r = start_row + c_iii_offset
+        #     for v_idx in range(0, c_iii_offset + 1):
+        #         A[r, v_idx] = 1
+        #     A[r][additive_idx] = -fA_plus[c_iii_offset]
+        # # print(f"A:{A}")
+        #
+        # x = scipy.optimize.linprog(c=w, A_ub=A, b_ub=b, bounds=bounds).x
+        #
+        # # print(f"x plus:{x}")
+        # # print(f"fA plus:{fA_plus}")
+        # # print(f"single plus:{[self.f_s(ele) for ele in remaining_plus]}")
+        # # print(f"l2:{-np.matmul(w, x)+ self.base_value}")
+        #
+        # fs = {}
+        # for i in range(0, len(x)):
+        #     if x[i] > 0:
+        #         fs[i] = float(x[i])
+        #
+        # return {
+        #     "upb": -np.matmul(w, x) + self.base_value,
+        #     "x": fs
+        # }
+
+
+
+
+class MultilinearOptimizer:
+    def __init__(self):
+        self.eps = 0.1
+        self.alpha = 0.8
+        self.sample_count = 0
+
+        self.model = None
+        self.n = 0
+
+        # start point
+        self.a = None
+        self.base = None
+        pass
+
+    def F(self, x):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            s = []
+            for i in range(0, self.n):
+                if random.random() < x[i]:
+                    s.append(i)
+
+            value = self.model.objective(s)
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def partial_derivative(self, x, i):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            ground = list(set(self.model.ground_set) - {i})
+            s = []
+            for j in ground:
+                if random.random() < x[j]:
+                    s.append(j)
+
+            value = self.model.objective(list(set(s) | {i})) - self.model.objective(s)
+            # for j in s:
+            #     value = value * x[j]
+            # for j in set(ground) - set(s):
+            #     value = value * (1 - x[j])
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def gradient(self, x):
+        g = np.zeros(x.shape)
+        n = x.shape[0]
+        for i in range(0, n):
+            g[i] = self.partial_derivative(x=x, i=i)
+        return g
+
+    def evaluate_sample_count(self):
+        nominator = 4 * math.log(1.0/(1-self.alpha), math.e)
+        denominator = math.pow(self.eps, 2)
+        return math.ceil(nominator/denominator)
+
+    def setModel(self, model):
+        self.model = model
+        self.n = len(model.ground_set)
+        self.a = np.zeros(self.n)
+        self.base = []
+
+    def setBase(self, base):
+        self.a = np.zeros(self.n)
+        for i in base:
+            self.a[i] = 1.0
+        self.base = base
+
+    def build(self):
+        self.sample_count = 100 #self.evaluate_sample_count()
+
+    def optimize(self):
+        # here we optimize x - a rather than x
+        # thus the constraint should be A(x-a) <= b - Aa
+
+        # build w
+        # print(f"ground:{self.F(self.a)}, f:{self.model.objective(self.base)}, base:{self.base}")
+        w = self.gradient(self.a)
+        for i in range(0, self.n):
+            w[i] = -w[i]
+
+        bounds = np.array([(0, 1)] * self.n)
+
+        # build A
+        A = self.model.A
+
+        # build b
+        item1 = np.array(self.model.bv)
+        item2 = np.matmul(A, self.a)
+        b = item1 - item2
+
+        # print(f"b:{b}")
+        for i in range(0, b.shape[1]):
+            if b[0, i] < 0:
+                return {
+                    "upb": 10000,
+                    "x": {}
+                }
+
+        x = scipy.optimize.linprog(c=w, A_ub=A, b_ub=b, bounds=bounds).x
+
+        fs = {}
+        for i in range(0, len(x)):
+            if x[i] > 0:
+                fs[i] = float(x[i])
+
+        return {
+            "upb": -np.matmul(w, x) + self.F(self.a),
+            "x": fs
+        }
+        pass
