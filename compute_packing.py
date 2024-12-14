@@ -8,14 +8,16 @@ from compute_knapsack_exp import model_factory
 import numpy as np
 
 if __name__ == "__main__":
-    task = "caltech"
-    n = 50
-    budget = 0
-
     parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--task', default='facebook', help='task to test')
+    parser.add_argument("-n",'--num', default=50, help='size of the ground set')
     parser.add_argument("-o", "--opt", default='normal', help="optimizer")
     parser.add_argument("-a", "--archive", default=15, help="archive index")
     args = parser.parse_args()
+
+    task = args.task
+    n = args.num
+    budget = 0
 
     root_dir = os.path.join("./result", f"archive-{args.archive}")
 
@@ -26,7 +28,7 @@ if __name__ == "__main__":
 
     opt = args.opt
 
-    assert opt in ['normal', 'modified1', 'modified2', 'multilinear']
+    assert opt in ['normal', 'modified1', 'modified2', 'multilinear', 'multilinear2']
 
     # if upb_suffix == '0':
     #     opt = 'normal'
@@ -39,7 +41,7 @@ if __name__ == "__main__":
     constraint_count = 4
 
     for seed in range(0, 50):
-        for budget in range(20, 25):
+        for budget in range(16, 20):
             start = time.time()
 
             model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True, constraint_count = constraint_count)
@@ -50,7 +52,6 @@ if __name__ == "__main__":
             stop = time.time()
 
             af = float(model.objective(list(S)) / upb)
-            print(f"af:{af}")
             # assert af <= 1.0
 
             final_res = {
@@ -70,7 +71,7 @@ if __name__ == "__main__":
                 os.mkdir(save_dir)
 
             save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}-{}.pckl".format(
-                f"mwu{upb_suffix}", opt, model.__class__.__name__, budget, Y_p))
+                f"mwu", opt, model.__class__.__name__, budget, Y_p))
 
             with open(save_path, "wb") as wrt:
                 pickle.dump(final_res, wrt)

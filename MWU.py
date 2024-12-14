@@ -5,7 +5,7 @@ import numpy as np
 
 from base_task import BaseTask
 from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer, \
-    PackingModified1Optimizer, MultilinearOptimizer
+    PackingModified1Optimizer, MultilinearOptimizer, MultilinearOptimizer2
 
 
 def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
@@ -29,6 +29,8 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
         opt = PackingOptimizer()
     elif opt_type == 'multilinear':
         opt = MultilinearOptimizer()
+    elif opt_type == 'multilinear2':
+        opt = MultilinearOptimizer2()
 
     opt.setModel(model)
     opt.permutation_mode = 'none'

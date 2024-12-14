@@ -332,6 +332,7 @@ class PackingOptimizer:
             "x": fs
         }
 
+
 class PackingModified1Optimizer:
     def __init__(self):
         self.A = None
@@ -476,6 +477,7 @@ class PackingModified1Optimizer:
             "upb": -np.matmul(w_s, x) + self.base_value + upb_base,
             "x": fs
         }
+
 
 class PackingModifiedOptimizer:
     def __init__(self):
@@ -957,8 +959,6 @@ class PackingModified2Optimizer:
         # }
 
 
-
-
 class MultilinearOptimizer:
     def __init__(self):
         self.eps = 0.1
@@ -1010,9 +1010,9 @@ class MultilinearOptimizer:
         return g
 
     def evaluate_sample_count(self):
-        nominator = 4 * math.log(1.0/(1-self.alpha), math.e)
+        nominator = 4 * math.log(1.0 / (1 - self.alpha), math.e)
         denominator = math.pow(self.eps, 2)
-        return math.ceil(nominator/denominator)
+        return math.ceil(nominator / denominator)
 
     def setModel(self, model):
         self.model = model
@@ -1027,7 +1027,7 @@ class MultilinearOptimizer:
         self.base = base
 
     def build(self):
-        self.sample_count = 100 #self.evaluate_sample_count()
+        self.sample_count = 100  #self.evaluate_sample_count()
 
     def optimize(self):
         # here we optimize x - a rather than x
@@ -1046,7 +1046,7 @@ class MultilinearOptimizer:
 
         # build b
         item1 = np.array(self.model.bv)
-        item2 = np.matmul(A, self.a)
+        item2 = A @ self.a
         b = item1 - item2
 
         # print(f"b:{b}")
@@ -1063,9 +1063,261 @@ class MultilinearOptimizer:
         for i in range(0, len(x)):
             if x[i] > 0:
                 fs[i] = float(x[i])
-
+                # print(f"i:{i}, xi:{x[i]}")
+        base = self.F(self.a)
+        # print(f"v1:{-(w @ x)}, base:{base}, g:{w}, x:{x}, b:{A @ x}")
         return {
-            "upb": -np.matmul(w, x) + self.F(self.a),
+            "upb": -np.matmul(w, x) + base,
+            "x": fs
+        }
+        pass
+
+
+class MultilinearOptimizer2:
+    def __init__(self):
+        self.eps = 0.1
+        self.alpha = 0.8
+        self.sample_count = 0
+
+        self.model = None
+        self.n = 0
+
+        # start point
+        self.a = None
+        self.base = None
+        self.w = None
+
+        # the linear constraint
+        self.L_c = None
+        self.A = None
+        self.b = None
+
+        # the submodular constraint
+        self.remaining = None
+        self.NL_sub_c = None
+        self.base_value = 0
+        self.err = 0.01
+        pass
+
+    def F(self, x):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            s = []
+            for i in range(0, self.n):
+                if random.random() < x[i]:
+                    s.append(i)
+
+            value = self.model.objective(s)
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def partial_derivative(self, x, i):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            ground = list(set(self.model.ground_set) - {i})
+            s = []
+            for j in ground:
+                if random.random() < x[j]:
+                    s.append(j)
+
+            value = self.model.objective(list(set(s) | {i})) - self.model.objective(s)
+            # for j in s:
+            #     value = value * x[j]
+            # for j in set(ground) - set(s):
+            #     value = value * (1 - x[j])
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def gradient(self, x):
+        g = np.zeros(x.shape)
+        n = x.shape[0]
+        for i in range(0, n):
+            g[i] = self.partial_derivative(x=x, i=i)
+        return g
+
+    def evaluate_sample_count(self):
+        nominator = 4 * math.log(1.0 / (1 - self.alpha), math.e)
+        denominator = math.pow(self.eps, 2)
+        return math.ceil(nominator / denominator)
+
+    def setModel(self, model):
+        self.model = model
+        self.n = len(model.ground_set)
+        self.a = np.zeros(self.n)
+        self.base = []
+
+    def setBase(self, base):
+        self.a = np.zeros(self.n)
+        for i in base:
+            self.a[i] = 1.0
+        self.base = base
+
+    def sub_constraint(self, x):
+        ret = np.zeros(self.n)
+
+        for i in range(0, self.n):
+            y = np.zeros(self.n)
+            g_base_set = set()
+            for j in range(0, i + 1):
+                y[j] = x[j]
+                if y[j] > 0:
+                    g_base_set.add(j)
+
+            item1 = self.w @ y
+            item2 = self.model.objective(list(set(self.base) | g_base_set)) - self.base_value
+
+            ret[i] = item1 + item2
+        return ret
+
+    def sub_constraint2(self, x):
+        ret = np.zeros(self.n)
+
+        for i in range(0, self.n):
+            y = np.zeros(self.n)
+            for j in range(0, i + 1):
+                y[j] = x[j]
+
+            item1 = self.w @ y
+            item2 = 0
+            prev = self.base_value
+            g_base_set = set(self.base)
+            for j in range(0, i + 1):
+                if y[j] > 0:
+                    g_base_set = g_base_set | {j}
+                    item2 = item2 + (self.model.objective(list(g_base_set)) - prev) * y[j]
+                    prev = self.model.objective(list(g_base_set))
+            # print(f"item1:{item1}, item2:{item2}")
+            ret[i] = item1 + item2
+        return ret
+
+    def sub_constraint_i(self, x, i):
+        g_base_set = set()
+
+        y = np.zeros(self.n)
+        for j in range(0, i + 1):
+            y[j] = x[j]
+            if x[j] > 0:
+                g_base_set.add(j)
+
+        item1 = self.w @ y
+        item2 = self.model.objective(list(set(self.base) | g_base_set)) - self.base_value
+
+        # if item1 + item2 + self.err < 0:
+        #     print(f"i:{i},item1:{item1},2:{item2}, g_bas:{g_base_set}, base:{self.base}, "
+        #           f"bv:{self.base_value}, 2:{list(set(self.base) | g_base_set)},"
+        #           f"3:{self.model.objective(list(set(self.base) | g_base_set))}, "
+        #           f"y:{y},w:{self.w}")
+
+        ret = item1 + item2 + self.err
+
+        return ret
+
+    def sub_constraint_all(self, x):
+        g_base_set = set()
+        for i in range(0, self.n):
+            if x[i] > 0:
+                g_base_set.add(i)
+
+        item1 = self.F(x)
+        item2 = self.model.objective(list(set(self.base) | g_base_set)) - self.base_value
+
+        ret = item2 - item1
+
+        return ret
+
+    def linear_constraint_i(self, x, i):
+        item1 = (self.A[i] @ x)[0, 0]
+        item2 = self.b[0, i]
+        return item2 - item1
+
+    def build(self):
+        self.sample_count = 100
+        self.remaining = list(set(self.model.ground_set) - set(self.base))
+        self.base_value = self.model.objective(self.base)
+        # sub_c = np.zeros(self.n)
+        #
+        # for ele in range(0, self.n):
+        #     sub_c[ele] = self.model.marginal_gain(ele, list(set(self.base) | set(range(0, ele))))
+
+        # build A
+        self.A = self.model.A
+        item1 = np.array(self.model.bv)
+        item2 = self.A @ self.a
+        self.b = np.asarray(item1 - item2).flatten()
+        # self.L_c = scipy.optimize.LinearConstraint(A=A, lb=np.zeros(shape=(4, 1)), ub=b, keep_feasible=np.zeros(shape=(4, 1)))
+        # print(f"shape:{self.A.shape}, a:{self.a.shape}. c:{(self.A @ self.a).shape}, b:{self.b.shape}")
+        # print(f"b:{self.b}")
+        # print(f"1:{self.A[1]}, a:{self.A}")
+        # self.L_c = [
+        #     {
+        #         'type': 'ineq',
+        #         'fun': lambda x: self.linear_constraint_i(x, i),
+        #     }
+        #     for i in range(0, self.A.shape[0])
+        # ]
+        # print(f"0:{self.A.shape}, 2:{self.b.shape},3:{type(self.b)}")
+        self.L_c = [
+            scipy.optimize.LinearConstraint(A=self.A, lb=np.zeros(self.b.shape[0]), ub=self.b)
+        ]
+        # self.NL_sub_c = [
+        #     {
+        #         'type': 'ineq',
+        #         'fun': lambda x: self.sub_constraint_i(x, i),
+        #     }
+        #     for i in range(0, self.A.shape[0])
+        # ]
+        self.NL_sub_c = [
+            scipy.optimize.NonlinearConstraint(fun=self.sub_constraint, lb=np.zeros(self.n), ub=np.inf)
+        ]
+
+        # build submodualr condition
+        # err = 0.1
+
+        # for i in range(0, self.n):
+        #     b[i] = self.model.objective(list(set(self.base) | set(range(0, i + 1)))) - base_value + err
+
+        # self.NL_sub_c = scipy.optimize.NonlinearConstraint(fun=self.sub_constraint, lb=0, ub=b)
+
+    def optimize(self):
+        # here we optimize x - a rather than x
+        # thus the constraint should be A(x-a) <= b - Aa
+
+        # build w
+        # print(f"ground:{self.F(self.a)}, f:{self.model.objective(self.base)}, base:{self.base}")
+        # w = self.gradient(self.a)
+        # for i in range(0, self.n):
+        #     w[i] = -w[i]
+        self.w = self.gradient(self.a)
+        for i in range(0, self.n):
+            self.w[i] = -self.w[i]
+
+        # bounds = np.array([(0, 1)] * self.n)
+        bounds = [(0, 1)] * self.n
+        for i in self.base:
+            bounds[i] = (0, 0)
+
+        # build b
+        # print(f"b:{b}")
+        for i in range(0, self.b.shape[0]):
+            if self.b[i] < 0:
+                return {
+                    "upb": 10000,
+                    "x": {}
+                }
+
+        # print(f"start optimize")
+        x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c + self.NL_sub_c, bounds=bounds).x
+
+        fs = {}
+        for i in range(0, len(x)):
+            if x[i] > 0:
+                fs[i] = float(x[i])
+                # print(f"i:{i}, xi:{x[i]}")
+        base = self.F(self.a)
+        # print(f"lc:{self.L_c}")
+        # print(f"v1:{-(self.w @ x)}, base:{base}, w:{self.w}, x:{x}, bi:{self.b[0]}")
+        return {
+            "upb": -(self.w @ x) + base,
             "x": fs
         }
         pass

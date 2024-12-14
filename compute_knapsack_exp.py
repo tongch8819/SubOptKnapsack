@@ -936,7 +936,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-ss", default=0, help="start of seed range")
     parser.add_argument("-se", default=200, help="stop of seed range")
-    parser.add_argument("-c","--cost",default="normal", help = "cost mode")
+    parser.add_argument("-c", "--cost", default="normal", help="cost mode")
 
     args = parser.parse_args()
 
