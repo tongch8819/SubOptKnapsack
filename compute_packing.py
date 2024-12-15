@@ -41,7 +41,7 @@ if __name__ == "__main__":
     constraint_count = 4
 
     for seed in range(0, 50):
-        for budget in range(16, 20):
+        for budget in range(16, 18):
             start = time.time()
 
             model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True, constraint_count = constraint_count)
