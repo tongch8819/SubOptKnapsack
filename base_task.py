@@ -97,17 +97,23 @@ class BaseTask(ABC):
                         (0.4 + random.random()) * 4
                         for obj in self.ground_set
                     ]
+                    self.A = np.matrix([self.costs_obj])
+                    self.cc = 1
                 elif cost_mode == "integer":
                     self.costs_obj = [
                         random.randint(1, 5)
                         for obj in self.ground_set
                     ]
+                    self.A = np.matrix([self.costs_obj])
+                    self.cc = 1
             else:
                 # cardinality
                 self.costs_obj = [
                     1
                     for node in self.ground_set
                 ]
+                self.A = np.matrix([self.costs_obj])
+                self.cc = 1
             pass
 
     @property
@@ -144,8 +150,6 @@ class BaseTask(ABC):
                 prev_sin = 0.
                 if i > 0:
                     prev_sin = f({eles[i-1]})
-
-                # print(f"f(A):{f(set(eles[:i+1]))},sum:{sum},sin:{f({eles[i]})},sub:{f(set(eles[:i+1])) - prev},ele:{eles[i]}, decreased:{prev_sin - f({eles[i]})} ")
 
                 c2 += f({eles[i]})/((f(set(eles[:i+1])) - prev) * (i+1))
 

@@ -4,8 +4,9 @@ import pickle
 import time
 
 from MWU import MWU
-from compute_knapsack_exp import model_factory
 import numpy as np
+
+from model_factory import model_factory
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -30,12 +31,6 @@ if __name__ == "__main__":
 
     assert opt in ['normal', 'modified1', 'modified2', 'multilinear', 'multilinear2']
 
-    # if upb_suffix == '0':
-    #     opt = 'normal'
-    # elif upb_suffix == '1':
-    #     opt = 'modified1'
-    # elif upb_suffix == '2':
-    #     opt = 'modified2'
     Y_p = "max"
 
     constraint_count = 4

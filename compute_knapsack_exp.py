@@ -8,6 +8,7 @@ from budget_max_coverage import IdealMaxCovModel
 from dblp_graph_coverage import DblpGraphCoverage
 from facebook_graph_coverage import FacebookGraphCoverage
 from image_sum import ImageSummarization
+from model_factory import model_factory
 from movie_recommendation import MovieRecommendation
 from revenue_max import RevenueMax, CalTechMaximization
 from custom_coverage import CustomCoverage
@@ -15,17 +16,18 @@ from influence_maximization import YoutubeCoverage, CitationCoverage
 from feature_selection import AdultIncomeFeatureSelection, SensorPlacement
 from facility_location import MovieFacilityLocation
 
-from mgreedy import modified_greedy_ub1,modified_greedy_ub7, modified_greedy_ub1m, modified_greedy_ub7m
-
 import numpy as np
 import pickle
 import os
 import multiprocessing as mp
 import argparse
 
+from mgreedy import modified_greedy_ub1, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
+    modified_greedy_ub9
+
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1"]
+upper_bounds = ["ub7m", 'ub8']
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -39,6 +41,7 @@ knapsack = True
 prepare_2_pair = False
 print_curvature = True
 graph_suffix = ""
+
 
 # make qe report 2 back
 # add enlonged experiments
@@ -80,7 +83,8 @@ def compute_image_sum(root_dir, skip_mode=False):
 
     for budget in bds:
         model = ImageSummarization(
-            image_path="/home/ctong/Projects/SubOptKnapsack/dataset/image/500_cifar10_sample.npy", budget=budget, max_num=max_num)
+            image_path="/home/ctong/Projects/SubOptKnapsack/dataset/image/500_cifar10_sample.npy", budget=budget,
+            max_num=max_num)
         for up in upper_bounds:
             for algo in algos:
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
@@ -116,7 +120,8 @@ def compute_movie_recom(root_dir, skip_mode=False):
 
     for budget in bds:
         model = MovieRecommendation(
-            matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=500, knapsack=True, prepare_max_pair=False, print_curvature=False)
+            matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=500, knapsack=True,
+            prepare_max_pair=False, print_curvature=False)
         for up in upper_bounds:
             for algo in algos:
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
@@ -191,11 +196,11 @@ def compute_facebook(root_dir, skip_mode=False):
                 print("Done: ", save_path)
 
 
-def compute_facebook_series(root_dir, skip_mode = False):
+def compute_facebook_series(root_dir, skip_mode=False):
     n = 500
     seed_interval = 1
-    start_seed = 0
-    end_seed = 10
+    start_seed = 36
+    end_seed = 50
     count_0 = 0
     count_t = 0
 
@@ -203,8 +208,8 @@ def compute_facebook_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
-        start_point = 10
+        num_points = 10
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -213,7 +218,7 @@ def compute_facebook_series(root_dir, skip_mode = False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-5", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-17", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -242,11 +247,12 @@ def compute_facebook_series(root_dir, skip_mode = False):
                     print(res)
 
         stop_time = time.time()
-        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
 
 
 def compute_custom(root_dir, skip_mode=False):
-    model = CustomCoverage(budget=10, n=100, graph_path="./dataset/custom-graph/graphs/100--0.2--0.1--0.5--20", knapsack=False, prepare_max_pair=prepare_2_pair,print_curvature=print_curvature)
+    model = CustomCoverage(budget=10, n=100, graph_path="./dataset/custom-graph/graphs/100--0.2--0.1--0.5--20",
+                           knapsack=False, prepare_max_pair=prepare_2_pair, print_curvature=print_curvature)
     interval = 1
     num_points = 20
     start_point = 1
@@ -268,6 +274,7 @@ def compute_custom(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+
 def compute_revenue_max(root_dir, skip_mode=False):
     # budget = 1
     # model = RevenueMax(budget=budget, pckl_path="/home/ctong/Projects/SubOptKnapsack/dataset/revenue/25_youtube_top5000.pkl")
@@ -281,7 +288,8 @@ def compute_revenue_max(root_dir, skip_mode=False):
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
-    model = RevenueMax(budget=1.0, pckl_path="/home/ctong/Projects/SubOptKnapsack/dataset/revenue/25_youtube_top5000.pkl")
+    model = RevenueMax(budget=1.0,
+                       pckl_path="/home/ctong/Projects/SubOptKnapsack/dataset/revenue/25_youtube_top5000.pkl")
 
     for budget in bds:
         model.b = budget
@@ -298,9 +306,11 @@ def compute_revenue_max(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print("Done: ", save_path)
 
+
 def compute_youtube(root_dir, skip_mode=False):
     n = 1000
-    model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=1, knapsack=knapsack, cost_mode=cost_mode, prepare_max_pair=False,print_curvature=False, construct_graph=True)
+    model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=1, knapsack=knapsack, cost_mode=cost_mode,
+                            prepare_max_pair=False, print_curvature=False, construct_graph=True)
     interval = 1
     num_points = 10
     start_point = 20
@@ -310,8 +320,9 @@ def compute_youtube(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir,"archive-3","youtube",f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
-                    algo, up + suffix, model.__class__.__name__, budget))
+                save_path = os.path.join(os.path.join(root_dir, "archive-3", "youtube", f"{n}"),
+                                         "{}-{}-{}-{:.2f}.pckl".format(
+                                             algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
                 if skip_mode and os.path.exists(save_path):
@@ -322,11 +333,12 @@ def compute_youtube(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 50
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 100
 
     count_0 = 0
     count_t = 0
@@ -335,15 +347,15 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 10
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-5", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-17", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -371,13 +383,13 @@ def compute_youtube_series(root_dir, skip_mode=False):
                         pickle.dump(res, wrt)
                     print(res)
 
-
         stop_time = time.time()
-        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
 
 
 def compute_citation(root_dir, skip_mode=False):
-    model = CitationCoverage(0, 1000, "./dataset/cite-HepPh", knapsack=knapsack, prepare_max_pair=False, cost_mode=cost_mode)
+    model = CitationCoverage(0, 1000, "./dataset/cite-HepPh", knapsack=knapsack, prepare_max_pair=False,
+                             cost_mode=cost_mode)
     interval = 1
     num_points = 30
     start_point = 1
@@ -399,10 +411,12 @@ def compute_citation(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
+
 def compute_caltech(root_dir, skip_mode=False):
     n = 100
     s = f"-{n}"
-    model = CalTechMaximization(0, n,"./dataset/caltech",seed=21, knapsack=True, prepare_max_pair=False, cost_mode=cost_mode,print_curvature=False, graph_suffix=s, construct_graph=True)
+    model = CalTechMaximization(0, n, "./dataset/caltech", seed=21, knapsack=True, prepare_max_pair=False,
+                                cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
     interval = 1
     num_points = 1
     start_point = 15
@@ -412,8 +426,9 @@ def compute_caltech(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir, "archive-3", "caltech", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
-                    algo, up + suffix, model.__class__.__name__, budget))
+                save_path = os.path.join(os.path.join(root_dir, "archive-3", "caltech", f"{n}"),
+                                         "{}-{}-{}-{:.2f}.pckl".format(
+                                             algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
                 if skip_mode and os.path.exists(save_path):
@@ -424,11 +439,12 @@ def compute_caltech(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
-def compute_caltech_series(root_dir, skip_mode = False):
-    n = 100
+
+def compute_caltech_series(root_dir, skip_mode=False):
+    n = 50
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 100
     count_0 = 0
     count_t = 0
 
@@ -436,8 +452,8 @@ def compute_caltech_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 10
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -445,7 +461,7 @@ def compute_caltech_series(root_dir, skip_mode = False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-5", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-17", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -454,7 +470,7 @@ def compute_caltech_series(root_dir, skip_mode = False):
             for up in upper_bounds:
                 for algo in algos:
                     save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
-                                                 algo, up + suffix, model.__class__.__name__, budget))
+                        algo, up + suffix, model.__class__.__name__, budget))
                     func_call = eval(algo + "_" + up)
                     res = func_call(model)  # dict
                     if skip_mode and os.path.exists(save_path):
@@ -473,14 +489,15 @@ def compute_caltech_series(root_dir, skip_mode = False):
                         pickle.dump(res, wrt)
                     print(res)
 
-
         stop_time = time.time()
-        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
+
 
 def compute_adult(root_dir, skip_mode=False):
     n = 100
     sample_count = 100
-    model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True, construct_graph=True)
+    model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", sample_count=sample_count, knapsack=True,
+                                        construct_graph=True)
     interval = 1
     num_points = 20
     start_point = 1
@@ -490,8 +507,9 @@ def compute_adult(root_dir, skip_mode=False):
         model.budget = budget
         for up in upper_bounds:
             for algo in algos:
-                save_path = os.path.join(os.path.join(root_dir, "archive-3", "adult", f"{sample_count}", f"{n}"), "{}-{}-{}-{:.2f}.pckl".format(
-                    algo, up + suffix, model.__class__.__name__, budget))
+                save_path = os.path.join(os.path.join(root_dir, "archive-3", "adult", f"{sample_count}", f"{n}"),
+                                         "{}-{}-{}-{:.2f}.pckl".format(
+                                             algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
                 res = func_call(model)  # dict
                 if skip_mode and os.path.exists(save_path):
@@ -502,13 +520,14 @@ def compute_adult(root_dir, skip_mode=False):
                 print(res)
                 print("Done: ", save_path)
 
-def compute_adult_series(root_dir, skip_mode = False):
-    n = 100
+
+def compute_adult_series(root_dir, skip_mode=False):
+    n = 50
     sample_count = 100
 
     seed_interval = 1
-    start_seed = 0
-    end_seed = 200
+    start_seed = 1
+    end_seed = 100
     count_0 = 0
     count_t = 0
 
@@ -516,14 +535,15 @@ def compute_adult_series(root_dir, skip_mode = False):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 10
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
-        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True, construct_graph=True, cost_mode=cost_mode)
+        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True,
+                                            construct_graph=True, cost_mode=cost_mode)
 
-        save_dir = os.path.join(root_dir, "archive-5", "adult", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-17", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -532,7 +552,7 @@ def compute_adult_series(root_dir, skip_mode = False):
             for up in upper_bounds:
                 for algo in algos:
                     save_path = os.path.join(save_dir, "{}-{}-{}-{:.2f}.pckl".format(
-                                                 algo, up + suffix, model.__class__.__name__, budget))
+                        algo, up + suffix, model.__class__.__name__, budget))
                     func_call = eval(algo + "_" + up)
                     res = func_call(model)  # dict
                     if skip_mode and os.path.exists(save_path):
@@ -552,10 +572,12 @@ def compute_adult_series(root_dir, skip_mode = False):
                     print(res)
 
         stop_time = time.time()
-        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time-start_time}")
+        print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
+
 
 def compute_sensor(root_dir, skip_mode=False):
-    model = SensorPlacement(0, 100, "./dataset/berkley-sensor", knapsack=True, construct_graph=False,cost_mode=cost_mode)
+    model = SensorPlacement(0, 100, "./dataset/berkley-sensor", knapsack=True, construct_graph=False,
+                            cost_mode=cost_mode)
     interval = 1
     num_points = 23
     start_point = 1
@@ -576,6 +598,7 @@ def compute_sensor(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print(res)
                 print("Done: ", save_path)
+
 
 def compute_facility(root_dir, skip_mode=False):
     # budget = 30.0
@@ -609,6 +632,7 @@ def compute_facility(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print(res)
                 print("Done: ", save_path)
+
 
 def run_multi_custom_exps(config_path: str):
     # run custom_coverage with different n, alpha, beta, gamma
@@ -666,7 +690,7 @@ def run_multi_custom_exps(config_path: str):
 
             AF_5_time += time.time() - start_time
 
-        MDAF = (AF_5 * 100 - AF_3*100)/num_points
+        MDAF = (AF_5 * 100 - AF_3 * 100) / num_points
 
         n, alpha, beta, gamma, seed = graph_path.split("--")
 
@@ -703,6 +727,7 @@ def run_multi_custom_exps(config_path: str):
         print(res)
         print(f"Done: alpha:{alpha}, beta:{beta}, gamma:{gamma}, seed:{seed}, MDAF:{MDAF}")
 
+
 def run_multiple_exps(root_dir, skip_mode):
     result_lst = []
     sufs = ["max_cov", "image_sum", "movie_recom", "revenue_max"]
@@ -714,7 +739,7 @@ def run_multiple_exps(root_dir, skip_mode):
         [res.wait() for res in result_lst]
 
 
-def compute_mp1_empty(task:str, n):
+def compute_mp1_empty(task: str, n):
     root_dir = os.path.join("./result", "archive-6")
 
     start_seed = 0
@@ -737,14 +762,13 @@ def compute_mp1_empty(task:str, n):
             res_plain = mgreedy.modified_greedy_plain(model)
 
             model.objective_style = "mp1_empty"
-            # res_mp1 = mgreedy.modified_greedy_plain(model)
             res_mp1 = dp.dp(model)
 
             stop_time = time.time()
 
             res = {
                 "S": res_plain["S"],
-                "AF": res_plain["f(S)"]/res_mp1["f(S)"],
+                "AF": res_plain["f(S)"] / res_mp1["f(S)"],
                 "c(S)": res_plain["c(S)"],
                 "f(S)": res_plain["f(S)"],
                 "upb": res_mp1["f(S)"],
@@ -765,7 +789,8 @@ def compute_mp1_empty(task:str, n):
             print(f"seed:{seed}/{stop_seed}, budget:{budget}/{end_point}")
             print(res)
 
-def compute_mp1_S(task:str, n):
+
+def compute_mp1_S(task: str, n):
     root_dir = os.path.join("./result", "archive-7")
 
     start_seed = 0
@@ -795,7 +820,7 @@ def compute_mp1_S(task:str, n):
 
             res = {
                 "S": res_plain["S"],
-                "AF": res_plain["f(S)"]/(res_mp1["f(S)"] + model.empty_Y_value),
+                "AF": res_plain["f(S)"] / (res_mp1["f(S)"] + model.empty_Y_value),
                 "c(S)": res_plain["c(S)"],
                 "f(S)": res_plain["f(S)"],
                 "upb": (res_mp1["f(S)"] + model.empty_Y_value),
@@ -816,7 +841,8 @@ def compute_mp1_S(task:str, n):
             print(f"seed:{seed}/{stop_seed}, budget:{budget}/{end_point}")
             print(res)
 
-def compute_mp1_V(task:str, n):
+
+def compute_mp1_V(task: str, n):
     root_dir = os.path.join("./result", "archive-7")
 
     start_seed = 0
@@ -846,7 +872,7 @@ def compute_mp1_V(task:str, n):
 
             res = {
                 "S": res_plain["S"],
-                "AF": res_plain["f(S)"]/(res_mp1["f(S)"] + model.empty_Y_value),
+                "AF": res_plain["f(S)"] / (res_mp1["f(S)"] + model.empty_Y_value),
                 "c(S)": res_plain["c(S)"],
                 "f(S)": res_plain["f(S)"],
                 "upb": (res_mp1["f(S)"] + model.empty_Y_value),
@@ -868,26 +894,7 @@ def compute_mp1_V(task:str, n):
             print(res)
 
 
-def model_factory(task:str, n, seed, budget, knap = True, cm = cost_mode, enable_packing = False, constraint_count = 4) -> BaseTask:
-    model = None
-    if task == "adult":
-        model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=knap, cost_mode=cm, construct_graph=True, enable_packing=enable_packing, constraint_count=constraint_count)
-    elif task == "caltech":
-        model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=knap, prepare_max_pair=False,
-                                    cost_mode=cm, print_curvature=False, construct_graph=True, enable_packing=enable_packing, constraint_count=constraint_count)
-    elif task == "facebook":
-        model = FacebookGraphCoverage(
-            budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knap, prepare_max_pair=False,
-            print_curvature=False, cost_mode=cm, construct_graph=True, enable_packing=enable_packing, constraint_count = constraint_count)
-    elif task == "youtube":
-        model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knap, cost_mode=cm,
-                                prepare_max_pair=False, print_curvature=False, construct_graph=True, enable_packing=enable_packing, constraint_count = constraint_count)
-
-    model.budget = budget
-
-    return model
-
-def compute_matroid(task:str, n):
+def compute_matroid(task: str, n):
     root_dir = os.path.join("./result", "archive-9")
 
     start_seed = 0
@@ -1008,5 +1015,3 @@ if __name__ == "__main__":
             compute_matroid("facebook", n=n)
         if args.task_num == 4:
             compute_matroid("youtube", n=n)
-
-
