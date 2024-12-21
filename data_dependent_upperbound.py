@@ -1833,6 +1833,7 @@ def marginal_delta_version6(base_set: Set[int], remaining_set: Set[int], model: 
 
     return ub
 
+
 def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)

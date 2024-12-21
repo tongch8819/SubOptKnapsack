@@ -335,10 +335,10 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 50
+    n = 500
     seed_interval = 1
-    start_seed = 0
-    end_seed = 100
+    start_seed = 25
+    end_seed = 50
 
     count_0 = 0
     count_t = 0
