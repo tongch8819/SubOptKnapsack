@@ -19,7 +19,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
     updated = False
 
-    update_upb = False
+    update_upb = True
 
     if upb is not None:
         delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
@@ -40,6 +40,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
             cur_cost += model.cost_of_singleton(u)
             delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
             fs = model.objective(sol)
+            # print(f"d:{delta}, fs:{fs}, upb:{fs + delta}, lbd:{}")
             if lambda_capital > fs + delta and update_upb:
                 lambda_capital = fs + delta
                 parameters = p1
@@ -216,6 +217,14 @@ def modified_greedy_ub7m(model: BaseTask):
 
 def modified_greedy_ub1m(model: BaseTask):
     return modified_greedy(model, "ub1m")
+
+
+def modified_greedy_ub8(model: BaseTask):
+    return modified_greedy(model, "ub8")
+
+
+def modified_greedy_ub9(model: BaseTask):
+    return modified_greedy(model, "ub9")
 
 
 def greedy_heuristic_for_matroid(model: BaseTask, upb: str):

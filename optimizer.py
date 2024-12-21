@@ -8,7 +8,6 @@ import numpy as np
 
 from base_task import BaseTask
 from matroid import Matroid
-from compute_knapsack_exp import model_factory
 
 import scipy
 
@@ -513,7 +512,6 @@ class PackingModifiedOptimizer:
         self.remaining = self.model.ground_set
         self.A = model.A
         self.b = model.bv
-
         self.S = np.identity(len(self.remaining))
 
         self.w = np.array([
@@ -1065,8 +1063,10 @@ class MultilinearOptimizer:
                 fs[i] = float(x[i])
                 # print(f"i:{i}, xi:{x[i]}")
         base = self.F(self.a)
-        # print(f"v1:{-(w @ x)}, base:{base}, g:{w}, x:{x}, b:{A @ x}")
+
+        # print(f"item1:{item1}, item2:{item2}, b:{b}, v1:{-np.matmul(w, x)}, v2:{base}, total:{-np.matmul(w, x) + base}")
         return {
+            "delta": -np.matmul(w, x),
             "upb": -np.matmul(w, x) + base,
             "x": fs
         }
@@ -1317,6 +1317,7 @@ class MultilinearOptimizer2:
         # print(f"lc:{self.L_c}")
         # print(f"v1:{-(self.w @ x)}, base:{base}, w:{self.w}, x:{x}, bi:{self.b[0]}")
         return {
+            "delta": -(self.w @ x),
             "upb": -(self.w @ x) + base,
             "x": fs
         }

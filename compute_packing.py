@@ -4,8 +4,9 @@ import pickle
 import time
 
 from MWU import MWU, greedy_for_matroid
-from compute_knapsack_exp import model_factory
 import numpy as np
+
+from model_factory import model_factory
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

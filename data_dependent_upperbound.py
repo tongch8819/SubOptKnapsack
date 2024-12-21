@@ -6,6 +6,9 @@ from typing import Set, List
 from itertools import accumulate
 import bisect
 import numpy as np
+
+import optimizer
+
 # 改图
 # setminus
 # 证明
@@ -39,7 +42,7 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     parameters["method3"] = t1 - t0
 
     # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]}")
-
+    # print(f"1, delta:{delta}, base:{model.objective(base_set)}, total:{}")
     return delta, parameters
 
 def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
@@ -1830,6 +1833,7 @@ def marginal_delta_version6(base_set: Set[int], remaining_set: Set[int], model: 
 
     return ub
 
+
 def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -2580,6 +2584,35 @@ def marginal_delta_version7_c(base_set: Set[int], remaining_set: Set[int], model
         return 0
     return 0
 
+
+def marginal_delta_version8(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.MultilinearOptimizer()
+    model.bv = [model.budget]
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
+
+def marginal_delta_version9(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.MultilinearOptimizer2()
+    model.bv = [model.budget]
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
+
 def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
 
     remaining_set = set(model.ground_set) - set(base_set)
@@ -2614,6 +2647,10 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model)
         elif upb == 'ub7m':
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model, minus=True)
+        elif upb == 'ub8':
+            delta, parameters = marginal_delta_version8(base_set, remaining_set, model, minus=True)
+        elif upb == 'ub9':
+            delta, parameters = marginal_delta_version9(base_set, remaining_set, model, minus=True)
         else:
             raise ValueError("Unsupported Upperbound")
         return delta, parameters

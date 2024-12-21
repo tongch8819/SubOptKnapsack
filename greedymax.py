@@ -134,31 +134,48 @@ def greedy_max_ub2(model):
 def greedy_max_ub3(model):
     return greedy_max(model, "ub3")
 
+
 def greedy_max_ub4(model):
     return greedy_max(model, "ub4")
+
 
 def greedy_max_ub4c(model):
     return greedy_max(model, "ub4c")
 
+
 def greedy_max_ub4cm(model):
     return greedy_max(model, "ub4cm")
+
 
 def greedy_max_ub5(model):
     return greedy_max(model, "ub5")
 
+
 def greedy_max_ub5c(model):
     return greedy_max(model, "ub5c")
+
 
 def greedy_max_ub5p(model):
     return greedy_max(model, "ub5p")
 
+
 def greedy_max_ub6(model):
     return greedy_max(model, "ub6")
+
 
 def greedy_max_ub7(model):
     return greedy_max(model, "ub7")
 
+
 def greedy_max_ub7m(model):
     return greedy_max(model, "ub7m")
+
+
+def greedy_max_ub8(model):
+    return greedy_max(model, "ub8")
+
+
+def greedy_max_ub9(model):
+    return greedy_max(model, "ub9")
 
 
