@@ -1331,6 +1331,133 @@ class MatroidOptimizer:
 
         self.model = None
         self.n = 0
+        self.m = 0
+
+        # start point
+        self.a = None
+        self.base = None
+        self.B = None
+        self.nabla = None
+
+        self.final_weight = None
+
+        #
+        self.remaining = []
+        self.base_value = 0
+        self.addition = 0
+
+        pass
+
+    def F(self, x):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            s = []
+            for i in range(0, self.n):
+                if random.random() < x[i]:
+                    s.append(i)
+
+            value = self.model.objective(s)
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def partial_derivative(self, x, i):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            ground = list(set(self.model.ground_set) - {i})
+            s = []
+            for j in ground:
+                if random.random() < x[j]:
+                    s.append(j)
+
+            value = self.model.objective(list(set(s) | {i})) - self.model.objective(s)
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def gradient(self, x):
+        g = np.zeros(x.shape)
+        n = x.shape[0]
+        for i in range(0, n):
+            g[i] = self.partial_derivative(x=x, i=i)
+        return g
+
+    def evaluate_sample_count(self):
+        nominator = 4 * math.log(1.0 / (1 - self.alpha), math.e)
+        denominator = math.pow(self.eps, 2)
+        return math.ceil(nominator / denominator)
+
+    def setModel(self, model):
+        self.model = model
+        self.n = len(model.ground_set)
+        self.a = np.zeros(self.n)
+        self.base = []
+
+    def setBase(self, base):
+        self.a = np.zeros(self.n)
+        for i in base:
+            self.a[i] = 1.0
+        self.base = base
+
+    def build(self):
+        self.sample_count = 100
+        self.n = len(self.model.ground_set)
+
+        self.remaining = list(set(self.model.ground_set) - set(self.base))
+        self.base_value = self.model.objective(self.base)
+        # build B
+        bases = self.model.matroid.bases
+        self.m = len(bases)
+
+        self.B = np.zeros(shape=(self.n, self.m))
+        for i in range(0, self.m):
+            for j in range(0, self.n):
+                if j in bases[i]:
+                    self.B[j, i] = 1
+
+        self.nabla = self.gradient(self.a)
+        for i in range(0, self.n):
+            self.nabla[i] = -self.nabla[i]
+
+        # print(f"b:{self.B.shape}, n:{self.nabla.shape}")
+        self.final_weight = (np.transpose(self.B) @ self.nabla).reshape(1, -1)
+        self.addition = self.F(self.a) - self.nabla @ self.a
+
+    def optimize(self):
+        # here we optimize x - a rather than x
+        # thus the constraint should be A(x-a) <= b - Aa
+
+        # bounds = np.array([(0, 1)] * self.n)
+        bounds = [(0, 1)] * self.m
+
+        unit_vector = np.ones(shape=(1, self.m))
+        b = np.ones(shape=(1, 1))
+
+        # print(f"f:{type(self.final_weight)}, {unit_vector.shape}, {b.shape}")
+
+        x = scipy.optimize.linprog(c=self.final_weight, A_eq=unit_vector, b_eq=b, bounds=bounds).x
+
+        v1 = - (self.final_weight @ x)
+        v2 = self.addition
+
+        fs = {}
+        for i in range(0, len(x)):
+            if x[i] > 0:
+                fs[i] = float(x[i])
+
+        return {
+            "upb": v1 + v2,
+            "x": fs
+        }
+        pass
+
+
+class MatroidOptimizer2:
+    def __init__(self):
+        self.eps = 0.1
+        self.alpha = 0.8
+        self.sample_count = 0
+
+        self.model = None
+        self.n = 0
 
         # start point
         self.a = None

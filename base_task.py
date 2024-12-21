@@ -58,7 +58,7 @@ class BaseTask(ABC):
         pass
 
     def enable_matroid(self):
-        self.matroid = Matroid(self.ground_set, 10, 20)
+        self.matroid = Matroid(self.ground_set, 10, 10)
 
     def assign_costs(self, knapsack, cost_mode):
         if self.enable_packing_constraint:

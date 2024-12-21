@@ -3,7 +3,7 @@ import os
 import pickle
 import time
 
-from MWU import MWU
+from MWU import MWU, greedy_for_matroid
 from compute_knapsack_exp import model_factory
 import numpy as np
 
@@ -28,26 +28,26 @@ if __name__ == "__main__":
 
     opt = args.opt
 
-    assert opt in ['normal', 'modified1', 'modified2', 'multilinear', 'multilinear2']
+    assert opt in ['normal', 'modified1', 'modified2', 'multilinear', 'multilinear2', 'matroid']
 
-    # if upb_suffix == '0':
-    #     opt = 'normal'
-    # elif upb_suffix == '1':
-    #     opt = 'modified1'
-    # elif upb_suffix == '2':
-    #     opt = 'modified2'
     Y_p = "max"
 
     constraint_count = 4
 
-    for seed in range(0, 50):
-        for budget in range(16, 18):
+    for seed in range(90, 100):
+        for budget in range(16, 17):
             start = time.time()
 
-            model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True, constraint_count = constraint_count)
-            model.bv = np.array([budget] * constraint_count)
-
-            S, upb, w = MWU(model, upb='ub0', upb_function_mode='none', opt_type = opt)
+            if opt == 'matroid':
+                model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=False,
+                                      constraint_count=constraint_count)
+                model.enable_matroid()
+                S, upb, w = greedy_for_matroid(model=model, opt_type=opt)
+            else:
+                model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True,
+                                      constraint_count=constraint_count)
+                model.bv = np.array([budget] * constraint_count)
+                S, upb, w = MWU(model, upb='ub0', upb_function_mode='none', opt_type = opt)
 
             stop = time.time()
 

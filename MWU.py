@@ -5,10 +5,10 @@ import numpy as np
 
 from base_task import BaseTask
 from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer, \
-    PackingModified1Optimizer, MultilinearOptimizer, MultilinearOptimizer2
+    PackingModified1Optimizer, MultilinearOptimizer, MultilinearOptimizer2, MatroidOptimizer
 
 
-def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
+def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
     S = set()
     n = len(model.ground_set)
     R = set(model.ground_set)
@@ -41,7 +41,7 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
         upb_function = UpperBoundFunction(model.objective, model.ground_set)
         t = list(model.ground_set)
         t.sort(key=model.objective)
-        upb_function.setY(t[:int(n/10)])
+        upb_function.setY(t[:int(n / 10)])
         upb_function.setType(upb_function_mode)
         upb_function.build()
         opt.upb_function = upb_function
@@ -59,16 +59,16 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
     W = -1
     for i in range(0, A.shape[0]):
         for j in range(0, A.shape[1]):
-            t = bv[i]/A[i, j]
+            t = bv[i] / A[i, j]
             if W == -1 or t < W:
                 W = t
 
-    worst_case_guarantee = 1/(math.pow(m, 1/W))
+    worst_case_guarantee = 1 / (math.pow(m, 1 / W))
 
     update_factor = math.exp(W) * m
 
     for i in range(0, m):
-        w[i] = 1/bv[i]
+        w[i] = 1 / bv[i]
 
     final_j = -1
     while True:
@@ -117,7 +117,7 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
 
         # print(f"A:{A.shape}, m:{m}, w:{w.shape}, j:{j}, c:{A[i, j]}")
         for i in range(0, m):
-            w[i] = w[i] * math.pow(update_factor, A[i, j]/bv[i])
+            w[i] = w[i] * math.pow(update_factor, A[i, j] / bv[i])
 
     x_s = np.zeros(n)
     for ele in S:
@@ -148,7 +148,6 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type = ""):
 
 
 def MWU_gradient_steepest(model: BaseTask, upb=None, upb_function_mode='none'):
-    
     pass
 
 
@@ -170,7 +169,7 @@ def MWU_gradient_nt(model: BaseTask, upb=None, upb_function_mode='m1+'):
         opt.upb_function = None
     else:
         upb_function = UpperBoundFunction(model.objective, model.ground_set)
-        upb_function.setY(random.sample(model.ground_set, int(n/10)))
+        upb_function.setY(random.sample(model.ground_set, int(n / 10)))
         upb_function.setType(upb_function_mode)
         upb_function.build()
         opt.upb_function = upb_function
@@ -188,16 +187,16 @@ def MWU_gradient_nt(model: BaseTask, upb=None, upb_function_mode='m1+'):
     W = -1
     for i in range(0, A.shape[0]):
         for j in range(0, A.shape[1]):
-            t = bv[i]/A[i, j]
+            t = bv[i] / A[i, j]
             if W == -1 or t < W:
                 W = t
 
-    worst_case_guarantee = 1/(math.pow(m, 1/W))
+    worst_case_guarantee = 1 / (math.pow(m, 1 / W))
 
     update_factor = math.exp(W) * m
 
     for i in range(0, m):
-        w[i] = 1/bv[i]
+        w[i] = 1 / bv[i]
 
     final_j = -1
     while True:
@@ -245,7 +244,7 @@ def MWU_gradient_nt(model: BaseTask, upb=None, upb_function_mode='m1+'):
 
         # print(f"A:{A.shape}, m:{m}, w:{w.shape}, j:{j}, c:{A[i, j]}")
         for i in range(0, m):
-            w[i] = w[i] * math.pow(update_factor, A[i, j]/bv[i])
+            w[i] = w[i] * math.pow(update_factor, A[i, j] / bv[i])
 
     x_s = np.zeros(n)
     for ele in S:
@@ -274,3 +273,38 @@ def MWU_gradient_nt(model: BaseTask, upb=None, upb_function_mode='m1+'):
 
     return final_S, upper_bound_value, worst_case_guarantee
 
+
+def greedy_for_matroid(model: BaseTask, opt_type: str):
+    model.enable_matroid()
+    s = set()
+    v = set(model.ground_set)
+
+    opt = None
+    if opt_type == 'matroid':
+        opt = MatroidOptimizer()
+
+    opt.setModel(model)
+    opt.setBase({})
+    opt.build()
+    upper_bound_value = opt.optimize()['upb']
+
+    while len(v) > 0:
+        max_ele = None
+        max_marginal_value = -1
+
+        for ele in v:
+            if model.marginal_gain(ele, list(s)) > max_marginal_value:
+                max_marginal_value = model.marginal_gain(ele, list(s))
+                max_ele = ele
+
+        if model.matroid.is_legal(s | {max_ele}):
+            s = s | {max_ele}
+            opt.setBase(s)
+            opt.build()
+            temp = opt.optimize()['upb']
+            if temp < upper_bound_value:
+                upper_bound_value = temp
+
+        v.remove(max_ele)
+
+    return s, upper_bound_value, 0

@@ -222,8 +222,6 @@ def greedy_heuristic_for_matroid(model: BaseTask, upb: str):
     model.enable_matroid()
     s = set()
     v = set(model.ground_set)
-    lc = 0
-    parameters = None
 
     while len(v) > 0:
         max_ele = None
@@ -242,7 +240,6 @@ def greedy_heuristic_for_matroid(model: BaseTask, upb: str):
     max_cardinality = len(s)
     model.budget = max_cardinality
     lc = modified_greedy(model, upb)["Lambda"]
-    # lc = min(2 * model.objective(s), modified_greedy(model, upb)["Lambda"])
 
     res = {
         "S": s,
