@@ -27,7 +27,7 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub7, modified_greedy_ub
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub7m", 'ub8']
+upper_bounds = ["ub1"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -337,7 +337,7 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 500
     seed_interval = 1
-    start_seed = 25
+    start_seed = 0
     end_seed = 50
 
     count_0 = 0
