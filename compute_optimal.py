@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
                 save_dir = os.path.join(root_dir, args.task, f'{args.num}')
                 save_path = os.path.join(save_dir, "{}-{}-{}-{}.pckl".format(
-                    "Astar", ub, seed, model.__class__.__name__))
+                    "Astar", ub, budget, model.__class__.__name__))
 
                 with open(save_path, "wb") as wrt:
                     pickle.dump(res, wrt)
