@@ -60,5 +60,4 @@ def simple_greedy_min(model: BaseTask, upb=None):
 
     stop_time = time.time()
     res['Time'] = stop_time - start_time
-
     return res

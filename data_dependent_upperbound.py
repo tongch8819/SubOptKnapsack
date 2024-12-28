@@ -2657,6 +2657,7 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
     else:
         raise ValueError("Upperbound unassigned")
 
+
 def marginal_delta_min_gate(upb: str, base_set, remaining_set, model:BaseTask):
     remaining_set = set(model.ground_set) - set(base_set)
     if upb is not None:
@@ -2671,6 +2672,7 @@ def marginal_delta_min_gate(upb: str, base_set, remaining_set, model:BaseTask):
         return delta, parameters
     else:
         raise ValueError("Upperbound unassigned")
+
 
 def marginal_delta_packing_gate(upb: str, base_set, remaining_set, model:BaseTask):
     remaining_set = set(model.ground_set) - set(base_set)
