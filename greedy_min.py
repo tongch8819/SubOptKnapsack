@@ -4,13 +4,13 @@
 """
 import time
 
+import optimizer
 from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta_min_gate
 
 
 def simple_greedy_min(model: BaseTask, upb=None):
     start_time = time.time()
-    parameters = {}
     res = {}
 
     G = set()
@@ -24,7 +24,6 @@ def simple_greedy_min(model: BaseTask, upb=None):
         s, max_md = None, -1
         for e in remaining_elements:
             md = model.marginal_gain(e, list(G)) / model.cost_of_singleton(e)
-            # print(f"e:{e}, md:{md}, s:{s}, max_md:{max_md}")
             if s is None or md > max_md:
                 s, max_md = e, md
         temp_G = G | {s}
@@ -48,6 +47,59 @@ def simple_greedy_min(model: BaseTask, upb=None):
 
         remaining_elements.remove(s)
 
+    res['S'] = G
+    res['f(S)'] = model.objective(list(G))
+    res['c(S)'] = model.cost_of_set(list(G))
+    res['target'] = model.value
+    if upb is not None:
+        res['Lambda'] = lambda_capital
+        res['AF'] = res['c(S)'] / lambda_capital
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+    return res
+
+
+def simple_greedy_min_opt(model: BaseTask, upb=None):
+    start_time = time.time()
+    res = {}
+
+    G = set()
+    remaining_elements = set(model.ground_set)
+    opt = optimizer.MultilinearDualOptimizer()
+    opt.setModel(model)
+
+    opt.setBase([])
+    opt.build()
+    lambda_capital = opt.optimize()['lwb']
+
+    while model.objective(list(G)) < model.value and len(remaining_elements) > 0:
+        s, max_md = None, -1
+        for e in remaining_elements:
+            md = model.marginal_gain(e, list(G)) / model.cost_of_singleton(e)
+            if s is None or md > max_md:
+                s, max_md = e, md
+        temp_G = G | {s}
+        if model.objective(list(temp_G)) < model.value:
+            G.add(s)
+        else:
+            min_cost = model.cost_of_singleton(s)
+            min_s = s
+            for e in remaining_elements:
+                temp_G = G | {e}
+                if model.objective(list(temp_G)) >= model.value:
+                    c_e = model.cost_of_singleton(e)
+                    if c_e < min_cost:
+                        min_s, min_cost = e, c_e
+            G.add(min_s)
+
+        opt.setBase(G)
+        opt.build()
+        temp_lwb = opt.optimize()['lwb']
+        if temp_lwb > lambda_capital:
+            lambda_capital = temp_lwb
+
+        remaining_elements.remove(s)
 
     res['S'] = G
     res['f(S)'] = model.objective(list(G))

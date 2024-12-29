@@ -10,11 +10,11 @@ import numpy as np
 
 def compute_min_series(task):
     seed_start = 0
-    seed_end = 50
-    n = 500
+    seed_end = 10
+    n = 200
     root_dir = f"./result/archive-19"
 
-    upb = 'ub0'
+    upb = 'opt'
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, 0)
@@ -31,8 +31,8 @@ def compute_min_series(task):
                 max_s = ele
                 max_v = t_v
         print(f"seed:{seed}, max_v:{max_v}, max_s:{max_s}")
-        start_value = min(max_v + 10, 100)
-        num_points = 20
+        start_value = min(max_v + 10, 50)
+        num_points = 15
         interval = 5
         end_value = start_value + (num_points - 1) * interval
         values = np.linspace(start=start_value, stop=end_value, num=num_points)
@@ -43,7 +43,7 @@ def compute_min_series(task):
             os.mkdir(save_dir)
         for value in values:
             model.value = value
-            res = greedy_min.simple_greedy_min(model, upb)
+            res = greedy_min.simple_greedy_min_opt(model, upb)
             res['ground'] = n
             res['worst'] = 1 + math.log(value, math.e)
             res['start_v'] = start_value

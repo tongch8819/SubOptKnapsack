@@ -2614,6 +2614,14 @@ def marginal_delta_version9(base_set: Set[int], remaining_set: Set[int], model: 
     return delta, parameters
 
 
+def marginal_delta_version10(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    delta = 0
+
+    return delta, parameters
+
+
 def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
 
     remaining_set = set(model.ground_set) - set(base_set)
@@ -2652,6 +2660,9 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version8(base_set, remaining_set, model, minus=True)
         elif upb == 'ub9':
             delta, parameters = marginal_delta_version9(base_set, remaining_set, model, minus=True)
+        elif upb == 'ub10':
+            delta, parameters = marginal_delta_version10(base_set, remaining_set, model, minus=True)
+
         else:
             raise ValueError("Unsupported Upperbound")
         return delta, parameters
