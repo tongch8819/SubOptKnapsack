@@ -113,7 +113,7 @@ class FacebookGraphCoverage(BaseTask):
             new_neighbors = set([int(x) for x in new_neighbors])
             neighbors = neighbors | new_neighbors
 
-        return 10 * len(neighbors) / len(self.nodes)
+        return len(neighbors)
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[x] for x in S)

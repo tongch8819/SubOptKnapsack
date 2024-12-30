@@ -74,17 +74,18 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
             else:
                 density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
                 cur_cost = cur_cost + x/density
-                print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}, bv:{f_s({t[idx]})},{model.cost_of_singleton(t[idx])}")
+                # print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}, bv:{f_s({t[idx]})},{model.cost_of_singleton(t[idx])}")
                 break
             idx = idx + 1
 
-        print(f"?:{cur_cost}")
+        # print(f"?:{cur_cost}")
         return cur_cost
 
     delta = H_plus(model.value - bv)
-    print(f"d:{delta}")
 
-    return delta, parameters
+    min_c = np.min([model.cost_of_singleton(x) for x in t])
+
+    return max(delta, min_c), parameters
 
 def marginal_delta_min_version1(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
@@ -2613,6 +2614,14 @@ def marginal_delta_version9(base_set: Set[int], remaining_set: Set[int], model: 
     return delta, parameters
 
 
+def marginal_delta_version10(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    delta = 0
+
+    return delta, parameters
+
+
 def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
 
     remaining_set = set(model.ground_set) - set(base_set)
@@ -2651,6 +2660,9 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version8(base_set, remaining_set, model, minus=True)
         elif upb == 'ub9':
             delta, parameters = marginal_delta_version9(base_set, remaining_set, model, minus=True)
+        elif upb == 'ub10':
+            delta, parameters = marginal_delta_version10(base_set, remaining_set, model, minus=True)
+
         else:
             raise ValueError("Unsupported Upperbound")
         return delta, parameters

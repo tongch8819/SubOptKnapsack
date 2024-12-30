@@ -108,7 +108,6 @@ class YoutubeCoverage(BaseTask):
         if type(S) == int:
             S = [S]
         neighbors = set([self.nodes[s] for s in S])
-        n = len(neighbors)
         for s in S:
             new_neighbors = set(self.graph.neighbors(str(self.nodes[s])))
             new_neighbors = set([int(x) for x in new_neighbors])
