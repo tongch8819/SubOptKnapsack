@@ -69,7 +69,7 @@ class FacebookGraphCoverage(BaseTask):
 
         self.budget = budget
 
-        if knapsack == False:
+        if not knapsack:
             self.costs_obj = [
                 1
                 for obj in self.objs
