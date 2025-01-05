@@ -1754,3 +1754,126 @@ class MultilinearDualOptimizer:
             "x": fs
         }
         pass
+
+
+class DualOptimizer:
+    def __init__(self):
+        self.model = None
+        self.intermediate_sets = []
+        self.upb = 'ub0'
+        self.n = 0
+        self.v = 0
+
+        self.c = None
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def addIntermediate(self, intermediate):
+        self.intermediate_sets.append(copy.deepcopy(intermediate))
+
+    def setUpb(self, upb):
+        self.upb = upb
+
+    def build(self):
+        # prepare c
+        self.n = len(self.model.ground_set)
+
+        self.c = np.zeros(self.n)
+        for e in self.model.ground_set:
+            self.c[e] = self.model.cost_of_singleton(e)
+
+        # prepare A
+        t = len(self.intermediate_sets)
+        self.A = np.zeros(shape=(t, self.n))
+        for r_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            for e in range(0, self.n):
+                self.A[r_idx, e] = -self.model.marginal_gain(e, intermediate_set)
+
+        # prepare b
+        self.b = np.zeros(t)
+        self.v = self.model.value
+        for r_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            self.b[r_idx] = self.model.objective(intermediate_set) - self.v
+
+    def optimize(self):
+        bounds = [(0, 1)] * self.n
+
+        # print(f"c:{self.c[:10]}, b:{self.b[:10]}, v:{self.model.value}, s:{self.model.objective(self.intermediate_sets[1])}")
+
+        x = scipy.optimize.linprog(c=self.c, A_eq=self.A, b_eq=self.b, bounds=bounds).x
+
+        # print(f"c:{self.c.shape}, x:{x.shape}")
+
+        return {
+            "lwb": self.c @ x
+        }
+
+
+class MaximizationOptimizer:
+    def __init__(self):
+        self.model = None
+        self.intermediate_sets = []
+        self.upb = 'ub0'
+        self.n = 0
+
+        self.c = None
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def addIntermediate(self, intermediate):
+        self.intermediate_sets.append(copy.deepcopy(intermediate))
+
+    def setUpb(self, upb):
+        self.upb = upb
+
+    def build(self):
+        # prepare c
+        self.n = len(self.model.ground_set)
+
+        self.c = np.zeros(self.n + 1)
+        self.c[self.n] = 1
+
+        # prepare A
+
+        # prepare lambda
+        t = len(self.intermediate_sets)
+
+        self.A = np.zeros(shape=(t + 1, self.n + 1))
+        for r_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            for e in range(0, self.n):
+                self.A[r_idx, e] = -self.model.marginal_gain(e, intermediate_set)
+            self.A[r_idx, self.n] = 1
+
+        for e in range(0, self.n):
+            self.A[t, e] = self.model.cost_of_singleton(e)
+
+        # prepare b
+        self.b = np.zeros(t + 1)
+        for r_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            self.b[r_idx] = self.model.objective(intermediate_set)
+        self.b[t] = self.model.budget
+
+    def optimize(self):
+        bounds = [(0, 1)] * (self.n + 1)
+        bounds[self.n] = (0, np.inf)
+
+        x = scipy.optimize.linprog(c=self.c, A_eq=self.A, b_eq=self.b, bounds=bounds).x
+
+        # print(f"c:{self.c.shape}, x:{x.shape}")
+
+        return {
+            "upb": self.c @ x
+        }
+
+
+
