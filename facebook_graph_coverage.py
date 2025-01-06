@@ -87,6 +87,7 @@ class FacebookGraphCoverage(BaseTask):
         if not os.path.isfile(path):
             raise OSError("File *.txt does not exist.")
         intact_graph: nx.Graph = nx.read_edgelist(path)
+
         nodes = random.sample(list(intact_graph.nodes), min(len(list(intact_graph.nodes)), self.max_nodes))
         nodes.sort()
         # print(f"nodes:{nodes[:10]}")

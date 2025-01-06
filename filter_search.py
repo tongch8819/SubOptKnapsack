@@ -36,23 +36,39 @@ class FS(OptimalAlg):
         delta, _ = marginal_delta_version7(set(S), set(self.model.ground_set) - set(S), self.model)
         return delta
 
+    def is_on_the_edge(self, S):
+        base_cost = self.model.cost_of_set(S)
+        for ele in set(self.model.ground_set) - S:
+            if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
+                return False
+        return True
+
     def g(self, S):
+        if self.is_on_the_edge(S):
+            return self.f(list(S))
+
         return self.f(list(S)) + self.alpha * self.h(S)
 
     def optimize(self):
         start_time = time.time()
 
         ret = {
-
         }
 
         s = None
-        self.heap.push(HeapObj(set(), self.g({})))
+        self.heap.push(HeapObj(set(), self.g(set())))
         while self.heap.size() > 0:
             obj = self.heap.pop()
             s, v = obj.s, obj.v
-            if self.h(s) == 0:
-                break
+
+            if self.is_on_the_edge(s):
+                stop_time = time.time()
+                ret['S'] = s
+                ret['c(S)'] = self.model.cost_of_set(s)
+                ret['f(S)'] = self.model.objective(s)
+                ret['time'] = stop_time - start_time
+                return ret
+
             if s not in self.closed_list:
                 self.closed_list.append(s)
 
@@ -62,10 +78,10 @@ class FS(OptimalAlg):
                     self.heap.push(HeapObj(s_plus, self.g(s_plus)))
 
         stop_time = time.time()
-
         ret['S'] = s
         ret['c(S)'] = self.model.cost_of_set(s)
         ret['f(S)'] = self.model.objective(s)
         ret['time'] = stop_time - start_time
+        print(f"return from fallback")
 
         return ret
