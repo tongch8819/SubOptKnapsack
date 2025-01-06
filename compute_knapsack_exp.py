@@ -23,11 +23,11 @@ import multiprocessing as mp
 import argparse
 
 from mgreedy import modified_greedy_ub1, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
-    modified_greedy_ub9, modified_greedy_ub10
+    modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub7", "ub10"]
+upper_bounds = ["ub1", "ub11"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -199,8 +199,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 500
     seed_interval = 1
-    start_seed = 0
-    end_seed = 50
+    start_seed = 30
+    end_seed = 40
     count_0 = 0
     count_t = 0
 
@@ -218,7 +218,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-20", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-22", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -355,7 +355,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-20", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-22", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 

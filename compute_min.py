@@ -12,9 +12,9 @@ def compute_min_series(task):
     seed_start = 0
     seed_end = 10
     n = 200
-    root_dir = f"./result/archive-19"
+    root_dir = f"./result/archive-21"
 
-    upb = 'opt'
+    upb = 'ub0'
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, 0)
@@ -43,7 +43,7 @@ def compute_min_series(task):
             os.mkdir(save_dir)
         for value in values:
             model.value = value
-            res = greedy_min.simple_greedy_min_opt(model, upb)
+            res = greedy_min.simple_greedy_min(model, upb)
             res['ground'] = n
             res['worst'] = 1 + math.log(value, math.e)
             res['start_v'] = start_value

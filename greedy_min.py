@@ -168,3 +168,56 @@ def augmented_greedy_min(model: BaseTask, upb=None):
     stop_time = time.time()
     res['Time'] = stop_time - start_time
     return res
+
+
+def simple_greedy_new_min(model: BaseTask, upb=None):
+    start_time = time.time()
+    res = {}
+
+    G = set()
+    remaining_elements = set(model.ground_set)
+    lambda_capital = 0.
+
+    opt = optimizer.DualOptimizer()
+    opt.setModel(model)
+    opt.addIntermediate(set())
+
+    while model.objective(list(G)) < model.value and len(remaining_elements) > 0:
+        s, max_md = None, -1
+        for e in remaining_elements:
+            md = model.marginal_gain(e, list(G)) / model.cost_of_singleton(e)
+            if s is None or md > max_md:
+                s, max_md = e, md
+        temp_G = G | {s}
+        if model.objective(list(temp_G)) < model.value:
+            G.add(s)
+        else:
+            min_cost = model.cost_of_singleton(s)
+            min_s = s
+            for e in remaining_elements:
+                temp_G = G | {e}
+                if model.objective(list(temp_G)) >= model.value:
+                    c_e = model.cost_of_singleton(e)
+                    if c_e < min_cost:
+                        min_s, min_cost = e, c_e
+            G.add(min_s)
+
+        if model.objective(list(G)) < model.value:
+            # print(f"G:{model.objective(list(G))}")
+            opt.addIntermediate(G)
+        remaining_elements.remove(s)
+
+    opt.build()
+    lambda_capital = opt.optimize()['lwb']
+
+    res['S'] = G
+    res['f(S)'] = model.objective(list(G))
+    res['c(S)'] = model.cost_of_set(list(G))
+    res['target'] = model.value
+    if upb is not None:
+        res['Lambda'] = lambda_capital
+        res['AF'] = res['c(S)'] / lambda_capital
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+    return res
