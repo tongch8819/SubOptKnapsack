@@ -18,7 +18,6 @@ if __name__ == "__main__":
     parser.add_argument("-aa", "--alpha", default=0.8, help="the approximation factor")
     args = parser.parse_args()
 
-
     # assert args.heuristic in ['ub0', 'ub2', 'ub3']
 
     ub_list = [args.heuristic]

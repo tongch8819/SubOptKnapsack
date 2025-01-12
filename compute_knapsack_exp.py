@@ -27,7 +27,7 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub7, modified_greedy_ub
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1", "ub11"]
+upper_bounds = ["ub1", "ub7" ,"ub11"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -197,10 +197,10 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 500
+    n = 1000
     seed_interval = 1
-    start_seed = 30
-    end_seed = 40
+    start_seed = 0
+    end_seed = 50
     count_0 = 0
     count_t = 0
 
@@ -208,7 +208,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -335,7 +335,7 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 500
+    n = 1000
     seed_interval = 1
     start_seed = 0
     end_seed = 50
@@ -347,7 +347,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -441,10 +441,10 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 50
+    n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 100
+    end_seed = 50
     count_0 = 0
     count_t = 0
 
@@ -452,7 +452,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -461,7 +461,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-17", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-22", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -522,12 +522,10 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 50
-    sample_count = 100
-
+    n = 100
     seed_interval = 1
-    start_seed = 1
-    end_seed = 100
+    start_seed = 0
+    end_seed = 50
     count_0 = 0
     count_t = 0
 
@@ -535,7 +533,7 @@ def compute_adult_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -543,7 +541,7 @@ def compute_adult_series(root_dir, skip_mode=False):
         model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True,
                                             construct_graph=True, cost_mode=cost_mode)
 
-        save_dir = os.path.join(root_dir, "archive-17", "adult", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-22", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 

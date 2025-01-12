@@ -1839,7 +1839,7 @@ class MaximizationOptimizer:
         self.n = len(self.model.ground_set)
 
         self.c = np.zeros(self.n + 1)
-        self.c[self.n] = 1
+        self.c[self.n] = -1
 
         # prepare A
 
@@ -1865,14 +1865,12 @@ class MaximizationOptimizer:
 
     def optimize(self):
         bounds = [(0, 1)] * (self.n + 1)
-        bounds[self.n] = (0, np.inf)
+        bounds[int(self.n)] = (0, np.inf)
 
-        x = scipy.optimize.linprog(c=self.c, A_eq=self.A, b_eq=self.b, bounds=bounds).x
-
-        # print(f"c:{self.c.shape}, x:{x.shape}")
-
+        x = scipy.optimize.linprog(c=self.c, A_ub=self.A, b_ub=self.b, bounds=bounds).x
+        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b}, x:{x}")
         return {
-            "upb": self.c @ x
+            "upb": -self.c @ x
         }
 
 
