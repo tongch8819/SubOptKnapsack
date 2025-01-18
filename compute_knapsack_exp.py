@@ -25,11 +25,13 @@ import argparse
 from mgreedy import modified_greedy_ub1, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
     modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11
 
+from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
+
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1", "ub7" ,"ub11"]
-algos = ["modified_greedy"]
-# algos = ["greedy_max"]
+upper_bounds = ["ub1", 'ub1m', 'ub7', "ub7m"]
+# algos = ["modified_greedy"]
+algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
 
@@ -200,16 +202,14 @@ def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
     start_seed = 0
-    end_seed = 50
-    count_0 = 0
-    count_t = 0
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 11
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -218,7 +218,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-22", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-23", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -234,13 +234,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
                         print("Skip: ", save_path)
                         continue
 
-                    count_t += 1
-                    if not res['updated']:
-                        count_0 += 1
                     print("Done: ", save_path)
-                    print(f"count:{count_0}/{count_t}")
-                    res["count_0"] = count_0
-                    res["count_t"] = count_t
 
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
@@ -338,24 +332,21 @@ def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
     start_seed = 0
-    end_seed = 50
-
-    count_0 = 0
-    count_t = 0
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 11
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-22", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-23", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -371,14 +362,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
                         print("Skip: ", save_path)
                         continue
 
-                    count_t += 1
-                    if not res['updated']:
-                        count_0 += 1
                     print("Done: ", save_path)
-                    print(f"count:{count_0}/{count_t}")
-                    res["count_0"] = count_0
-                    res["count_t"] = count_t
-
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print(res)
@@ -443,8 +427,8 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 50
+    start_seed = 100
+    end_seed = 200
     count_0 = 0
     count_t = 0
 
@@ -452,8 +436,8 @@ def compute_caltech_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 11
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -461,7 +445,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-22", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-23", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -477,13 +461,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
                         print("Skip: ", save_path)
                         continue
 
-                    count_t += 1
-                    if not res['updated']:
-                        count_0 += 1
                     print("Done: ", save_path)
-                    print(f"count:{count_0}/{count_t}")
-                    res["count_0"] = count_0
-                    res["count_t"] = count_t
 
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
@@ -525,23 +503,21 @@ def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 50
-    count_0 = 0
-    count_t = 0
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
-        start_point = 11
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True,
                                             construct_graph=True, cost_mode=cost_mode)
 
-        save_dir = os.path.join(root_dir, "archive-22", "adult", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-23", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -557,13 +533,7 @@ def compute_adult_series(root_dir, skip_mode=False):
                         print("Skip: ", save_path)
                         continue
 
-                    count_t += 1
-                    if not res['updated']:
-                        count_0 += 1
                     print("Done: ", save_path)
-                    print(f"count:{count_0}/{count_t}")
-                    res["count_0"] = count_0
-                    res["count_t"] = count_t
 
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)

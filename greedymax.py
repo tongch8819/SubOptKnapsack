@@ -126,6 +126,8 @@ def greedy_max(model: BaseTask, upb: str = None):
 def greedy_max_ub1(model):
     return greedy_max(model, "ub1")
 
+def greedy_max_ub1m(model):
+    return greedy_max(model, "ub1m")
 
 def greedy_max_ub2(model):
     return greedy_max(model, "ub2")
