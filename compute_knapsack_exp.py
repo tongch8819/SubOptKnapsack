@@ -22,14 +22,14 @@ import os
 import multiprocessing as mp
 import argparse
 
-from mgreedy import modified_greedy_ub1, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
+from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
     modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11
 
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1", 'ub1m', 'ub7', "ub7m"]
+upper_bounds = ['ub1', 'ub7', 'ub7m']
 # algos = ["modified_greedy"]
 algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -427,10 +427,8 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 100
+    start_seed = 180
     end_seed = 200
-    count_0 = 0
-    count_t = 0
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()

@@ -57,10 +57,8 @@ def greedy_max(model: BaseTask, upb: str = None):
             S = tmp_G
             # update data-dependent upper-bound
             if upb is not None:
-                delta, p1 = marginal_delta_gate(upb, S, set(remaining_elements) - {s}, model)
+                delta, p1 = marginal_delta_gate(upb, S, set(model.ground_set) - S, model)
                 fs = model.objective(S)
-                # if fs + delta < lambda_capital:
-                #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
                 if lambda_capital > fs + delta:
                     lambda_capital = fs + delta
                     parameters = p1
@@ -77,7 +75,7 @@ def greedy_max(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
-            delta, p1 = marginal_delta_gate(upb, G, set(remaining_elements) - {a}, model)
+            delta, p1 = marginal_delta_gate(upb, G, set(model.ground_set) - G, model)
             fs = model.objective(G)
             # if fs + delta < lambda_capital:
             #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
