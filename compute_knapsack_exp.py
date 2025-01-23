@@ -29,15 +29,15 @@ from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_ma
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ['ub1', 'ub7', 'ub7m']
-# algos = ["modified_greedy"]
-algos = ["greedy_max"]
+upper_bounds = ['ub1m', 'ub7m']
+algos = ["modified_greedy"]
+# algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
 
 # count how many upbs are calculated by empty sets
 # apply the new method on the MSMK problem
-# explore the 10^11910010101 prolbem
+# explore the 10^11910010101 problem
 
 knapsack = True
 prepare_2_pair = False
@@ -201,7 +201,7 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
+    start_seed = 165
     end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
@@ -218,7 +218,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
 
-        save_dir = os.path.join(root_dir, "archive-23", "facebook", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -331,7 +331,7 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
+    start_seed = 100
     end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
@@ -346,7 +346,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-23", "youtube", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -427,8 +427,8 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 180
-    end_seed = 200
+    start_seed = 0
+    end_seed = 100
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -443,7 +443,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
         model = CalTechMaximization(0, n, "./dataset/caltech", seed=seed, knapsack=True, prepare_max_pair=False,
                                     cost_mode=cost_mode, print_curvature=False, graph_suffix=s, construct_graph=True)
 
-        save_dir = os.path.join(root_dir, "archive-23", "caltech", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "caltech", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -500,7 +500,7 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
+    start_seed = 150
     end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
@@ -515,7 +515,7 @@ def compute_adult_series(root_dir, skip_mode=False):
         model = AdultIncomeFeatureSelection(0, n, "./dataset/adult-income", seed=seed, sample_count=100, knapsack=True,
                                             construct_graph=True, cost_mode=cost_mode)
 
-        save_dir = os.path.join(root_dir, "archive-23", "adult", f"{n}", f"{seed}")
+        save_dir = os.path.join(root_dir, "archive-5", "adult", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
