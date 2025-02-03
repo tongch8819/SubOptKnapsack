@@ -1,11 +1,13 @@
-from base_task import BaseTask
+from application.base_task import BaseTask
+from application.constraint import KnapsackConstraint
+
 import numpy as np
 import os
 from typing import Set, List
 
-#  TODO: not sure if we need to import the following
-class MovieRecommendation(BaseTask):
-    def __init__(self, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None, llambda: float = 0.5, is_mono=True):
+
+class MovieRecommendationKnapsack(BaseTask):
+    def __init__(self, budget_ratio: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path : str="application/dataset/movie/user_by_movies_small_rating.npy", llambda: float = 0.5, is_mono=True):
         """
         Inputs:
         - k: number of users
@@ -15,6 +17,8 @@ class MovieRecommendation(BaseTask):
 
         The objective is non-negative and non-monotone.
         """
+        assert 0. <= budget_ratio <= 1., "Budget ratio should lie in [0, 1]"
+
         super().__init__(is_mono)
         if matrix_path is None:
             # self.M[i][j] denotes the rating of user i for movie j
@@ -27,10 +31,15 @@ class MovieRecommendation(BaseTask):
             self.num_users, self.num_movies = self.M.shape
         self.movies = [i for i in range(self.num_movies)]
         self.similarity_type = sim_type  # or cosine
-
         # factor in objective
         self.llambda = llambda
         assert 0. <= self.llambda <= 1.
+
+        avg_ratings = np.average(self.M, axis=0)
+        assert min(avg_ratings) >= 0 and max(
+            avg_ratings) <= 10, "Average rating should lie in [0, 10]"
+        cost_obj = 10 - avg_ratings
+        self.constraint = KnapsackConstraint(cost_obj=cost_obj, budget_ratio=budget_ratio)
 
     @property
     def ground_set(self):
@@ -83,12 +92,13 @@ class MovieRecommendation(BaseTask):
 
 
 def main():
-    model = MovieRecommendation(matrix_path="dataset/movie/user_by_movies_small_rating.npy", budget=1.0)
+    model = MovieRecommendationKnapsack(budget_ratio=0.3)
 
     S = [0, 1, 2, 3, 4]
     print("S =", S)
     print("f(S) =", model.objective(S))
-    print("c(S) =", model.cost_of_set(S))
+    print("c(S) =", model.constraint.cost_of_set(S))
+    print("budget b = ", model.constraint.budget)
 
 
 if __name__ == "__main__":

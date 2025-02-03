@@ -1,33 +1,22 @@
-from abc import ABC, abstractclassmethod
+from application.constraint import knapsack_id
+
+from abc import ABC
 from typing import List, Set
 from copy import deepcopy
 
 
 class BaseTask(ABC):
+    """
+    Model objective instead of constraint
+    """
 
-    def __init__(self, is_mono=True):
+    def __init__(self, constraint=None, is_mono=True):
+        self.constraint = constraint
         self.is_mono = is_mono
         self.total_curvature = None
 
-    @property
-    def budget(self):
-        return self.b
-    
-    @budget.setter
-    def budget(self, v):
-        self.b = v
-
-    @abstractclassmethod
     def objective(self):
         pass
-
-    def cost_of_set(self, S: List[int]):
-        return sum(self.costs_obj[x] for x in S)
-
-    def cost_of_singleton(self, singleton: int):
-        assert singleton < len(
-            self.costs_obj), "Singleton: {}".format(singleton)
-        return self.costs_obj[singleton]
 
     def marginal_gain(self, single: int, base: List[int]):
         if len(base) == 0:
@@ -42,9 +31,16 @@ class BaseTask(ABC):
             assert res >= 0., f"f({base2}) - f({base}) = {fS2:.2f} - {fS1:.2f}"
         return res
 
-    def density(self, single: int, base: List[int]):
-        mg = self.marginal_gain(single, base)
-        cost = self.costs_obj[single]
+    def density(self, singleton: int, base: List[int]):
+        """
+        return f(singleton | base) / c(singleton)
+        """
+        if self.constraint is None:
+            raise ValueError("Constraint is not defined.")
+        if self.constraint.id != knapsack_id:
+            raise ValueError("Constraint is not knapsack.")
+        mg = self.marginal_gain(singleton, base)
+        cost = self.constraint.cost_of_singleton(singleton)
         return (mg * 100) / (cost * 100)
 
     def cutout_marginal_gain(self, singleton: int, base: Set[int]):
