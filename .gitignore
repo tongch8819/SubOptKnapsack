@@ -4,6 +4,7 @@ misc/
 test.py
 dataset/revenue/*txt
 dataset/image/cifar*
+**/dataset/**
 log/
 *.sh
 *tmp*
