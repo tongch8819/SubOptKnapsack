@@ -1,6 +1,5 @@
 from typing import List
 import logging
-logging.basicConfig(level=logging.DEBUG)
 
 cardinality_id = 1
 knapsack_id = 2
@@ -58,4 +57,25 @@ class KnapsackConstraint(Constraint):
         self.budget_ratio = self.budget / sum(self.cost_func)
         self.is_normalized = True
 
-    
+    def enforce_cost_ratio_and_budget(self, cost_ratio: float, budget: float):
+        """
+        # Linear scaling formula in LaTeX:
+        # c'_i = \\frac{(c_i - c_{\min})}{c_{\max} - c_{\min}} (r - 1) c_{\min} + c_{\min}
+        """
+        self.normalize()
+        assert cost_ratio <= budget, "Cost ratio should be less than budget"
+        c_min = min(self.cost_func)
+        c_max = max(self.cost_func)
+        diff = c_max - c_min
+
+        k = (cost_ratio - 1) * c_min / diff
+        b = - c_min * (cost_ratio - 1) * c_min / diff + c_min
+
+        self.cost_func = [ k * ci + b for ci in self.cost_func]
+        # self.budget = k * self.budget + b
+        self.budget = budget
+        
+    def show_stat(self):
+        cmin, cmax = min(self.cost_func), max(self.cost_func)
+        budget_ratio = self.budget / sum(self.cost_func)
+        return f"Min cost: {cmin}, Max cost: {cmax}, Budget ratio: {budget_ratio}, Budget: {self.budget}"   

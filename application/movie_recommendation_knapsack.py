@@ -1,5 +1,6 @@
 from application.base_task import BaseTask
 from application.constraint import KnapsackConstraint
+from config import DATA_DIR
 
 import numpy as np
 import os
@@ -7,7 +8,7 @@ from typing import Set, List
 
 
 class MovieRecommendationKnapsack(BaseTask):
-    def __init__(self, budget_ratio: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path : str="application/dataset/movie/user_by_movies_small_rating.npy", llambda: float = 0.5, is_mono=True):
+    def __init__(self, budget_ratio: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path : str=os.path.join(DATA_DIR, "movie", "user_by_movies_small_rating.npy"), llambda: float = 0.5, is_mono=True):
         """
         Inputs:
         - k: number of users
