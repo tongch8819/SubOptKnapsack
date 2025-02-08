@@ -1,4 +1,5 @@
-from base_task import BaseTask
+from application.base_task import BaseTask
+from application.constraint import KnapsackConstraint
 import random
 from typing import Set, List
 import numpy as np
@@ -7,7 +8,7 @@ from collections import defaultdict
 import os
 
 
-class RevenueMax(BaseTask):
+class RevenueMaxKnapsack(BaseTask):
     """
     Select a set of users in a social network to advertise a product to maximize the revenue.
 
@@ -52,6 +53,8 @@ class RevenueMax(BaseTask):
         self.costs_obj = [self._compute_cost(u) for u in self.objects]
 
         self.b = budget
+        self.constraint = KnapsackConstraint(self.costs_obj, budget=budget)
+        self.is_mono = False
 
     @property
     def ground_set(self):
@@ -87,7 +90,7 @@ class RevenueMax(BaseTask):
 
 
 def main():
-    model = RevenueMax(budget=1.0, pckl_path="dataset/revenue/25_youtube_top5000.pkl")
+    model = RevenueMaxKnapsack(budget=1.0, pckl_path="application/dataset/revenue/25_youtube_top5000.pkl")
 
     S = [0, 1, 2, 3, 4]
     print("S =", S)

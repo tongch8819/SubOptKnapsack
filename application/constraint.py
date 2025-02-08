@@ -16,25 +16,25 @@ class CardinalityConstraint(Constraint):
         self.id = cardinality_id
 
 class KnapsackConstraint(Constraint):
-    def __init__(self, cost_obj: List[int], budget: float):
+    def __init__(self, cost_obj: List[int], budget: float = None, budget_ratio: float = None):
         super().__init__("knapsack constraint")
         self.id = knapsack_id
         assert min(cost_obj) >= 0, "Abort: Cost can't be negative"
         self.cost_func = cost_obj
-        self.budget = budget
-        self.budget_ratio = budget / sum(cost_obj)
 
-        self.is_normalized = False
+        if budget is not None and budget_ratio is not None:
+            raise ValueError("Either budget or budget_ratio must be provided, not both")
 
-    def __init__(self, cost_obj: List[int], budget_ratio: float):
-        logging.debug("Use budget ratio constructor")
-        super().__init__("knapsack constraint")
-        self.id = knapsack_id
-        assert min(cost_obj) >= 0, "Abort: Cost can't be negative\n{}".format(min(cost_obj))
-        self.cost_func = cost_obj
-        assert 0.0 <= budget_ratio <= 1.0, "Budget ratio error: {}".format(budget_ratio)
-        self.budget_ratio = budget_ratio
-        self.budget = sum(cost_obj) * budget_ratio
+        if budget is not None:
+            self.budget = budget
+            self.budget_ratio = budget / sum(cost_obj)
+        elif budget_ratio is not None:
+            # logging.debug("Use budget ratio constructor")
+            assert 0.0 <= budget_ratio <= 1.0, "Budget ratio error: {}".format(budget_ratio)
+            self.budget_ratio = budget_ratio
+            self.budget = sum(cost_obj) * budget_ratio
+        else:
+            raise ValueError("Either budget or budget_ratio must be provided")
 
         self.is_normalized = False
 
