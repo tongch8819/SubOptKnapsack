@@ -1,9 +1,8 @@
 from application.movie_recommendation_knapsack import MovieRecommendationKnapsack
-from application.image_sum_knapsack import ImageSummarizationKnapsack
-from application.facility_location_knapsack import MaximumFacilityLocationKnapsack
-from application.revenue_max_knapsack import RevenueMaxKnapsack
+from application.model import model_constructor
 
 from algorithms.greedy import greedy_density_knapsack, greedy_marginal_gain_knapsack
+from algorithms.greedy import is_dominance_theoretical
 
 import numpy as np
 import os
@@ -14,14 +13,7 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.ERROR)
 
 
-def is_dominance_theoretical(cost_ratio: float, budget: float):
-    assert cost_ratio <= budget, "Cost ratio should be less than budget"
-    d = np.minimum(budget, cost_ratio * np.floor(budget))
-    af_density = 1 - np.exp(- (budget - cost_ratio) / d)
-    C = 1 - np.exp(-1)
-    af_marginal_gain = C * np.floor(budget / cost_ratio) / np.floor(budget)
-    # logging.debug(f"af_density: {af_density}, af_marginal_gain: {af_marginal_gain}")
-    return af_density >= af_marginal_gain
+
 
 
 def is_dominance_practical(density_res, marginal_gain_res):
@@ -77,18 +69,9 @@ def search_rb_points(max_num_points=10, output_file="dominance.txt"):
             f.write(f"{item[0]},{item[1]},False\n")
 
 
+
 def run_single_experiment(cost_ratio: float, budget: float, is_dominance_theoretical: bool, model_name: str):
-    if model_name == "MovieRecommendation":
-        model = MovieRecommendationKnapsack(n=50, k=40, budget_ratio=0.2)
-    elif model_name == "ImageSum":
-        model = ImageSummarizationKnapsack(
-            budget_ratio=0.3, image_path="application/dataset/image/500_cifar10_sample.npy", max_num=50)
-    elif model_name == "MaxFLP":
-        model = MaximumFacilityLocationKnapsack(num_facilities=50, num_customers=40)
-    elif model_name == "MaxRevenue":
-        model = RevenueMaxKnapsack(budget=budget * 5, pckl_path="application/dataset/revenue/25_youtube_top5000.pkl")
-    else:
-        raise ValueError("Model name is not valid")
+    model = model_constructor(model_name)
     model.constraint.enforce_cost_ratio_and_budget(cost_ratio, budget)
     # logging.debug(model.constraint.show_stat())
     density_res = greedy_density_knapsack(model)

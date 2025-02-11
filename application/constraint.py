@@ -4,6 +4,9 @@ import logging
 cardinality_id = 1
 knapsack_id = 2
 
+def is_knapsack_constraint(constraint):
+    return constraint.id == knapsack_id
+
 class Constraint:
     def __init__(self, name="general constraint"):
         self.id = 0
