@@ -502,8 +502,8 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 185
-    end_seed = 186
+    start_seed = 190
+    end_seed = 191
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
