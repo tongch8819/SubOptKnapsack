@@ -1874,4 +1874,23 @@ class MaximizationOptimizer:
         }
 
 
+class PrimalDualOptimizer:
+    def __init__(self):
+        self.model = None
+
+        pass
+
+    def build(self):
+        pass
+
+    def optimize(self):
+        i = 1
+        A = set()
+        alg = set()
+
+
+
+        pass
+
+
 

@@ -39,8 +39,8 @@ def modified_greedy(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(u) <= model.budget:
             # satisfy the knapsack constraint
             sol.add(u)
-
             cur_cost += model.cost_of_singleton(u)
+
             delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
             fs = model.objective(sol)
 
@@ -94,6 +94,90 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
     return res
 
+
+def modified_greedy_nis(model: BaseTask, upb: str = None):
+    start_time = time.time()
+
+    sol = set()
+    remaining_elements = set(model.ground_set)
+    ground_set = set(model.ground_set)
+    cur_cost = 0.
+    parameters = {}
+
+    # print("I am here!")
+
+    if upb is not None:
+        delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
+        lambda_capital = delta
+        parameters = p1
+
+    while len(remaining_elements):
+        u, max_density = None, -1.
+        for e in remaining_elements:
+            # e is an object
+            ds = model.density(e, sol)
+            if u is None or ds > max_density:
+                u, max_density = e, ds
+
+        assert u is not None
+
+        if cur_cost + model.cost_of_singleton(u) <= model.budget:
+            # satisfy the knapsack constraint
+            sol.add(u)
+            cur_cost += model.cost_of_singleton(u)
+
+        # print(f"sol:{sol}, u:{u}, budget:{cur_cost}")
+
+        remaining_elements.remove(u)
+        # filter out violating elements
+        to_remove = set()
+        for v in remaining_elements:
+            if model.cost_of_singleton(v) + cur_cost > model.budget:
+                to_remove.add(v)
+        remaining_elements -= to_remove
+
+    # find the maximum singleton
+    v_star, v_star_fv = None, float('-inf')
+    for e in model.ground_set:
+        if model.cost_of_singleton(e) > model.budget:
+            # filter out singleton whose cost is larger than budget
+            continue
+        fv = model.objective([e])
+        if fv > v_star_fv:
+            v_star, v_star_fv = e, fv
+
+    sol_fv = model.objective(list(sol))
+
+    if upb is not None:
+        delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
+        parameters = p1
+
+        if lambda_capital > sol_fv + delta:
+            lambda_capital = sol_fv + delta
+            parameters = p1
+
+    if v_star_fv > sol_fv:
+        res = {
+            'S': [v_star],
+            'f(S)': v_star_fv,
+            'c(S)': model.cost_of_singleton(v_star),
+        }
+    else:
+        res = {
+            'S': sol,
+            'f(S)': sol_fv,
+            'c(S)': cur_cost,
+        }
+
+    if upb is not None:
+        res['Lambda'] = lambda_capital
+        res['AF'] = res['f(S)'] / lambda_capital
+        res['parameters'] = parameters
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+
+    return res
 
 def modified_greedy_ub10(model: BaseTask):
     start_time = time.time()
@@ -387,6 +471,22 @@ def modified_greedy_ub8(model: BaseTask):
 
 def modified_greedy_ub9(model: BaseTask):
     return modified_greedy(model, "ub9")
+
+
+def modified_greedy_nis_ub1(model: BaseTask):
+    return modified_greedy_nis(model, "ub1")
+
+
+def modified_greedy_nis_ub1m(model: BaseTask):
+    return modified_greedy_nis(model, "ub1m")
+
+
+def modified_greedy_nis_ub7(model: BaseTask):
+    return modified_greedy_nis(model, "ub7")
+
+
+def modified_greedy_nis_ub7m(model: BaseTask):
+    return modified_greedy_nis(model, "ub7m")
 
 
 def greedy_heuristic_for_matroid(model: BaseTask, upb: str):
