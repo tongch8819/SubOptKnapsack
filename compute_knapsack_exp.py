@@ -201,8 +201,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 10
-    end_seed = 200
+    start_seed = 68
+    end_seed = 70
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -331,8 +331,8 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 30
-    end_seed = 200
+    start_seed = 148
+    end_seed = 150
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -427,7 +427,7 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 45
+    start_seed = 160
     end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
@@ -500,8 +500,8 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 30
-    end_seed = 200
+    start_seed = 100
+    end_seed = 120
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
