@@ -1,10 +1,5 @@
-# Submodular Optimization with Knapsack Constraint
+# Submodular Optimization Experiment
 
-## ToDo
-+ [Done] add movie recommendation task
-+ add image summarization task
-    + does not have submodularity: `f([1, 34, 17]) - f({1, 34}) = 43.21 - 43.21`
-+ add revenue maximization task
-    + does not have submodularity
 
-+ add mock test
+This repository focuses on submodular maximization problems with knapsack constraints. Submodular functions are set functions that exhibit a natural diminishing returns property, making them suitable for various optimization tasks. The goal is to maximize these functions under given constraints, which is a common problem in fields like machine learning, economics, and operations research.
+
