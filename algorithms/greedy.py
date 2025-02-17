@@ -206,8 +206,18 @@ def adaptive_greedy(model: BaseTask):
 
         cost_ratio_heap.remove(optimal_element)
         remaining_elements.remove(optimal_element)
-        remaining_elements = {e for e in remaining_elements if cost_func[e] + cur_cost <= budget}
+
+        next_remaining_elements = set()
+        for e in remaining_elements:
+            if cost_func[e] + cur_cost > budget:
+                # remove invalid elements from the cost ratio heap
+                cost_ratio_heap.remove(e)
+            else:
+                next_remaining_elements.add(e)
+
+        remaining_elements = next_remaining_elements
         
+        # it is possible that remaining elements 
         residual_cost_ratio = cost_ratio_heap.get_max()
         residual_budget = budget - cur_cost
 

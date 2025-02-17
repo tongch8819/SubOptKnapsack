@@ -17,6 +17,7 @@ baselines = {
     "Aggregate" : greedy_aggregate,
     "MGreedy" : modified_greedy,
     "GreedyMax" : greedy_max,
+    "AdaptiveGreedy" : adaptive_greedy,
 }
 
 
