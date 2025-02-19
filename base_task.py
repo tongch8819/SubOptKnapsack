@@ -82,6 +82,14 @@ class BaseTask(ABC):
                         ]
                         data.append(costs_obj_i)
                     self.A = np.matrix(data)
+                elif cost_mode == "facebook":
+                    data = []
+                    with open("./dataset/facebook/gmcost.txt", "r") as f:
+                        for i in range(0, 4039):
+                            data.append(int(f.readline()))
+
+                    self.A = np.matrix(data)
+
             else:
                 # cardinality
                 self.costs_obj = [
@@ -105,6 +113,16 @@ class BaseTask(ABC):
                         for obj in self.ground_set
                     ]
                     self.A = np.matrix([self.costs_obj])
+                    self.cc = 1
+                elif cost_mode == "facebook":
+                    data = []
+                    with open("./dataset/facebook/gmcost.txt", "r") as f:
+                        for i in range(0, 4039):
+                            line = f.readline()
+                            line = line.replace("\n",'')
+                            data.append(float(line))
+                    self.costs_obj = data
+                    self.A = np.matrix(data)
                     self.cc = 1
             else:
                 # cardinality
