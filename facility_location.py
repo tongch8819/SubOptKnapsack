@@ -45,7 +45,7 @@ class FacilityLocation(BaseTask):
 
 class MovieFacilityLocation(BaseTask):
     def __init__(self, budget: float, k: int = None, n: int = None, seed = 21, sim_type: str = "cosine", matrix_path: str = None,
-                 llambda: float = 0.5, knapsack=True, prepare_max_pair=True, print_curvature=False):
+                 llambda: float = 1, knapsack=True, prepare_max_pair=True, print_curvature=False):
         """
         Inputs:
         - k: number of users
@@ -95,7 +95,6 @@ class MovieFacilityLocation(BaseTask):
         if not os.path.isfile(path):
             raise OSError("File *.npy does not exist.")
         return np.load(path)
-
 
     def internal_objective(self, S: List[int]):
         """

@@ -12,8 +12,10 @@ from custom_coverage import CustomCoverage
 from influence_maximization import YoutubeCoverage, CitationCoverage
 
 from greedy import greedy
-from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4,  modified_greedy_ub5
-from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4, greedy_max_ub4c, greedy_max_ub5, greedy_max_ub5c, greedy_max_ub6
+from mgreedy import modified_greedy_ub1, modified_greedy_ub2, modified_greedy_ub3, modified_greedy_ub4, \
+    modified_greedy_ub5
+from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max_ub4, greedy_max_ub4c, greedy_max_ub5, \
+    greedy_max_ub5c, greedy_max_ub6
 from greedy_with_denstiy_threshold import gdt_ub1, gdt_ub2, gdt_ub3, gdt_ub4
 from gcg import gcg_ub1, gcg_ub2, gcg_ub3, gcg_ub4
 
@@ -24,6 +26,7 @@ import os
 import multiprocessing as mp
 import argparse
 import networkx as nx
+
 knapsack = False
 prepare_2_pair = False
 print_curvature = True
@@ -31,6 +34,7 @@ max_nodes = 100
 graph_path = "dataset/custom-graph/custom.txt"
 
 import pandas as pd
+
 
 def prepare_graphs(config_path: str):
     # run custom_coverage with different n, alpha, beta, gamma
@@ -77,14 +81,15 @@ def prepare_graphs(config_path: str):
                 for seed in range(seed_min, seed_max, seed_step):
                     model_name = f"{n}--{alpha}--{beta}--{gamma}--{seed}"
                     model = CustomCoverage(budget=10, n=n, alpha=alpha, beta=beta, seed=seed, gamma=gamma,
-                                           graph_path=graph_dir+"/"+model_name,
+                                           graph_path=graph_dir + "/" + model_name,
                                            knapsack=knapsack, prepare_max_pair=prepare_2_pair,
-                                           print_curvature=print_curvature,construct_graph=True)
+                                           print_curvature=print_curvature, construct_graph=True)
                 gamma += gamma_step
 
             beta += beta_step
 
         alpha += alpha_step
+
 
 def load_graph(path: str):
     if not os.path.isfile(path):
@@ -93,6 +98,7 @@ def load_graph(path: str):
     nodes = random.sample(list(intact_graph.nodes), max_nodes)
 
     return intact_graph.subgraph(nodes)
+
 
 def prepare_feature_selection():
     data_path = "./dataset/adult-income/adult.csv"
@@ -155,12 +161,12 @@ def prepare_feature_selection():
                 x_i_binary.append(binary_dict[s])
 
         x_i_binary = np.array(x_i_binary)
-        x_s = np.append(x_s, x_i_binary, axis = 1)
+        x_s = np.append(x_s, x_i_binary, axis=1)
 
     print(x_s.shape)
     print(y.shape)
 
-    df = np.append(x_s, y, axis= 1)
+    df = np.append(x_s, y, axis=1)
     print(df.shape)
 
     with open("./dataset/adult-income/binary_data.txt", 'w') as f:
@@ -174,8 +180,9 @@ def prepare_feature_selection():
 
     pass
 
+
 # 读取每个sensor的前200行数据
-def prepare_sensor_placement(n = 1000):
+def prepare_sensor_placement(n=1000):
     current_sensor_idx = 1
     current_sensor_data = n
 
@@ -195,7 +202,7 @@ def prepare_sensor_placement(n = 1000):
                     idx = int(idx)
                     if idx == current_sensor_idx:
                         current_sensor_data -= 1
-                        temps[idx-1].append(float(temp))
+                        temps[idx - 1].append(float(temp))
 
                         if current_sensor_data == 0:
                             current_sensor_idx += 1
@@ -213,7 +220,8 @@ def prepare_sensor_placement(n = 1000):
                                 if line == "":
                                     break
                                 else:
-                                    date, time, epoch, idx, temp, humid, light, voltage = list(line.rstrip("\n").split(" "))
+                                    date, time, epoch, idx, temp, humid, light, voltage = list(
+                                        line.rstrip("\n").split(" "))
                                     if idx.isdigit():
                                         idx = int(idx)
                                         if idx == current_sensor_idx:
@@ -229,7 +237,6 @@ def prepare_sensor_placement(n = 1000):
                         current_sensor_data = n
 
                         temps.append([])
-
 
     # 5号传感器异常
     # print(len(temps))
@@ -248,36 +255,26 @@ def prepare_sensor_placement(n = 1000):
             t = t + "\n"
             f.write(t)
 
+
 def prepare_facebook():
-    facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
-                                     prepare_max_pair=False, print_curvature=False, construct_graph=True,
-                                     graph_suffix="-1000")
+    print("in")
 
-    g1 = facebook.graph
-    c1 = facebook.costs_obj
-    g1l = list(g1.nodes)
-    g1l.sort()
-    print(f"g1:{g1l[:10]}")
+    model = FacebookGraphCoverage(
+        budget=0, n=4039, seed=0, graph_path="./dataset/facebook", knapsack=True, prepare_max_pair=False,
+        print_curvature=False, cost_mode="normal", construct_graph=True, enable_packing=False,
+        constraint_count=1)
 
-    facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
-                                     prepare_max_pair=False, print_curvature=False, construct_graph=True,
-                                     graph_suffix="-1000")
+    print(f"v:{len(model.graph.nodes)}, e:{len(model.graph.edges)}")
 
-    g2 = facebook.graph
-    c2 = facebook.costs_obj
-    g2l = list(g2.nodes)
-    g2l.sort()
-    print(f"g2:{g2l[:10]}")
 
 def prepare_caltech():
     cal = CalTechMaximization(0, 100, "./dataset/caltech", knapsack=True, prepare_max_pair=False, construct_graph=True,
                               graph_suffix="-100100")
 
 
-
 if __name__ == "__main__":
-    # prepare_facebook()
+    prepare_facebook()
 
     # run_multiple_exps(root_dir, True)
 
-    prepare_caltech()
+    # prepare_caltech()

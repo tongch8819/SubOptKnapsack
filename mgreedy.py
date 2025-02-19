@@ -162,13 +162,14 @@ def modified_greedy_nis(model: BaseTask, upb: str = None):
             'f(S)': v_star_fv,
             'c(S)': model.cost_of_singleton(v_star),
         }
+        print(f"Single is selected. Single:{v_star}, G:{sol}")
     else:
         res = {
             'S': sol,
             'f(S)': sol_fv,
             'c(S)': cur_cost,
         }
-
+        print(f"G is selected. Single:{v_star}, G:{sol}")
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital

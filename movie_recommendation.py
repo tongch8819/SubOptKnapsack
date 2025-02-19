@@ -6,7 +6,7 @@ from typing import Set, List
 
 class MovieRecommendation(BaseTask):
     def __init__(self, budget: float, k: int = None, n: int = None, sim_type: str = "cosine", matrix_path: str = None,
-                 llambda: float = 0.5, knapsack=True, prepare_max_pair=True,print_curvature=False):
+                 llambda: float = 1.0, knapsack=True, prepare_max_pair=True,print_curvature=False):
         """
         Inputs:
         - k: number of users

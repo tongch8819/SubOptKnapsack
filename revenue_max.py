@@ -25,6 +25,7 @@ class RevenueMax(BaseTask):
         Inputs:
         - m: number of nodes
         """
+        super().__init__()
         random.seed(seed)
         if pckl_path is None:
             if m is None or edges is None:
@@ -56,6 +57,8 @@ class RevenueMax(BaseTask):
         self.costs_obj = [self._compute_cost(u) for u in self.objects]
 
         self.b = budget
+
+        # self.objective_dict = {'internal': self.internal_objective}
 
     @property
     def ground_set(self):

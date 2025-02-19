@@ -30,8 +30,8 @@ from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_ma
 
 cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ['ub1','ub1m','ub7','ub7m']
-algos = ["modified_greedy_nis"]
+upper_bounds = ['ub1']
+algos = ["modified_greedy_nis", "greedy_max"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
@@ -116,8 +116,8 @@ def compute_movie_recom(root_dir, skip_mode=False):
     # res = greedy_max_ub1(model)
     # print(res)
 
-    interval = 1
-    num_points = 20
+    interval = 10
+    num_points = 10
     start_point = 11
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -285,10 +285,10 @@ def compute_revenue_max(root_dir, skip_mode=False):
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
     model = RevenueMax(budget=1.0,
-                       pckl_path="/home/ctong/Projects/SubOptKnapsack/dataset/revenue/25_youtube_top5000.pkl")
+                       pckl_path="./dataset/revenue/25_youtube_top5000.pkl")
 
     for budget in bds:
-        model.b = budget
+        model.budget = budget
         for up in upper_bounds:
             for algo in algos:
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
@@ -300,6 +300,7 @@ def compute_revenue_max(root_dir, skip_mode=False):
                 res = func_call(model)  # dict
                 with open(save_path, "wb") as wrt:
                     pickle.dump(res, wrt)
+                print(res)
                 print("Done: ", save_path)
 
 
@@ -575,7 +576,7 @@ def compute_facility(root_dir, skip_mode=False):
     # res = greedy_max_ub1(model)
     # print(res)
 
-    interval = 1
+    interval = 10
     num_points = 30
     start_point = 11
     end_point = start_point + (num_points - 1) * interval
