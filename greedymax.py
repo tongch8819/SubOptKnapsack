@@ -37,13 +37,6 @@ def greedy_max(model: BaseTask, upb: str = None):
     #         return model.cost_of_singleton(x) > model.cost_of_singleton(y)
 
     while len(remaining_elements):
-        # remaining_elements = list(remaining_elements)
-        # remaining_elements.sort(key = lambda x: model.density(x, []), reverse=True)
-        #
-        # t = [model.density(x,[]) for x in remaining_elements]
-        #
-        # print(f"r:{remaining_elements[:10]}, t:{t[:10]}")
-
         # argmax marginal gain
         s, max_marginal_gain = None, -1
         for e in remaining_elements:

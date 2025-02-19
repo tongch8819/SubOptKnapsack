@@ -17,7 +17,6 @@ from greedymax import greedy_max_ub1, greedy_max_ub2, greedy_max_ub3, greedy_max
 from greedy_with_denstiy_threshold import gdt_ub1, gdt_ub2, gdt_ub3, gdt_ub4
 from gcg import gcg_ub1, gcg_ub2, gcg_ub3, gcg_ub4
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
@@ -248,36 +247,69 @@ def prepare_sensor_placement(n = 1000):
             t = t + "\n"
             f.write(t)
 
-def prepare_facebook():
-    facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
-                                     prepare_max_pair=False, print_curvature=False, construct_graph=True,
-                                     graph_suffix="-1000")
-
-    g1 = facebook.graph
-    c1 = facebook.costs_obj
-    g1l = list(g1.nodes)
-    g1l.sort()
-    print(f"g1:{g1l[:10]}")
-
-    facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
-                                     prepare_max_pair=False, print_curvature=False, construct_graph=True,
-                                     graph_suffix="-1000")
-
-    g2 = facebook.graph
-    c2 = facebook.costs_obj
-    g2l = list(g2.nodes)
-    g2l.sort()
-    print(f"g2:{g2l[:10]}")
+# def prepare_facebook():
+#     facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
+#                                      prepare_max_pair=False, print_curvature=False, construct_graph=True,
+#                                      graph_suffix="-1000")
+#
+#     g1 = facebook.graph
+#     c1 = facebook.costs_obj
+#     g1l = list(g1.nodes)
+#     g1l.sort()
+#     print(f"g1:{g1l[:10]}")
+#
+#     facebook = FacebookGraphCoverage(0, 1000, graph_path="./dataset/facebook/graphs/1", knapsack=True,
+#                                      prepare_max_pair=False, print_curvature=False, construct_graph=True,
+#                                      graph_suffix="-1000")
+#
+#     g2 = facebook.graph
+#     c2 = facebook.costs_obj
+#     g2l = list(g2.nodes)
+#     g2l.sort()
+#     print(f"g2:{g2l[:10]}")
 
 def prepare_caltech():
     cal = CalTechMaximization(0, 100, "./dataset/caltech", knapsack=True, prepare_max_pair=False, construct_graph=True,
                               graph_suffix="-100100")
 
+def prepare_facebook():
+    path = "./dataset/facebook/facebook_combined.txt"
 
+    if not os.path.isfile(path):
+        raise OSError("File *.txt does not exist.")
+    intact_graph: nx.Graph = nx.read_edgelist(path)
+    print(f"vertex:{len(intact_graph.nodes)}, edges:{len(intact_graph.edges)}")
+
+    nodes = list(intact_graph.nodes)
+    nodes.sort()
+
+    alpha = 1/20
+
+    costs = []
+
+    for node in nodes:
+        neighbors = len(set(intact_graph.neighbors(str(node))))
+        cost = (neighbors - alpha)/4039
+        costs.append(cost)
+
+    max_c = 100000
+    for cost in costs:
+        if cost < max_c:
+            max_c = cost
+
+    beta = 1/max_c
+
+    costs = [cost * beta for cost in costs]
+
+    print(f"m:{np.min(costs)}")
+
+    with open("./dataset/facebook/gmcost.txt", "w") as f:
+        for cost in costs:
+            f.write(f"{cost}\n")
 
 if __name__ == "__main__":
-    # prepare_facebook()
+    prepare_facebook()
 
     # run_multiple_exps(root_dir, True)
 
-    prepare_caltech()
+    # prepare_caltech()
