@@ -122,6 +122,7 @@ class BaseTask(ABC):
                             line = line.replace("\n",'')
                             data.append(float(line))
                     self.costs_obj = data
+                    # print(f"ccc:{self.costs_obj[:10]}")
                     self.A = np.matrix(data)
                     self.cc = 1
             else:

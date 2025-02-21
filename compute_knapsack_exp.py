@@ -28,14 +28,14 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
 
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
-cost_mode = "facebook"
+cost_mode = "normal"
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ['ub1']
-algos = ["modified_greedy_nis", "greedy_max"]
+upper_bounds = ['ub1', 'ub1m', 'ub7', 'ub7m']
+algos = ["greedy_max"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
-archive = "archive-24"
+archive = "archive-25"
 
 # count how many upbs are calculated by empty sets
 # apply the new method on the MSMK problem
@@ -171,16 +171,23 @@ def compute_dblp(root_dir, skip_mode=False):
 def compute_facebook(root_dir, skip_mode=False):
     interval = 1
     num_points = 10
-    start_point = 5
+    start_point = 1.6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
-    n = 1000
+    n = 4039
     s = f"-{n}"
+
 
     model = FacebookGraphCoverage(
         budget=0, n=n, seed=0, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
-        print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
+        print_curvature=False, cost_mode='facebook', construct_graph=True, graph_suffix=s)
+
+    # print(f"what f:{model.objective({4036})}, c:{model.cost_of_set({4036})}")
+    # for i in range(1946,1950):
+    #     print(f"i:{i}, f:{model.objective({i})}")
+    # print(f"f:{model.objective({4036})}")
+
 
     for budget in bds:
         model.budget = budget
@@ -201,7 +208,7 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 4039
+    n = 1000
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -210,8 +217,8 @@ def compute_facebook_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 1
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -334,8 +341,8 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 141
-    end_seed = 200
+    start_seed = 0
+    end_seed = 100
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -430,7 +437,7 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 198
+    start_seed = 100
     end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):

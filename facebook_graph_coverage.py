@@ -45,7 +45,7 @@ class FacebookGraphCoverage(BaseTask):
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
-            self.nodes.sort()
+            # self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
             self.assign_costs(knapsack, cost_mode)
@@ -57,7 +57,7 @@ class FacebookGraphCoverage(BaseTask):
             self.graph: nx.Graph = self.load_graph(graph_path + "/" + graph_name)
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
-            self.nodes.sort()
+            # self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
             with open(self.graph_path + "/" + cost_name, "r") as f:
@@ -87,10 +87,10 @@ class FacebookGraphCoverage(BaseTask):
         if not os.path.isfile(path):
             raise OSError("File *.txt does not exist.")
         intact_graph: nx.Graph = nx.read_edgelist(path)
-        print(f"l:{len(intact_graph.nodes)}")
+        # print(f"l:{len(intact_graph.nodes)}")
 
         nodes = random.sample(list(intact_graph.nodes), min(len(list(intact_graph.nodes)), self.max_nodes))
-        nodes.sort()
+        # nodes.sort()
         # print(f"nodes:{nodes[:10]}")
         return intact_graph.subgraph(nodes)
 
@@ -115,7 +115,9 @@ class FacebookGraphCoverage(BaseTask):
             new_neighbors = set([int(x) for x in new_neighbors])
             neighbors = neighbors | new_neighbors
 
-        return len(neighbors)
+        # print(f"S:{S}, neigh:{len(neighbors)}")
+
+        return len(neighbors) / 4039
 
     def cost_of_set(self, S: List[int]):
         return sum(self.costs_obj[x] for x in S)

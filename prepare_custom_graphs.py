@@ -281,27 +281,30 @@ def prepare_facebook():
     print(f"vertex:{len(intact_graph.nodes)}, edges:{len(intact_graph.edges)}")
 
     nodes = list(intact_graph.nodes)
-    nodes.sort()
-
-    alpha = 1/20
 
     costs = []
 
+    count = 0
     for node in nodes:
-        neighbors = len(set(intact_graph.neighbors(str(node))))
-        cost = (neighbors - alpha)/4039
+        neighbors = len(set(intact_graph.neighbors(str(node)))) + 1
+        cost = neighbors/4039
         costs.append(cost)
+        # if count < 10:
+        #     print(cost)
+        # count += 1
 
-    max_c = 100000
+    min_c = 100000
     for cost in costs:
-        if cost < max_c:
-            max_c = cost
+        if cost < min_c:
+            min_c = cost
 
-    beta = 1/max_c
+    alpha = min_c/20
 
-    costs = [cost * beta for cost in costs]
+    beta = 20/(19 * min_c)
 
-    print(f"m:{np.min(costs)}")
+    costs = [(cost - alpha) * beta for cost in costs]
+
+    # print(f"min_c:{min_c}, alpha:{alpha}, beta:{beta}")
 
     with open("./dataset/facebook/gmcost.txt", "w") as f:
         for cost in costs:

@@ -35,20 +35,21 @@ def greedy_max(model: BaseTask, upb: str = None):
         s, max_marginal_gain = None, -1
         for e in remaining_elements:
             mg = model.marginal_gain(e, G)
-            if s is None or mg > max_marginal_gain:
+            if cur_cost + model.cost_of_singleton(e) <= model.budget and (s is None or mg > max_marginal_gain):
                 s, max_marginal_gain = e, mg
         assert s is not None
         tmp_G = deepcopy(G)
         tmp_G.add(s)
+        # print(f"? s:{s}, cost:{model.cost_of_set(tmp_G)}, b:{model.budget}, temp_G:{tmp_G}")
         if model.objective(S) < model.objective(tmp_G) and model.cost_of_set(tmp_G) <= model.budget:
             S = tmp_G
             # update data-dependent upper-bound
-            # if upb is not None:
-            #     delta, p1 = marginal_delta_gate(upb, S, set(model.ground_set) - S, model)
-            #     fs = model.objective(S)
-            #     if lambda_capital > fs + delta:
-            #         lambda_capital = fs + delta
-            #         parameters = p1
+            if upb is not None:
+                delta, p1 = marginal_delta_gate(upb, S, set(model.ground_set) - S, model)
+                fs = model.objective(S)
+                if lambda_capital > fs + delta:
+                    lambda_capital = fs + delta
+                    parameters = p1
 
         # argmax density
         a, max_density = None, -1.
@@ -62,13 +63,13 @@ def greedy_max(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
-            # delta, p1 = marginal_delta_gate(upb, G, set(model.ground_set) - G, model)
-            # fs = model.objective(G)
-            # # if fs + delta < lambda_capital:
-            # #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
-            # if lambda_capital > fs + delta:
-            #     lambda_capital = fs + delta
-            #     parameters = p1
+            delta, p1 = marginal_delta_gate(upb, G, set(model.ground_set) - G, model)
+            fs = model.objective(G)
+            # if fs + delta < lambda_capital:
+            #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
+            if lambda_capital > fs + delta:
+                lambda_capital = fs + delta
+                parameters = p1
 
         remaining_elements.remove(a)
         # filter out violating elements
@@ -88,14 +89,14 @@ def greedy_max(model: BaseTask, upb: str = None):
             'f(S)': S_fv,
             'c(S)': model.cost_of_set(S),
         }
-        print(f"S is selected. S:{S}, G:{G}")
+        # print(f"S is selected. S:{S}, G:{G}")
     else:
         res = {
             'S': G,
             'f(S)': G_fv,
             'c(S)': model.cost_of_set(G),
         }
-        print(f"G is selected. S:{S}, G:{G}")
+        # print(f"G is selected. S:{S}, G:{G}")
 
     if upb is not None:
         res['Lambda'] = lambda_capital
