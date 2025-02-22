@@ -1877,20 +1877,67 @@ class MaximizationOptimizer:
 class PrimalDualOptimizer:
     def __init__(self):
         self.model = None
+        self.b = 0
+        self.n = 0
+        self.tau = None
+        self.x = None
 
         pass
 
     def build(self):
+        self.b = self.model.budget
+        self.n = len(self.model.ground_set)
         pass
 
     def optimize(self):
         i = 1
-        A = set()
-        alg = set()
+        # initial solution
+        self.x = np.zeros(self.n)
+        # fractional solution sequence
+        x_series = [copy.deepcopy(self.x)]
+        # map from indexes in x_series to weight
+        self.tau = {
+            0: 1,
+        }
+        c = 0
+        T = set()
+
+        d_gamma = 0
+        betas = []
+        for i in range(0, self.n):
+            betas.append(self.beta(i))
+
+        while c < self.b:
+            self.discrete_make_dual()
+
+            # find p_c
+            p_c, t = None, 0
+            for j, beta_j in T:
+                if p_c is None or t < beta_j:
+                    p_c = j
+                    t = beta_j
+
+            delta_c = max(self.b - c, self.model.cost_of_singleton(p_c))
+
+            self.x[p_c] = self.x[p_c] + delta_c
+
+            x_series.append(copy.deepcopy(self.x))
 
 
 
         pass
 
+    def discrete_make_dual(self):
+        pass
 
+    def beta(self, j, base = None):
+        if base is None:
+            return self.density(j, self.x)
+        else:
+            return self.density(j, base)
 
+    def density(self, j, base = None):
+        pass
+
+    def gain(self, j, base = None):
+        pass
