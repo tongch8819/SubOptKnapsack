@@ -1923,8 +1923,7 @@ class PrimalDualOptimizer:
 
             x_series.append(copy.deepcopy(self.x))
 
-
-
+            
         pass
 
     def discrete_make_dual(self):
