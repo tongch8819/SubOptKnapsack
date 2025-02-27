@@ -39,13 +39,14 @@ class FacebookGraphCoverage(BaseTask):
         if construct_graph:
             self.graph: nx.Graph = self.load_original_graph("./dataset/facebook/facebook_combined.txt")
 
-            with open(self.graph_path + "/" + graph_name, "w") as f:
-                for edge in self.graph.edges:
-                    f.write(f"{edge[0]} {edge[1]}\n")
+            # with open(self.graph_path + "/" + graph_name, "w") as f:
+            #     for edge in self.graph.edges:
+            #         f.write(f"{edge[0]} {edge[1]}\n")
 
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
-            # self.nodes.sort()
+            self.nodes.sort()
+            # print(f"self:{self.nodes[:10]}")
             self.objs = list(range(0, len(self.nodes)))
 
             self.assign_costs(knapsack, cost_mode)
@@ -87,11 +88,8 @@ class FacebookGraphCoverage(BaseTask):
         if not os.path.isfile(path):
             raise OSError("File *.txt does not exist.")
         intact_graph: nx.Graph = nx.read_edgelist(path)
-        # print(f"l:{len(intact_graph.nodes)}")
-
         nodes = random.sample(list(intact_graph.nodes), min(len(list(intact_graph.nodes)), self.max_nodes))
-        # nodes.sort()
-        # print(f"nodes:{nodes[:10]}")
+        nodes.sort()
         return intact_graph.subgraph(nodes)
 
     def load_graph(self, path: str):

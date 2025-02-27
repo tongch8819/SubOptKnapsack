@@ -5,6 +5,7 @@ import shlex
 from typing import Set, List
 
 import numpy as np
+from networkx.algorithms.bipartite.basic import density
 
 from base_task import BaseTask
 from matroid import Matroid
@@ -1881,63 +1882,209 @@ class PrimalDualOptimizer:
         self.n = 0
         self.tau = None
         self.x = None
+        self.x_series = None
+        self.betas = []
+        self.d_betas = []
+        self.T = set()
 
+        self.d_alpha = 0
+        self.d_gamma = 0
+        self.alpha = 0
+        self.gamma = 0
         pass
 
     def build(self):
         self.b = self.model.budget
         self.n = len(self.model.ground_set)
-        pass
+        self.x = []
+        self.x_series = [copy.deepcopy(self.x)]
+        self.tau = [1]
+
+        self.betas.clear()
+        self.d_betas.clear()
+        for i in range(0, self.n):
+            self.betas.append(self.beta(i))
+            self.d_betas.append(0)
+
+        self.d_alpha = 0
+        self.d_gamma = 0
+        self.gamma = 0
+        self.T = set()
+
+        max_i, max_b = None, -1
+        for i in range(0, self.n):
+            if max_i is None or max_b < self.betas[i]:
+                max_i, max_b = i, self.betas[i]
+
+        self.alpha = max_b
+        for i in range(0, self.n):
+            if self.betas[i] == self.alpha:
+                self.T.add(i)
 
     def optimize(self):
-        i = 1
-        # initial solution
-        self.x = np.zeros(self.n)
-        # fractional solution sequence
-        x_series = [copy.deepcopy(self.x)]
-        # map from indexes in x_series to weight
-        self.tau = {
-            0: 1,
-        }
         c = 0
-        T = set()
-
-        d_gamma = 0
-        betas = []
-        for i in range(0, self.n):
-            betas.append(self.beta(i))
+        last_j = -1
+        last_b = self.b
 
         while c < self.b:
             self.discrete_make_dual()
-
             # find p_c
             p_c, t = None, 0
-            for j, beta_j in T:
-                if p_c is None or t < beta_j:
+            for j in self.T:
+                d_beta_j = self.d_betas[j]
+                if p_c is None or t < d_beta_j:
                     p_c = j
-                    t = beta_j
+                    t = d_beta_j
 
-            delta_c = max(self.b - c, self.model.cost_of_singleton(p_c))
+            delta_c = min(self.b - c, self.model.cost_of_singleton(p_c))
 
-            self.x[p_c] = self.x[p_c] + delta_c
+            if delta_c == self.b - c:
+                # terminate
+                last_j = p_c
+                last_b = delta_c
+                break
+            else:
+                self.x.append(p_c)
+                self.x_series.append(copy.deepcopy(self.x))
+                self.tau.append(0)
 
-            x_series.append(copy.deepcopy(self.x))
+                # update gamma, alpha
+                self.update_betas()
+                self.update_alpha()
+                self.update_gamma()
 
+                c += self.model.cost_of_singleton(p_c)
 
+        # print(f"last_b:{last_b}, last_j:{last_j}")
+        upb = self.b * self.alpha + self.gamma
 
-        pass
+        return {
+            "x" : self.x,
+            "fx": self.objective(self.x),
+            "last_j": last_j,
+            "upb": upb
+        }
 
     def discrete_make_dual(self):
-        pass
+        if self.b * self.d_alpha + self.d_gamma >= 0:
+            return
 
-    def beta(self, j, base = None):
+        j_star, max_b = None, -1
+        for i in self.T:
+            if j_star is None or max_b < self.d_betas[i]:
+                j_star, max_b = i, self.d_betas[i]
+
+        W = set()
+        for i in range(0, self.n):
+            temp = self.b * self.d_betas[i] + self.d_gamma
+            if temp >= 0:
+                W.add(i)
+
+        while True:
+            l, max_l = None, -1
+            for i in set(range(0, self.n)) - self.T:
+                nominator = self.density(i, self.x) - self.density(j_star, self.x)
+                denominator = self.betas[j_star] - self.betas[i]
+                temp = nominator / denominator
+                if l is None or max_l < temp:
+                    l, max_l = i, temp
+
+            nominator = self.betas[j_star] - self.betas[l]
+            denominator = self.density(l, self.x) - self.density(j_star, self.x)
+
+            temp = nominator / denominator
+
+            # no more element can enter tight set T
+            if temp < 0:
+                self.tau[len(self.tau) - 1] = 1
+                for i in range(0, len(self.tau) - 1):
+                    self.tau[i] = 0
+
+                self.update_betas()
+                self.update_alpha()
+                self.update_gamma()
+
+                break
+
+
+            # print(f"temp:{temp}, T:{self.T}, n:{nominator}, d:{denominator}")
+            t = math.log(1 + temp, math.e)
+            e_t = math.pow(math.e, -t)
+
+            self.alpha = self.betas[l] * e_t + self.density(l, self.x) * (1 - e_t)
+
+            for i in range(0, self.n):
+                self.betas[i] = self.betas[i] * e_t + self.density(i, self.x) * (1 - e_t)
+                self.d_betas[i] = self.d_betas[i] * e_t
+
+            self.gamma = self.gamma * e_t + self.objective(self.x) * (1 - e_t)
+            self.d_gamma = self.d_gamma * e_t
+
+            self.T.clear()
+            for i in range(0, self.n):
+                if self.betas[i] == self.alpha:
+                    self.T.add(i)
+
+            for i in range(0, len(self.tau) - 1):
+                self.tau[i] -= t * self.tau[i]
+            self.tau[len(self.tau) - 1] += t * (1 - self.tau[len(self.tau) - 1])
+
+            if l in W:
+                break
+            else:
+                j_star = l
+
+    def update_betas(self):
+        for i in range(0, self.n):
+            self.betas[i] = self.beta(i)
+            self.d_betas[i] = self.density(i, self.x) - self.betas[i]
+
+    def update_alpha(self):
+        max_i, max_b = None, -1
+
+        for i in range(0, self.n):
+            if max_i is None or max_b < self.betas[i]:
+                max_i, max_b = i, self.betas[i]
+
+        self.alpha = max_b
+        self.T.clear()
+        for i in range(0, self.n):
+            if self.betas[i] == self.alpha:
+                self.T.add(i)
+
+        max_i, max_db = None, -1
+        for i in self.T:
+            if max_i is None or max_db < self.d_betas[i]:
+                max_i, max_db = i, self.d_betas[i]
+        self.d_alpha = max_db
+
+    def update_gamma(self):
+        ret = 0
+        for i in range(0, len(self.x_series)):
+            tau_x = self.tau[i]
+            ret += tau_x * self.objective(self.x_series[i])
+
+        self.gamma = ret
+        self.d_gamma = self.objective(self.x) - self.gamma
+
+    def beta(self, j):
+        ret = 0
+        for i in range(0, len(self.x_series)):
+            tau_x = self.tau[i]
+            ret += tau_x * self.density(j, self.x_series[i])
+
+        return ret
+
+    def density(self, j, base=None):
         if base is None:
-            return self.density(j, self.x)
-        else:
-            return self.density(j, base)
+            base = []
+        # print(f"base:{base}")
+        return self.model.density(j, base)
 
-    def density(self, j, base = None):
-        pass
+    def gain(self, j, base=None):
+        if base is None:
+            base = []
+        return self.model.marginal_gain(j, base)
 
-    def gain(self, j, base = None):
-        pass
+    def objective(self, x):
+        return self.model.objective(list(x))
