@@ -28,8 +28,8 @@ if __name__ == "__main__":
     stop_seed = 20
 
     interval = 1
-    num_points = 5
-    start_point = 7
+    num_points = 15
+    start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
                 res = alg.optimize()
                 print(f"Done:seed:{seed}/{stop_seed - start_seed + 1}, budget:{budget}, res:{res}")
 
-                save_dir = os.path.join(root_dir, args.task, f'{args.num}')
+                save_dir = os.path.join(root_dir, args.task, f'{args.num}', f'{seed}')
                 save_path = os.path.join(save_dir, "{}-{}-{}-{}-{}.pckl".format(
                     "FS", ub, budget, alpha, model.__class__.__name__))
 

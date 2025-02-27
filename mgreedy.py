@@ -353,13 +353,9 @@ def modified_greedy_ub11(model: BaseTask):
     return res
 
 def modified_greedy_plain(model: BaseTask):
-    start_time = time.time()
-
     sol = set()
     remaining_elements = set(model.ground_set)
-    ground_set = set(model.ground_set)
     cur_cost = 0.
-    parameters = {}
 
     while len(remaining_elements):
         u, max_density = None, -1.
@@ -406,9 +402,6 @@ def modified_greedy_plain(model: BaseTask):
             'f(S)': sol_fv,
             'c(S)': cur_cost,
         }
-
-    stop_time = time.time()
-    res['Time'] = stop_time - start_time
 
     return res
 
