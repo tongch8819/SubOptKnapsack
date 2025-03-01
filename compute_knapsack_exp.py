@@ -210,8 +210,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 100
-    end_seed = 200
+    start_seed = 180
+    end_seed = 190
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -510,8 +510,8 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 100
+    start_seed = 190
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()

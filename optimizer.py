@@ -1942,6 +1942,14 @@ class PrimalDualOptimizer:
                 # terminate
                 last_j = p_c
                 last_b = delta_c
+
+                # update gamma, alpha
+                self.update_betas()
+                self.update_alpha()
+                self.update_gamma()
+
+                self.discrete_make_dual()
+
                 break
             else:
                 self.x.append(p_c)
@@ -1952,10 +1960,6 @@ class PrimalDualOptimizer:
                 self.update_betas()
                 self.update_alpha()
                 self.update_gamma()
-
-<<<<<<< .merge_file_kJwvNu
-        pass
-=======
                 c += self.model.cost_of_singleton(p_c)
 
         # print(f"last_b:{last_b}, last_j:{last_j}")
@@ -1967,7 +1971,6 @@ class PrimalDualOptimizer:
             "last_j": last_j,
             "upb": upb
         }
->>>>>>> .merge_file_OcQsM8
 
     def discrete_make_dual(self):
         if self.b * self.d_alpha + self.d_gamma >= 0:
@@ -2009,7 +2012,6 @@ class PrimalDualOptimizer:
                 self.update_gamma()
 
                 break
-
 
             # print(f"temp:{temp}, T:{self.T}, n:{nominator}, d:{denominator}")
             t = math.log(1 + temp, math.e)
