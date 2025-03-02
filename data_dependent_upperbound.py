@@ -72,13 +72,13 @@ def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseT
                 x = x - f_s({t[idx]})
                 cur_cost = cur_cost + model.cost_of_singleton(t[idx])
             else:
+                if x == 0:
+                    break
                 density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
                 cur_cost = cur_cost + x/density
-                # print(f"break here:{idx}, d:{density}, x:{x}, curcost:{cur_cost}, bv:{f_s({t[idx]})},{model.cost_of_singleton(t[idx])}")
                 break
             idx = idx + 1
 
-        # print(f"?:{cur_cost}")
         return cur_cost
 
     delta = H_plus(model.value - bv)
@@ -318,7 +318,7 @@ def marginal_delta_min_version2(base_set: Set[int], remaining_set: Set[int], gro
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
     if len(remaining_set) == 0:
-        return 0
+        return 0, {}
 
     parameters = {}
 
@@ -350,6 +350,8 @@ def marginal_delta_min_version2(base_set: Set[int], remaining_set: Set[int], gro
             if x > f_s(set(t[:idx+1])):
                 cur_cost = cur_cost + model.cost_of_singleton(t[idx]) * sigma[idx]
                 prev_ai = f_s(set(t[:idx+1]))
+            elif x == f_s(set(t[:idx+1])):
+                break
             else:
                 density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
                 x = x - prev_ai

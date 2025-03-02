@@ -1,3 +1,4 @@
+import argparse
 import copy
 import math
 import os
@@ -11,13 +12,13 @@ import numpy as np
 def compute_min_series(task):
     seed_start = 0
     seed_end = 10
-    n = 200
-    root_dir = f"./result/archive-21"
+    n = 1000
+    root_dir = f"./result/archive-29"
 
     upb = 'ub0'
 
     for seed in range(seed_start, seed_end):
-        model = model_factory(task, n, seed, 0)
+        model = model_factory(task, n, seed, budget=0, knap=False)
 
         t = copy.deepcopy(model.ground_set)
         t.sort(key=lambda x: model.cost_of_singleton(x))
@@ -30,7 +31,7 @@ def compute_min_series(task):
             if t_c < gate and (max_s is None or max_v < t_v):
                 max_s = ele
                 max_v = t_v
-        print(f"seed:{seed}, max_v:{max_v}, max_s:{max_s}")
+
         start_value = min(max_v + 10, 50)
         num_points = 15
         interval = 5
@@ -54,7 +55,54 @@ def compute_min_series(task):
             print(res)
     pass
 
+def compute_min_series_b(task):
+    seed_start = 0
+    seed_end = 10
+    root_dir = f"./result/archive-29"
+
+    upb = 'ub2'
+
+    for n in range(100, 501, 100):
+        n_dir = os.path.join(root_dir, task, f"{n}")
+        if not os.path.exists(n_dir):
+            os.mkdir(n_dir)
+
+        for seed in range(seed_start, seed_end):
+            model = model_factory(task, n, seed, budget=0, knap=False)
+            # calculate worst case
+            max_ele, max_v = None, -1
+            for ele in model.ground_set:
+                if max_ele is None or model.objective([ele]) > max_v:
+                    max_v = model.objective([ele])
+                    max_ele = ele
+
+            save_dir = os.path.join(n_dir, f'{seed}')
+
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+
+            model.value = n
+            print(f"n:{n}, seed:{seed}")
+            res = greedy_min.simple_greedy_min(model, upb)
+
+            res['ground'] = n
+            res['worst'] = 1 + math.log(max_v, math.e)
+
+            # assert res['AF'] <= res['worst'], print(f"AF:{res['AF']}, worst:{res['worst']}")
+
+            save_path = os.path.join(save_dir, "{}-{}-{:.2f}-{}.pckl".format(upb, model.__class__.__name__, n, seed))
+            with open(save_path, "wb") as wrt:
+                pickle.dump(res, wrt)
+            print(res)
+    pass
+
 
 if __name__ == "__main__":
-    compute_min_series("youtube")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--task", default='', help="task name")
+    args = parser.parse_args()
+
+    assert args.task in ["facebook", "youtube"]
+
+    compute_min_series_b(args.task)
     pass
