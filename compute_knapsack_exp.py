@@ -210,8 +210,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 195
-    end_seed = 200
+    start_seed = 180
+    end_seed = 190
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -258,6 +258,7 @@ def compute_custom(root_dir, skip_mode=False):
                            knapsack=False, prepare_max_pair=prepare_2_pair, print_curvature=print_curvature)
     interval = 1
     num_points = 20
+
     start_point = 1
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -268,6 +269,7 @@ def compute_custom(root_dir, skip_mode=False):
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
                     algo, up + suffix, model.__class__.__name__, budget))
                 func_call = eval(algo + "_" + up)
+
                 res = func_call(model)  # dict
                 if skip_mode and os.path.exists(save_path):
                     print("Skip: ", save_path)
@@ -341,14 +343,14 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 20
+    start_seed = 100
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
+        num_points = 35
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -510,8 +512,8 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 99
-    end_seed = 100
+    start_seed = 190
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()

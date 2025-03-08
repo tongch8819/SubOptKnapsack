@@ -1942,6 +1942,14 @@ class PrimalDualOptimizer:
                 # terminate
                 last_j = p_c
                 last_b = delta_c
+
+                # update gamma, alpha
+                self.update_betas()
+                self.update_alpha()
+                self.update_gamma()
+
+                self.discrete_make_dual()
+
                 break
             else:
                 self.x.append(p_c)
@@ -1952,14 +1960,13 @@ class PrimalDualOptimizer:
                 self.update_betas()
                 self.update_alpha()
                 self.update_gamma()
-
                 c += self.model.cost_of_singleton(p_c)
 
         # print(f"last_b:{last_b}, last_j:{last_j}")
         upb = self.b * self.alpha + self.gamma
 
         return {
-            "x" : self.x,
+            "x": self.x,
             "fx": self.objective(self.x),
             "last_j": last_j,
             "upb": upb
@@ -2005,7 +2012,6 @@ class PrimalDualOptimizer:
                 self.update_gamma()
 
                 break
-
 
             # print(f"temp:{temp}, T:{self.T}, n:{nominator}, d:{denominator}")
             t = math.log(1 + temp, math.e)
@@ -2088,3 +2094,63 @@ class PrimalDualOptimizer:
 
     def objective(self, x):
         return self.model.objective(list(x))
+
+
+class SlicingMaximizationOptimizer:
+    def __init__(self):
+        self.model = None
+        self.intermediate_sets = []
+        self.upb = 'ub0'
+        self.n = 0
+
+        self.c = None
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def addIntermediate(self, intermediate):
+        self.intermediate_sets.append(copy.deepcopy(intermediate))
+
+    def setUpb(self, upb):
+        self.upb = upb
+
+    def build(self):
+        # prepare c
+        self.n = len(self.model.ground_set)
+
+        self.c = np.zeros(self.n + 1)
+        self.c[self.n] = -1
+
+        # prepare A
+
+        # prepare lambda
+        t = len(self.intermediate_sets)
+
+        self.A = np.zeros(shape=(t + 1, self.n + 1))
+        for r_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            for e in range(0, self.n):
+                self.A[r_idx, e] = -self.model.marginal_gain(e, intermediate_set)
+            self.A[r_idx, self.n] = 1
+
+        for e in range(0, self.n):
+            self.A[t, e] = self.model.cost_of_singleton(e)
+
+        # prepare b
+        self.b = np.zeros(t + 1)
+        for r_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            self.b[r_idx] = self.model.objective(intermediate_set)
+        self.b[t] = self.model.budget
+
+    def optimize(self):
+        bounds = [(0, 1)] * (self.n + 1)
+        bounds[int(self.n)] = (0, np.inf)
+
+        x = scipy.optimize.linprog(c=self.c, A_ub=self.A, b_ub=self.b, bounds=bounds).x
+        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b}, x:{x}")
+        return {
+            "upb": -self.c @ x
+        }

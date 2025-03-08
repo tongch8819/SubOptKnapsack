@@ -46,7 +46,6 @@ class FacebookGraphCoverage(BaseTask):
             self.nodes = list(self.graph.nodes)
             self.nodes = [int(node_str) for node_str in self.nodes]
             self.nodes.sort()
-            # print(f"self:{self.nodes[:10]}")
             self.objs = list(range(0, len(self.nodes)))
 
             self.assign_costs(knapsack, cost_mode)

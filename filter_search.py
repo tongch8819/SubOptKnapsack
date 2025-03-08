@@ -3,7 +3,7 @@ import time
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
 from MaxHeap import MaxHeap, HeapObj
-from data_dependent_upperbound import marginal_delta_version7, marginal_delta
+from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m
 
 
 class FS(OptimalAlg):
@@ -23,6 +23,8 @@ class FS(OptimalAlg):
         self.f = self.model.objective
         if self.opt == 'ub0':
             self.h = self.h_ub0
+        elif self.opt == 'ub1':
+            self.h = self.h_ub1
         elif self.opt == 'ub2':
             self.h = self.h_ub2
 
@@ -34,6 +36,11 @@ class FS(OptimalAlg):
     # the heuristic function
     def h_ub2(self, S):
         delta, _ = marginal_delta_version7(set(S), set(self.model.ground_set) - set(S), self.model)
+        return delta
+
+    # the heuristic function
+    def h_ub1(self, S):
+        delta, _ = marginal_delta_m(set(S), set(self.model.ground_set) - set(S), self.model)
         return delta
 
     def is_on_the_edge(self, S):
@@ -56,10 +63,14 @@ class FS(OptimalAlg):
         }
 
         s = None
+
+        node_count = 0
+
         self.heap.push(HeapObj(set(), self.g(set())))
         while self.heap.size() > 0:
             obj = self.heap.pop()
             s, v = obj.s, obj.v
+            node_count += 1
 
             if self.is_on_the_edge(s):
                 stop_time = time.time()
@@ -67,6 +78,7 @@ class FS(OptimalAlg):
                 ret['c(S)'] = self.model.cost_of_set(s)
                 ret['f(S)'] = self.model.objective(s)
                 ret['time'] = stop_time - start_time
+                ret['node_count'] = node_count
                 return ret
 
             if s not in self.closed_list:
@@ -82,6 +94,7 @@ class FS(OptimalAlg):
         ret['c(S)'] = self.model.cost_of_set(s)
         ret['f(S)'] = self.model.objective(s)
         ret['time'] = stop_time - start_time
+        ret['node_count'] = node_count
         print(f"return from fallback")
 
         return ret
