@@ -20,12 +20,14 @@ def simple_greedy_min(model: BaseTask, upb=None):
         delta, parameters = marginal_delta_min_gate(upb, set({}), remaining_elements, model)
         lambda_capital = delta
 
+    # print(f"model.value:{model.value}")
     while model.objective(list(G)) < model.value and len(remaining_elements) > 0:
         s, max_md = None, -1
         for e in remaining_elements:
             md = model.marginal_gain(e, list(G)) / model.cost_of_singleton(e)
             if s is None or md > max_md:
                 s, max_md = e, md
+
         temp_G = G | {s}
         if model.objective(list(temp_G)) < model.value:
             G.add(s)

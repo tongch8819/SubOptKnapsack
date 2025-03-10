@@ -2,6 +2,8 @@ import copy
 import math
 import random
 import shlex
+import bisect
+from itertools import accumulate
 from typing import Set, List
 
 import numpy as np
@@ -2096,61 +2098,223 @@ class PrimalDualOptimizer:
         return self.model.objective(list(x))
 
 
-class SlicingMaximizationOptimizer:
+class SlicingAugmentedOptimizer:
     def __init__(self):
+        self.NL_sub_c = None
+        self.L_c = None
         self.model = None
-        self.intermediate_sets = []
-        self.upb = 'ub0'
         self.n = 0
+        self.b = 0
 
-        self.c = None
-        self.A = None
-        self.b = None
+        self.intermediate_sets = []
 
     def setModel(self, model):
         self.model = model
 
-    def addIntermediate(self, intermediate):
-        self.intermediate_sets.append(copy.deepcopy(intermediate))
+    def add_intermediate_set(self, s):
+        self.intermediate_sets.append(copy.deepcopy(s))
 
-    def setUpb(self, upb):
-        self.upb = upb
+    def to_u(self, x):
+        u = []
+        for i in range(0, self.n):
+            if x[i] == 1:
+                u.append(i)
+        return u
+
+    def non_linear_constraint(self, x, s):
+        ret = x[self.n] - self.f(s)
+
+        u = self.to_u(x)
+        outside = list(set(u) - set(s))
+
+        if len(outside) == 0:
+            return ret
+
+        for i in range(0, len(outside)):
+            base = set(s) | set(outside[:i])
+            ret -= self.f_s(base, outside[i]) * x[i]
+
+        return ret
+
+    def f(self, s):
+        return self.model.objective(list(s))
+
+    def f_s(self, s, i):
+        return self.model.marginal_gain(i, list(s))
 
     def build(self):
-        # prepare c
+        self.b = self.model.budget
         self.n = len(self.model.ground_set)
 
-        self.c = np.zeros(self.n + 1)
-        self.c[self.n] = -1
+        c = np.zeros(self.n + 1)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
 
-        # prepare A
+        self.L_c = [
+            scipy.optimize.LinearConstraint(A=c, lb= -np.inf, ub=self.b)
+        ]
 
-        # prepare lambda
-        t = len(self.intermediate_sets)
+        self.NL_sub_c = []
 
-        self.A = np.zeros(shape=(t + 1, self.n + 1))
-        for r_idx in range(0, t):
-            intermediate_set = list(self.intermediate_sets[r_idx])
-            for e in range(0, self.n):
-                self.A[r_idx, e] = -self.model.marginal_gain(e, intermediate_set)
-            self.A[r_idx, self.n] = 1
+        for s in self.intermediate_sets:
+            self.NL_sub_c.append(
+                scipy.optimize.NonlinearConstraint(fun=lambda x: self.non_linear_constraint(x, s), lb= -np.inf, ub=0)
+            )
 
-        for e in range(0, self.n):
-            self.A[t, e] = self.model.cost_of_singleton(e)
-
-        # prepare b
-        self.b = np.zeros(t + 1)
-        for r_idx in range(0, t):
-            intermediate_set = list(self.intermediate_sets[r_idx])
-            self.b[r_idx] = self.model.objective(intermediate_set)
-        self.b[t] = self.model.budget
 
     def optimize(self):
-        bounds = [(0, 1)] * (self.n + 1)
-        bounds[int(self.n)] = (0, np.inf)
+        # here we optimize x - a rather than x
+        # thus the constraint should be A(x-a) <= b - Aa
 
-        x = scipy.optimize.linprog(c=self.c, A_ub=self.A, b_ub=self.b, bounds=bounds).x
-        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b}, x:{x}")
+        # build w
+        bounds = [(0, 1)] * (self.n + 1)
+
+        bounds[self.n] = (0, np.inf)
+
+        # print(f"start optimize")
+        x = scipy.optimize.minimize(lambda y: -y[self.n], x0=np.zeros(self.n + 1), constraints=self.L_c + self.NL_sub_c,
+                                    bounds=bounds).x
+
+        # print(f"lc:{self.L_c}")
+        # print(f"v1:{-(self.w @ x)}, base:{base}, w:{self.w}, x:{x}, bi:{self.b[0]}")
         return {
-            "upb": -self.c @ x
+            "upb": x[self.n],
         }
+        pass
+
+class CutoffAugmentedOptimizer:
+    def __init__(self):
+        self.NL_sub_c = None
+        self.L_c = None
+        self.model = None
+        self.n = 0
+        self.b = 0
+        self.c = None
+
+        self.intermediate_sets = []
+
+    def setModel(self, model):
+        self.model = model
+
+    def add_intermediate_set(self, s):
+        self.intermediate_sets.append(copy.deepcopy(s))
+
+    def to_u(self, x):
+        u = []
+        for i in range(0, self.n):
+            if x[i] == 1:
+                u.append(i)
+        return u
+
+
+    def G_minus(self, x, base):
+        if x <= 0:
+            return 0
+        if x >= self.model.cost_of_set(base):
+            return np.sum([self.model.cutout_marginal_gain(i) for i in base])
+
+        def inside_cumsum_costs():
+            s = list(base)
+            costs = [self.model.cost_of_singleton(x) for x in s]
+            cumsum_costs = list(accumulate(costs, initial=None))
+            return cumsum_costs, s
+
+        cumsum_costs, _ = inside_cumsum_costs()
+
+        r1 = bisect.bisect_right(cumsum_costs, x)
+        G = 0.
+        if r1 == 0:
+            return x * self.model.cutout_density(base[0], base)
+        for i in range(r1):
+            # t[i] is a single element
+            assert  i < len(base), f"i:{i}, base:{base}, x:{x}, c:{self.model.cost_of_set(base)}, cc:{cumsum_costs}"
+            G += self.model.cutout_marginal_gain(base[i])
+
+        if r1 >= 1 and r1 < len(cumsum_costs):
+            last_weight = x - cumsum_costs[r1 - 1]
+            assert last_weight >= 0., f"last weight: {last_weight}, x: {x}, cumsum: {cumsum_costs}, r: {r1}"
+            G += last_weight * self.model.cutout_density(base[r1], base)
+        #     if p:
+        #         print(
+        #             f"x:{x}, last_weight:{last_weight},md:{[model.cutout_density(elements[i], base_set) for i in range(r1)]}, mg:{[model.cutout_marginal_gain(elements[i]) for i in range(r1)]}, r1:{r1}, G:{G}, cum:{cumsum_costs}")
+        return G
+
+    def non_linear_constraint(self, x, s):
+        ret = x[self.n] - self.f(s)
+        for i in range(0, self.n):
+            ret -= self.f_s(s, i) * x[i]
+
+        cost = max(0, self.c @ x - self.b + self.model.cost_of_set(s))
+
+        # ret[self.n] = 1
+        ret += self.G_minus(cost, s)
+
+        return ret
+
+    def f(self, s):
+        return self.model.objective(list(s))
+
+    def f_s(self, s, i):
+        return self.model.marginal_gain(i, list(s))
+
+    def f_cutoff(self, i):
+        return self.model.cutout_marginal_gain(i)
+
+    def build(self):
+        self.b = self.model.budget
+        self.n = len(self.model.ground_set)
+
+        self.c = np.zeros(self.n + 2)
+        for i in range(0, self.n):
+            self.c[i] = self.model.cost_of_singleton(i)
+
+        self.L_c = [
+            scipy.optimize.LinearConstraint(A=self.c, lb= -np.inf, ub=self.b)
+        ]
+
+
+        self.NL_sub_c = []
+
+        for s in self.intermediate_sets:
+            s = list(s)
+            s.sort(key=lambda x: self.model.cutout_density(x, s), reverse=False)
+            self.NL_sub_c.append(
+                scipy.optimize.NonlinearConstraint(fun=lambda x: self.non_linear_constraint(x, s), lb= -np.inf, ub=0)
+            )
+
+
+
+    def optimize(self):
+        # here we optimize x - a rather than x
+        # thus the constraint should be A(x-a) <= b - Aa
+
+        # build w
+        bounds = [(0, 1)] * (self.n + 2)
+
+        bounds[self.n] = (0, np.inf)
+        bounds[self.n + 1] = (1, 1)
+
+        x0 = np.zeros(self.n + 2)
+        x0[self.n + 1] = 1
+
+        # print(f"start optimize")
+        x = scipy.optimize.minimize(lambda y: -y[self.n], x0=x0, constraints=self.L_c + self.NL_sub_c,
+                                    bounds=bounds).x
+
+        c = np.zeros(self.n + 2)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        # u = []
+        # e = []
+        # for i in range(0, self.n):
+        #     if x[i] > 0.1:
+        #         u.append(i)
+        #         e.append(x[i])
+        #
+        # print(f"x:{u}, e:{e}, y:{c @ x}")
+        return {
+            "upb": x[self.n],
+        }
+        pass
+
