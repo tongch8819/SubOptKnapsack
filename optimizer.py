@@ -2117,7 +2117,7 @@ class SlicingAugmentedOptimizer:
     def to_u(self, x):
         u = []
         for i in range(0, self.n):
-            if x[i] == 1:
+            if x[i] > 0:
                 u.append(i)
         return u
 
@@ -2139,6 +2139,9 @@ class SlicingAugmentedOptimizer:
     def f(self, s):
         return self.model.objective(list(s))
 
+    def integer_constraint(self, x):
+        return np.array([x[i] - int(x[i]) for i in range(0, self.n)])
+
     def f_s(self, s, i):
         return self.model.marginal_gain(i, list(s))
 
@@ -2154,7 +2157,11 @@ class SlicingAugmentedOptimizer:
             scipy.optimize.LinearConstraint(A=c, lb= -np.inf, ub=self.b)
         ]
 
-        self.NL_sub_c = []
+        self.NL_sub_c = [
+            # scipy.optimize.NonlinearConstraint(fun=lambda x: self.integer_constraint(x), lb=0.0, ub = 0.0)
+        ]
+
+        # print(f"inter:{self.intermediate_sets}")
 
         for s in self.intermediate_sets:
             self.NL_sub_c.append(
@@ -2173,10 +2180,19 @@ class SlicingAugmentedOptimizer:
 
         # print(f"start optimize")
         x = scipy.optimize.minimize(lambda y: -y[self.n], x0=np.zeros(self.n + 1), constraints=self.L_c + self.NL_sub_c,
-                                    bounds=bounds).x
+                                    bounds=bounds, method='SLSQP').x
 
         # print(f"lc:{self.L_c}")
         # print(f"v1:{-(self.w @ x)}, base:{base}, w:{self.w}, x:{x}, bi:{self.b[0]}")
+
+        u = []
+        e = []
+        for i in range(0, self.n):
+            if x[i] > 0:
+                u.append(i)
+                e.append(x[i])
+
+        # print(f"u:{u}, e:{e}, upb:{x[self.n]}, n:{self.n}")
         return {
             "upb": x[self.n],
         }
@@ -2312,7 +2328,7 @@ class CutoffAugmentedOptimizer:
         #         u.append(i)
         #         e.append(x[i])
         #
-        # print(f"x:{u}, e:{e}, y:{c @ x}")
+        # print(f"u:{u}, e:{e}, y:{c @ x}")
         return {
             "upb": x[self.n],
         }
