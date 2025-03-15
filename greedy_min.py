@@ -223,3 +223,60 @@ def simple_greedy_new_min(model: BaseTask, upb=None):
     stop_time = time.time()
     res['Time'] = stop_time - start_time
     return res
+
+
+def greedy_mintss(model: BaseTask, upb=None):
+    start_time = time.time()
+    parameters = {}
+    lambda_capital = 0
+
+    def g(x):
+        return min(model.objective(list(x)), model.value)
+
+    def g_s(x, base):
+        item1 = set(base) | {x}
+        item2 = base
+
+        return g(item1) - g(item2)
+
+    def d_g_s(x, base):
+        return g_s(x, base) / model.cost_of_singleton(x)
+
+    remaining_elements = set(model.ground_set)
+
+    # print("gonna go")
+    if upb is not None:
+        delta, parameters = marginal_delta_min_gate(upb, set({}), remaining_elements, model)
+        lambda_capital = delta
+    # print("gonna go1")
+
+    s = set()
+    while g(s) < model.value:
+        max_i, max_d = None, 0
+        for i in remaining_elements:
+            if max_i is None or d_g_s(i, s) > max_d:
+                max_i = i
+                max_d = g_s(i, s)
+
+        s.add(max_i)
+        remaining_elements.remove(max_i)
+
+        # print(f"s updated:{s}")
+
+        if upb is not None:
+            delta, parameters = marginal_delta_min_gate(upb, s, remaining_elements, model)
+            if lambda_capital < delta:
+                lambda_capital = delta
+
+    stop_time = time.time()
+
+    ret = {
+        "S": s,
+        "f(S)": model.objective(list(s)),
+        "c(S)": model.cost_of_set(list(s)),
+        "upb": lambda_capital,
+        "AF": model.cost_of_set(list(s)) / lambda_capital,
+        "time": stop_time - start_time
+    }
+
+    return ret
