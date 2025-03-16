@@ -2342,3 +2342,66 @@ class CutoffAugmentedOptimizer:
         }
         pass
 
+class LowerBoundOptimizer:
+    def __init__(self):
+        self.model = None
+        self.intermediate_sets = []
+        self.upb = 'ub0'
+        self.n = 0
+
+        self.c = None
+        self.v = None
+        self.L_c = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def addIntermediate(self, intermediate):
+        self.intermediate_sets.append(copy.deepcopy(intermediate))
+
+    def linear_constraint(self, s):
+        ret = np.zeros(self.n)
+
+        for i in range(0, self.n):
+            ret[i] = self.f_s(s, i)
+
+        return ret
+
+    def setUpb(self, upb):
+        self.upb = upb
+
+    def f(self, s):
+        return self.model.objective(list(s))
+
+    def f_s(self, s, i):
+        return self.model.marginal_gain(i, list(s))
+
+    def build(self):
+        # prepare c
+        self.n = len(self.model.ground_set)
+        self.v = self.model.value
+
+        self.c = np.zeros(self.n)
+        # prepare c
+        for i in range(0, self.n):
+            self.c[i] = self.model.cost_of_singleton(i)
+
+        # prepare lambda
+        self.L_c = [
+        ]
+
+        for s in self.intermediate_sets:
+            # print(f"s:{s}, {self.linear_constraint(s)}")
+            self.L_c.append(
+                scipy.optimize.LinearConstraint(A=self.linear_constraint(s), lb=self.v - self.f(s), ub=np.inf)
+            )
+
+
+    def optimize(self):
+        bounds = [(0, 1)] * self.n
+
+        x = scipy.optimize.minimize(lambda y: self.c @ y, constraints=self.L_c ,bounds=bounds, x0=np.zeros(self.n)).x
+        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b}, x:{x}")
+        return {
+            "upb": self.c @ x
+        }
