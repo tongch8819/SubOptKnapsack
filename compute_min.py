@@ -13,7 +13,7 @@ def compute_min_series(task):
     seed_start = 0
     seed_end = 100
     n = 1000
-    root_dir = f"./result/archive-31"
+    root_dir = f"./result/archive-29"
 
     upb = 'ub0'
 
@@ -58,21 +58,21 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 100
-    seed_end = 150
+    seed_start = 175
+    seed_end = 200
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
-        num_points = 10
-        start_value = 10
-        interval = 10
-
         # num_points = 10
-        # start_value = int(n/4)
-        # interval = int(n/20)
+        # start_value = 10
+        # interval = 10
+
+        num_points = 10
+        start_value = int(n/4)
+        interval = int(n/20)
 
         # num_points = 1
         # start_value = 550
