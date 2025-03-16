@@ -58,7 +58,7 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 0
+    seed_start = 175
     seed_end = 200
     n = 1000
     root_dir = f"./result/archive-{archive}"
