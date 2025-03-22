@@ -1,5 +1,6 @@
 import random
 
+import cost_manager
 from base_task import BaseTask
 import numpy as np
 import os
@@ -48,7 +49,15 @@ class FacebookGraphCoverage(BaseTask):
             self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
-            self.assign_costs(knapsack, cost_mode)
+            # self.assign_costs(knapsack, cost_mode)
+
+            cm = cost_manager.CostManager()
+            cm.set_model(self)
+            cm.set_mode(cost_mode)
+            cm.build()
+
+            self.costs_obj = cm.assign()
+            # print(f"len:{self.costs_obj[:10]}. v:{[self.objective([i]) for i in range(0, 10)]}")
 
             # with open(self.graph_path + "/" + cost_name, "w") as f:
             #     for node in range(0, self.max_nodes):

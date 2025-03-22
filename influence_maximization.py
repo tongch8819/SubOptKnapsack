@@ -1,5 +1,6 @@
 import random
 
+import cost_manager
 from base_task import BaseTask
 import numpy as np
 import os
@@ -48,7 +49,12 @@ class YoutubeCoverage(BaseTask):
             self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
-            self.assign_costs(knapsack, cost_mode)
+            cm = cost_manager.CostManager()
+            cm.set_model(self)
+            cm.set_mode(cost_mode)
+            cm.build()
+
+            self.costs_obj = cm.assign()
         else:
             self.graph: nx.Graph = self.load_graph(os.path.join(self.graph_path, graph_name))
             self.nodes = list(self.graph.nodes)

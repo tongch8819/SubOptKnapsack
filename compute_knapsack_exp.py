@@ -28,14 +28,14 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
 
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
-cost_mode = "normal"
+cost_mode = ""
 #upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1m", "ub11", 'ub11m']
+upper_bounds = ["ub1", 'ub1m', 'ub7', 'ub7m']
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
-archive = "archive-28"
+archive = "archive-32"
 
 # count how many upbs are calculated by empty sets
 # apply the new method on the MSMK problem
@@ -209,14 +209,14 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 11
-    end_seed = 30
+    start_seed = 0
+    end_seed = 60
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 15
+        num_points = 35
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -340,10 +340,10 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 100
+    n = 1000
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 50
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -439,7 +439,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 50
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -512,7 +512,7 @@ def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 30
+    end_seed = 50
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -921,10 +921,12 @@ if __name__ == "__main__":
     parser.add_argument("-ss", default=0, help="start of seed range")
     parser.add_argument("-se", default=200, help="stop of seed range")
     parser.add_argument("-c", "--cost", default="normal", help="cost mode")
+    parser.add_argument("-a", "--archive", default="5", help="archive")
 
     args = parser.parse_args()
 
     cost_mode = args.cost
+    archive = f"archive-{args.archive}"
 
     if args.m == '0':
         if args.task_num == 0:
@@ -979,6 +981,7 @@ if __name__ == "__main__":
         elif args.task_num == 2:
             mp_procedure("caltech", n=n)
         elif args.task_num == 3:
+
             mp_procedure("facebook", n=n)
         elif args.task_num == 4:
             mp_procedure("youtube", n=n)
