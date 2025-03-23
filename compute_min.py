@@ -10,8 +10,8 @@ import numpy as np
 
 
 def compute_min_series(task):
-    seed_start = 0
-    seed_end = 100
+    seed_start = 46
+    seed_end = 50
     n = 1000
     root_dir = f"./result/archive-29"
 
@@ -58,8 +58,8 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 190
-    seed_end = 200
+    seed_start = 99
+    seed_end = 100
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
