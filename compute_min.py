@@ -70,8 +70,8 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
         # start_value = 10
         # interval = 10
 
-        num_points = 10
-        start_value = int(n/4)
+        num_points = 2
+        start_value = 650
         interval = int(n/20)
 
         # num_points = 1

@@ -4,6 +4,7 @@ import random
 import pandas as pd
 from scipy.stats import entropy
 
+import cost_manager
 from base_task import BaseTask
 import numpy as np
 import os
@@ -112,7 +113,13 @@ class AdultIncomeFeatureSelection(BaseTask):
 
         # cost parameters
         if construct_graph:
-            self.assign_costs(knapsack, cost_mode)
+            # self.assign_costs(knapsack, cost_mode)
+            cm = cost_manager.CostManager()
+            cm.set_model(self)
+            cm.set_mode(cost_mode)
+            cm.build()
+
+            self.costs_obj = cm.assign()
         else:
             with open(data_path + "/" + cost_name, "r") as f:
                 while True:

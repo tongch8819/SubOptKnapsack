@@ -1,5 +1,6 @@
 import math
 
+import cost_manager
 from base_task import BaseTask
 import random
 from typing import Set, List
@@ -93,6 +94,7 @@ class RevenueMax(BaseTask):
             self.costs_obj), "Singleton: {}".format(singleton)
         return self.costs_obj[singleton]
 
+
 class CalTechMaximization(BaseTask):
     def __init__(self, budget: float, n: int = None, graph_path: str = None, knapsack=True, seed = 0,
                  prepare_max_pair=True, print_curvature=False, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode = "normal", graph_suffix = "", enable_packing = False, constraint_count = 4):
@@ -128,20 +130,29 @@ class CalTechMaximization(BaseTask):
             self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
-            # nx.write_adjlist(G=self.graph, path=self.graph_path + "/" + graph_name)
-
-            self.assign_costs(knapsack, cost_mode)
-
-            # with open(self.graph_path + "/" + cost_name, "w") as f:
-            #     for node in range(0, self.max_nodes):
-            #         f.write(f"{self.costs_obj[node]}\n")
-
             with open(self.graph_path + "/" + "weights" + graph_suffix + ".txt", "w") as f:
                 for edge in self.graph.edges:
                     w = random.random()
                     # f.write(f"{edge[0]} {edge[1]} {w}\n")
                     self.weights[(int(edge[0]), int(edge[1]))] = w
                     self.weights[(int(edge[1]), int(edge[0]))] = w
+
+            # nx.write_adjlist(G=self.graph, path=self.graph_path + "/" + graph_name)
+
+            # self.assign_costs(knapsack, cost_mode)
+
+            cm = cost_manager.CostManager()
+            cm.set_model(self)
+            cm.set_mode(cost_mode)
+            cm.build()
+
+            self.costs_obj = cm.assign()
+
+            # with open(self.graph_path + "/" + cost_name, "w") as f:
+            #     for node in range(0, self.max_nodes):
+            #         f.write(f"{self.costs_obj[node]}\n")
+
+
 
         else:
             self.graph: nx.Graph = self.load_graph(graph_path + "/" + graph_name)
