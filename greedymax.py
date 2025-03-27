@@ -26,6 +26,9 @@ def greedy_max(model: BaseTask, upb: str = None):
     remaining_elements = set(model.ground_set)
     # print(f"l:{len(remaining_elements)},s:{remaining_elements}")
     cur_cost = 0.
+
+    update_upb = True
+
     if upb is not None:
         delta, parameters = marginal_delta_gate(upb, set({}), remaining_elements, model)
         lambda_capital = delta
@@ -44,7 +47,7 @@ def greedy_max(model: BaseTask, upb: str = None):
         if model.objective(S) < model.objective(tmp_G) and model.cost_of_set(tmp_G) <= model.budget:
             S = tmp_G
             # update data-dependent upper-bound
-            if upb is not None:
+            if update_upb and (upb is not None):
                 delta, p1 = marginal_delta_gate(upb, S, set(model.ground_set) - S, model)
                 fs = model.objective(S)
                 if lambda_capital > fs + delta:
@@ -63,13 +66,15 @@ def greedy_max(model: BaseTask, upb: str = None):
         if cur_cost + model.cost_of_singleton(a) <= model.budget:
             G.add(a)
             cur_cost += model.cost_of_singleton(a)
-            delta, p1 = marginal_delta_gate(upb, G, set(model.ground_set) - G, model)
-            fs = model.objective(G)
-            # if fs + delta < lambda_capital:
-            #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
-            if lambda_capital > fs + delta:
-                lambda_capital = fs + delta
-                parameters = p1
+            # update data-dependent upper-bound
+            if update_upb and (upb is not None):
+                delta, p1 = marginal_delta_gate(upb, G, set(model.ground_set) - G, model)
+                fs = model.objective(G)
+                # if fs + delta < lambda_capital:
+                #     print(f"new lambda:{fs + delta}, S:{S}, fs:{fs}, delta:{delta}")
+                if lambda_capital > fs + delta:
+                    lambda_capital = fs + delta
+                    parameters = p1
 
         remaining_elements.remove(a)
         # filter out violating elements
@@ -104,6 +109,7 @@ def greedy_max(model: BaseTask, upb: str = None):
         # res['ScanCount'] = parameters["ScanCount"]
         # res['MinusCount'] = parameters["MinusCount"]
         res['p'] = parameters
+        res['update_upb'] = update_upb
 
     stop_time = time.time()
     res['Time'] = stop_time - start_time

@@ -61,6 +61,7 @@ class AdultIncomeFeatureSelection(BaseTask):
                     f.write(ss)
 
             self.objs = list(range(0, self.samples.shape[1] - 1))
+
             self.objs = random.sample(self.objs, n)
 
             for i in range(0, len(self.objs)):
@@ -113,13 +114,14 @@ class AdultIncomeFeatureSelection(BaseTask):
 
         # cost parameters
         if construct_graph:
-            # self.assign_costs(knapsack, cost_mode)
-            cm = cost_manager.CostManager()
-            cm.set_model(self)
-            cm.set_mode(cost_mode)
-            cm.build()
-
-            self.costs_obj = cm.assign()
+            if cost_mode == 'normal':
+                self.assign_costs(knapsack, cost_mode)
+            else:
+                cm = cost_manager.CostManager()
+                cm.set_model(self)
+                cm.set_mode(cost_mode)
+                cm.build()
+                self.costs_obj = cm.assign()
         else:
             with open(data_path + "/" + cost_name, "r") as f:
                 while True:

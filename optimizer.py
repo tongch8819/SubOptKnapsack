@@ -2305,22 +2305,9 @@ class CutoffAugmentedOptimizer:
         x0 = np.zeros(self.n + 2)
         x0[self.n + 1] = 1
 
-        # print(f"start optimize")
         x = scipy.optimize.minimize(lambda y: -y[self.n], x0=x0, constraints=self.L_c,
                                     bounds=bounds).x
 
-        # c = np.zeros(self.n + 2)
-        # for i in range(0, self.n):
-        #     c[i] = self.model.cost_of_singleton(i)
-        #
-        # u = []
-        # e = []
-        # for i in range(0, self.n):
-        #     if x[i] > 0.1:
-        #         u.append(i)
-        #         e.append(x[i])
-        #
-        # print(f"x:{u}, e:{e}, y:{c @ x}")
         return {
             "upb": x[self.n],
         }

@@ -139,14 +139,15 @@ class CalTechMaximization(BaseTask):
 
             # nx.write_adjlist(G=self.graph, path=self.graph_path + "/" + graph_name)
 
-            # self.assign_costs(knapsack, cost_mode)
+            if cost_mode == 'normal':
+                self.assign_costs(knapsack, cost_mode)
+            else:
+                cm = cost_manager.CostManager()
+                cm.set_model(self)
+                cm.set_mode(cost_mode)
+                cm.build()
 
-            cm = cost_manager.CostManager()
-            cm.set_model(self)
-            cm.set_mode(cost_mode)
-            cm.build()
-
-            self.costs_obj = cm.assign()
+                self.costs_obj = cm.assign()
 
             # with open(self.graph_path + "/" + cost_name, "w") as f:
             #     for node in range(0, self.max_nodes):
@@ -206,6 +207,8 @@ class CalTechMaximization(BaseTask):
         sparse = mmread(path)
 
         intact_graph: nx.Graph = nx.Graph(sparse)
+
+        # print(len(intact_graph))
 
         if self.max_nodes <= len(intact_graph.nodes):
             nodes = random.sample(list(intact_graph.nodes), self.max_nodes)

@@ -49,12 +49,15 @@ class YoutubeCoverage(BaseTask):
             self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
-            cm = cost_manager.CostManager()
-            cm.set_model(self)
-            cm.set_mode(cost_mode)
-            cm.build()
+            if cost_mode == 'normal':
+                self.assign_costs(knapsack, cost_mode)
+            else:
+                cm = cost_manager.CostManager()
+                cm.set_model(self)
+                cm.set_mode(cost_mode)
+                cm.build()
+                self.costs_obj = cm.assign()
 
-            self.costs_obj = cm.assign()
         else:
             self.graph: nx.Graph = self.load_graph(os.path.join(self.graph_path, graph_name))
             self.nodes = list(self.graph.nodes)
@@ -94,6 +97,9 @@ class YoutubeCoverage(BaseTask):
         if not os.path.isfile(path):
             raise OSError("File *.txt does not exist.")
         intact_graph: nx.Graph = nx.read_adjlist(path)
+
+        # print(f"l:{len(list(intact_graph.nodes))}")
+
         nodes = random.sample(list(intact_graph.nodes), min(len(list(intact_graph.nodes)), self.max_nodes))
 
         return intact_graph.subgraph(nodes)
