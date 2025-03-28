@@ -50,40 +50,37 @@ class SolutionProcessor:
         results = {}
 
         for b in self.bds:
-            count = len(self.bds)
-
-            while len(results) < count:
-                x = []
-                cost = 0
-                for i in range(0, self.n):
-                    if cost + self.c[i] <= b:
-                        if random.random() <= 0.5:
-                            x.append(i)
-                    else:
-                        break
-                results[b] = self.model.objective(x)
+            x = []
+            cost = 0
+            for i in range(0, self.n):
+                if cost + self.c[i] <= b:
+                    if random.random() <= 0.5:
+                        x.append(i)
+                        cost += self.c[i]
+                else:
+                    break
+            results[float(b)] = self.model.objective(x)
 
         return results
 
     def get_greedy(self):
-        archive = '../result/archive-5'
+        archive = './result/archive-5'
         result = {}
 
         source_dir = os.path.join(archive, f"{self.task}", f"{self.n}", f"{self.seed}")
         for name in os.listdir(source_dir):
-            # print(f"name:{name}")
             if not os.path.isdir(os.path.join(source_dir, name)):
                 _, up, task, budget = name.strip()[:-5].split('-')
-                if up == 'ub0':
+                if up == 'ub1':
                     file_path = os.path.join(source_dir, name)
                     with open(file_path, "rb") as rd:
                         kv_data = pickle.load(rd)
-                        result[budget] = kv_data['f(S)']
+                        result[float(budget)] = kv_data['f(S)']
 
         return result
 
     def get_upb0(self):
-        ground = self.model.ground_set
+        ground = list(self.model.ground_set)
         ground.sort(key=lambda y: self.model.density(y, []), reverse=True)
 
         result = {}
@@ -92,12 +89,13 @@ class SolutionProcessor:
             x = []
             cost = 0
             for i in range(0, self.n):
-                if cost + self.c[i] <= b:
-                    x.append(i)
+                if cost + self.c[ground[i]] <= b:
+                    x.append(ground[i])
+                    cost += self.c[ground[i]]
                 else:
                     break
 
-            result[b] = self.model.objective(x)
+            result[float(b)] = self.model.objective(x)
 
         return result
 
@@ -105,9 +103,9 @@ class SolutionProcessor:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", '--task', help="task name")
-    parser.add_argument("-n", '--num', help="ground set size")
-    parser.add_argument("-ss", '--stseed', help="start seed")
-    parser.add_argument("-sp", '--spseed', help="stop seed")
+    parser.add_argument("-n", '--num', type=int, help="ground set size")
+    parser.add_argument("-ss", '--stseed', default=0, type=int, help="start seed")
+    parser.add_argument("-sp", '--spseed', default=200, type=int, help="stop seed")
 
     args = parser.parse_args()
 
@@ -115,16 +113,16 @@ if __name__ == "__main__":
     stop_seed = args.spseed
 
     for seed in range(start_seed, stop_seed):
-        save_dir = os.path.join('./result', 'archive-34', f"{args.task}", f"{args.n}")
+        save_dir = os.path.join('./result', 'archive-34', f"{args.task}", f"{args.num}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
-        model = model_factory.model_factory(args.task, args.n, 0, 0, True, cm='normal')
+        model = model_factory.model_factory(args.task, args.num, seed, 0, True, cm='normal')
 
         processor = SolutionProcessor()
         processor.set_task(args.task)
         processor.set_model(model)
-        processor.set_seed(0)
+        processor.set_seed(seed)
         processor.set_b()
         processor.build()
 
@@ -137,6 +135,7 @@ if __name__ == "__main__":
 
         with open(save_path, "wb") as wrt:
             pickle.dump(s_r, wrt)
+        print(f"seed:{seed}, random completed.")
         print(s_r)
 
         save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
@@ -144,11 +143,13 @@ if __name__ == "__main__":
 
         with open(save_path, "wb") as wrt:
             pickle.dump(s_g, wrt)
+        print(f"seed:{seed}, greedy completed.")
         print(s_g)
 
         save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
-            args.task, 'uniform', seed))
+            args.task, 'upper', seed))
 
         with open(save_path, "wb") as wrt:
             pickle.dump(s_u, wrt)
+        print(f"seed:{seed}, upper completed.")
         print(s_u)
