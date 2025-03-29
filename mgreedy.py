@@ -88,6 +88,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
         res['AF'] = res['f(S)'] / lambda_capital
         res['parameters'] = parameters
         res['updated'] = updated
+        res['update_upb'] = update_upb
 
     stop_time = time.time()
     res['Time'] = stop_time - start_time

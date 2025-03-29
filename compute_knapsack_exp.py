@@ -29,13 +29,12 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-#upper_bounds = ["ub1", "ub3"]
-upper_bounds = ["ub1", 'ub1m', 'ub7', 'ub7m']
-algos = ["modified_greedy_nis"]
+upper_bounds = ["ub1"]
+algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
-archive = "archive-32"
+archive = "archive-17"
 
 # count how many upbs are calculated by empty sets
 # apply the new method on the MSMK problem
@@ -207,17 +206,17 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 4039
     seed_interval = 1
-    start_seed = 160
-    end_seed = 200
+    start_seed = 0
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 10
+        start_point = 31
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -340,17 +339,17 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 39841
     seed_interval = 1
-    start_seed = 150
-    end_seed = 200
+    start_seed = 0
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 1
+        start_point = 29
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -436,17 +435,17 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 100
+    n = 769
     seed_interval = 1
-    start_seed = 150
-    end_seed = 200
+    start_seed = 0
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 10
+        start_point = 31
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -509,17 +508,17 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 100
+    n = 50
     seed_interval = 1
-    start_seed = 150
-    end_seed = 200
+    start_seed = 0
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 10
+        start_point = 11
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -912,7 +911,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("task_num", type=int, help="0,1,2,3,4")
-
     parser.add_argument("-n", "--num", default=1000, help="size of dataset")
     parser.add_argument("-m", default='0', help="objective mode")
 

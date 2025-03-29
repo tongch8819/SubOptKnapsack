@@ -146,6 +146,7 @@ class CalTechMaximization(BaseTask):
                 cm.set_model(self)
                 cm.set_mode(cost_mode)
                 cm.build()
+
                 self.costs_obj = cm.assign()
 
             # with open(self.graph_path + "/" + cost_name, "w") as f:
@@ -206,6 +207,8 @@ class CalTechMaximization(BaseTask):
         sparse = mmread(path)
 
         intact_graph: nx.Graph = nx.Graph(sparse)
+
+        # print(len(intact_graph))
 
         if self.max_nodes <= len(intact_graph.nodes):
             nodes = random.sample(list(intact_graph.nodes), self.max_nodes)

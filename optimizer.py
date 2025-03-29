@@ -2117,7 +2117,7 @@ class SlicingAugmentedOptimizer:
     def to_u(self, x):
         u = []
         for i in range(0, self.n):
-            if x[i] > 0:
+            if x[i] == 1:
                 u.append(i)
         return u
 
@@ -2139,9 +2139,6 @@ class SlicingAugmentedOptimizer:
     def f(self, s):
         return self.model.objective(list(s))
 
-    def integer_constraint(self, x):
-        return np.array([x[i] - int(x[i]) for i in range(0, self.n)])
-
     def f_s(self, s, i):
         return self.model.marginal_gain(i, list(s))
 
@@ -2157,11 +2154,7 @@ class SlicingAugmentedOptimizer:
             scipy.optimize.LinearConstraint(A=c, lb=-np.inf, ub=self.b)
         ]
 
-        self.NL_sub_c = [
-            # scipy.optimize.NonlinearConstraint(fun=lambda x: self.integer_constraint(x), lb=0.0, ub = 0.0)
-        ]
-
-        # print(f"inter:{self.intermediate_sets}")
+        self.NL_sub_c = []
 
         for s in self.intermediate_sets:
             self.NL_sub_c.append(
@@ -2179,19 +2172,10 @@ class SlicingAugmentedOptimizer:
 
         # print(f"start optimize")
         x = scipy.optimize.minimize(lambda y: -y[self.n], x0=np.zeros(self.n + 1), constraints=self.L_c + self.NL_sub_c,
-                                    bounds=bounds, method='SLSQP').x
+                                    bounds=bounds).x
 
         # print(f"lc:{self.L_c}")
         # print(f"v1:{-(self.w @ x)}, base:{base}, w:{self.w}, x:{x}, bi:{self.b[0]}")
-
-        u = []
-        e = []
-        for i in range(0, self.n):
-            if x[i] > 0:
-                u.append(i)
-                e.append(x[i])
-
-        # print(f"u:{u}, e:{e}, upb:{x[self.n]}, n:{self.n}")
         return {
             "upb": x[self.n],
         }
@@ -2321,87 +2305,11 @@ class CutoffAugmentedOptimizer:
         x0 = np.zeros(self.n + 2)
         x0[self.n + 1] = 1
 
-        # print(f"start optimize")
         x = scipy.optimize.minimize(lambda y: -y[self.n], x0=x0, constraints=self.L_c,
                                     bounds=bounds).x
 
-        # c = np.zeros(self.n + 2)
-        # for i in range(0, self.n):
-        #     c[i] = self.model.cost_of_singleton(i)
-        #
-        # u = []
-        # e = []
-        # for i in range(0, self.n):
-        #     if x[i] > 0.1:
-        #         u.append(i)
-        #         e.append(x[i])
-        #
-        # print(f"u:{u}, e:{e}, y:{c @ x}")
         return {
             "upb": x[self.n],
         }
         pass
 
-class LowerBoundOptimizer:
-    def __init__(self):
-        self.model = None
-        self.intermediate_sets = []
-        self.upb = 'ub0'
-        self.n = 0
-
-        self.c = None
-        self.v = None
-        self.L_c = None
-
-    def setModel(self, model):
-        self.model = model
-
-    def addIntermediate(self, intermediate):
-        self.intermediate_sets.append(copy.deepcopy(intermediate))
-
-    def linear_constraint(self, s):
-        ret = np.zeros(self.n)
-
-        for i in range(0, self.n):
-            ret[i] = self.f_s(s, i)
-
-        return ret
-
-    def setUpb(self, upb):
-        self.upb = upb
-
-    def f(self, s):
-        return self.model.objective(list(s))
-
-    def f_s(self, s, i):
-        return self.model.marginal_gain(i, list(s))
-
-    def build(self):
-        # prepare c
-        self.n = len(self.model.ground_set)
-        self.v = self.model.value
-
-        self.c = np.zeros(self.n)
-        # prepare c
-        for i in range(0, self.n):
-            self.c[i] = self.model.cost_of_singleton(i)
-
-        # prepare lambda
-        self.L_c = [
-        ]
-
-        for s in self.intermediate_sets:
-            # print(f"s:{s}, {self.linear_constraint(s)}")
-            self.L_c.append(
-                scipy.optimize.LinearConstraint(A=self.linear_constraint(s), lb=self.v - self.f(s), ub=np.inf)
-            )
-
-
-    def optimize(self):
-        bounds = [(0, 1)] * self.n
-
-        x = scipy.optimize.minimize(lambda y: self.c @ y, constraints=self.L_c ,bounds=bounds, x0=np.zeros(self.n)).x
-        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b}, x:{x}")
-        return {
-            "upb": self.c @ x
-        }

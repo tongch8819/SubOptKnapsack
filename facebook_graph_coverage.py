@@ -57,7 +57,6 @@ class FacebookGraphCoverage(BaseTask):
                 cm.set_mode(cost_mode)
                 cm.build()
                 self.costs_obj = cm.assign()
-
             # print(f"len:{self.costs_obj[:10]}. v:{[self.objective([i]) for i in range(0, 10)]}")
 
             # with open(self.graph_path + "/" + cost_name, "w") as f:
