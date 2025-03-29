@@ -108,10 +108,10 @@ def modified_greedy_nis(model: BaseTask, upb: str = None):
 
     lambda_capital = 0
 
-    # if upb is not None:
-    #     delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
-    #     lambda_capital = delta
-    #     parameters = p1
+    if upb is not None:
+        delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
+        lambda_capital = delta
+        parameters = p1
 
     while len(remaining_elements):
         u, max_density = None, -1.
@@ -150,10 +150,10 @@ def modified_greedy_nis(model: BaseTask, upb: str = None):
 
     sol_fv = model.objective(list(sol))
 
-    if upb is not None:
-        delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
-        lambda_capital = sol_fv + delta
-        parameters = p1
+    # if upb is not None:
+    #     delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
+    #     lambda_capital = sol_fv + delta
+    #     parameters = p1
 
     if v_star_fv > sol_fv:
         res = {

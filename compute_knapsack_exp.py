@@ -31,11 +31,11 @@ from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_ma
 cost_mode = ""
 #upper_bounds = ["ub1", "ub3"]
 upper_bounds = ["ub1", 'ub1m', 'ub7', 'ub7m']
-algos = ["modified_greedy"]
+algos = ["modified_greedy_nis"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
-archive = "archive-31"
+archive = "archive-32"
 
 # count how many upbs are calculated by empty sets
 # apply the new method on the MSMK problem
@@ -209,8 +209,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 50
+    start_seed = 160
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -342,8 +342,8 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 50
+    start_seed = 150
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -438,8 +438,8 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 50
+    start_seed = 150
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -511,8 +511,8 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 50
+    start_seed = 150
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
