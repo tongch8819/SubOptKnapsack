@@ -57,14 +57,13 @@ class SolutionProcessor:
                     if random.random() <= 0.5:
                         x.append(i)
                         cost += self.c[i]
-                else:
-                    break
+
             results[float(b)] = self.model.objective(x)
 
         return results
 
     def get_greedy(self):
-        archive = './result/archive-5'
+        archive = './result/archive-31'
         result = {}
 
         source_dir = os.path.join(archive, f"{self.task}", f"{self.n}", f"{self.seed}")
@@ -92,8 +91,6 @@ class SolutionProcessor:
                 if cost + self.c[ground[i]] <= b:
                     x.append(ground[i])
                     cost += self.c[ground[i]]
-                else:
-                    break
 
             result[float(b)] = self.model.objective(x)
 
@@ -115,7 +112,7 @@ if __name__ == "__main__":
     stop_seed = args.spseed
 
     for seed in range(start_seed, stop_seed):
-        save_dir = os.path.join('./result', 'archive-34', f"{args.task}", f"{args.num}")
+        save_dir = os.path.join('./result', 'archive-35', f"{args.task}", f"{args.num}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
