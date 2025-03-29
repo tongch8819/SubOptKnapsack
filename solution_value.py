@@ -102,7 +102,9 @@ class SolutionProcessor:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", '--task', help="task name")
+
+    parser.add_argument("-t", '--task', help="task na"
+                                             "me")
     parser.add_argument("-n", '--num', type=int, help="ground set size")
     parser.add_argument("-ss", '--stseed', default=0, type=int, help="start seed")
     parser.add_argument("-sp", '--spseed', default=200, type=int, help="stop seed")
