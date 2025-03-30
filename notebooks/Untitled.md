@@ -67,10 +67,10 @@ count:2/5 caltech_v.jpg completed.
 
 ### youtube
 
-ub:ub1, mean:0.7474105674789718
-ub:ub1m, mean:0.7474105674789718
-ub:ub7, mean:0.8956100214050563
-ub:ub7m, mean:0.8956100214050563
+ub:ub1, mean:0.7474105674789718, median:0.7511810171928109
+ub:ub1m, mean:0.7474105674789718, median:0.7511810171928109
+ub:ub7, mean:0.8956100214050563, median:0.9104456679945243
+ub:ub7m, mean:0.8956100214050563, median:0.9104456679945243
 count:1/5 youtube_v.jpg completed.
 count:2/5 youtube_v.jpg completed.
 
