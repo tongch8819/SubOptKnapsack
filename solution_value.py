@@ -112,7 +112,7 @@ if __name__ == "__main__":
     stop_seed = args.spseed
 
     for seed in range(start_seed, stop_seed):
-        save_dir = os.path.join('./result', 'archive-35', f"{args.task}", f"{args.num}")
+        save_dir = os.path.join('./result', 'archive-34', f"{args.task}", f"{args.num}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
