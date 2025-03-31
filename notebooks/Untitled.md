@@ -215,3 +215,41 @@ count:1/4 youtube_500_l20.pdf completed.
 count:2/4 youtube_v.jpg completed.
 count:3/4 youtube_v.jpg completed.
 count:4/4 youtube_v.jpg completed.
+
+## L(greedy solution set)
+
+### adult
+
+ub:ub1, mean:0.37234379703501175, median:0.3492623190006654
+ub:ub1m, mean:0.37234379703501175, median:0.3492623190006654
+ub:ub7, mean:0.9254900315689456, median:0.9969897000433603
+ub:ub7m, mean:0.9254900315689456, median:0.9969897000433603
+count:1/5 adult_v.jpg completed.
+count:2/5 adult_v.jpg completed.
+
+### caltech
+
+ub:ub1, mean:0.8973463258241389, median:0.8973468317921866
+ub:ub1m, mean:0.8973303231479095, median:0.8973330709061077
+ub:ub7, mean:0.910097899245084, median:0.9129767827844301
+ub:ub7m, mean:0.910097899245084, median:0.9129767827844301
+count:1/5 caltech_v.jpg completed.
+count:2/5 caltech_v.jpg completed.
+
+### facebook
+
+ub:ub1, mean:0.7172561719400448, median:0.7066637043414956
+ub:ub1m, mean:0.7172561719400448, median:0.7066637043414956
+ub:ub7, mean:0.9004827811997028, median:0.9044776516145792
+ub:ub7m, mean:0.9004827811997028, median:0.9044776516145792
+count:1/5 facebook_v.jpg completed.
+count:2/5 facebook_v.jpg completed.
+
+### youtube
+
+ub:ub1, mean:0.919802944863177, median:0.925507367109297
+ub:ub1m, mean:0.92038836777847, median:0.9260633168767147
+ub:ub7, mean:0.9606578890075489, median:0.969701250363297
+ub:ub7m, mean:0.9606578890075489, median:0.969701250363297
+count:1/5 youtube_v.jpg completed.
+count:2/5 youtube_v.jpg completed.

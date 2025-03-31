@@ -7,6 +7,7 @@ import numpy as np
 
 import model_factory
 from base_task import BaseTask
+from mgreedy import modified_greedy_plain
 
 
 # original greedy value has computed
@@ -47,6 +48,9 @@ class SolutionProcessor:
         random.seed(self.seed)
 
     def get_random(self):
+        np.random.seed(self.seed)
+        random.seed(self.seed)
+
         results = {}
 
         for b in self.bds:
@@ -63,19 +67,30 @@ class SolutionProcessor:
         return results
 
     def get_greedy(self):
-        archive = './result/archive-31'
+        np.random.seed(self.seed)
+        random.seed(self.seed)
+
         result = {}
 
-        source_dir = os.path.join(archive, f"{self.task}", f"{self.n}", f"{self.seed}")
-        for name in os.listdir(source_dir):
-            if not os.path.isdir(os.path.join(source_dir, name)):
-                _, up, task, budget = name.strip()[:-5].split('-')
-                if up == 'ub1':
-                    file_path = os.path.join(source_dir, name)
-                    with open(file_path, "rb") as rd:
-                        kv_data = pickle.load(rd)
-                        result[float(budget)] = kv_data['f(S)']
+        for b in self.bds:
+            self.model.budget = b
+            res = modified_greedy_plain(self.model)
+            result[float(b)] = res['f(S)']
+            print(f"b:{b}, f:{res['f(S)']}, S:{res['S']}")
 
+        # archive = './result/archive-5'
+        # result = {}
+        #
+        # source_dir = os.path.join(archive, f"{self.task}", f"{self.n}", f"{self.seed}")
+        # for name in os.listdir(source_dir):
+        #     if not os.path.isdir(os.path.join(source_dir, name)):
+        #         _, up, task, budget = name.strip()[:-5].split('-')
+        #         if up == 'ub1':
+        #             file_path = os.path.join(source_dir, name)
+        #             with open(file_path, "rb") as rd:
+        #                 kv_data = pickle.load(rd)
+        #                 result[float(budget)] = kv_data['f(S)']
+        #                 print(f"budget:{budget}, c:{kv_data['c(S)']}, s:{kv_data['S']}")
         return result
 
     def get_upb0(self):
@@ -92,6 +107,7 @@ class SolutionProcessor:
                     x.append(ground[i])
                     cost += self.c[ground[i]]
 
+            print(f"b:{b}, cost:{cost}, s:{x}, f:{self.model.objective({x[0]})}")
             result[float(b)] = self.model.objective(x)
 
         return result
@@ -103,7 +119,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", '--task', help="task na"
                                              "me")
     parser.add_argument("-n", '--num', type=int, help="ground set size")
-    parser.add_argument("-ss", '--stseed', default=0, type=int, help="start seed")
+    parser.add_argument("-ss", '--stseed', default=100, type=int, help="start seed")
     parser.add_argument("-sp", '--spseed', default=200, type=int, help="stop seed")
 
     args = parser.parse_args()
@@ -125,17 +141,17 @@ if __name__ == "__main__":
         processor.set_b()
         processor.build()
 
-        s_r = processor.get_random()
+        # s_r = processor.get_random()
         s_g = processor.get_greedy()
-        s_u = processor.get_upb0()
+        # s_u = processor.get_upb0()
 
-        save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
-            args.task, 'random', seed))
-
-        with open(save_path, "wb") as wrt:
-            pickle.dump(s_r, wrt)
-        print(f"seed:{seed}, random completed.")
-        print(s_r)
+        # save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
+        #     args.task, 'random', seed))
+        #
+        # with open(save_path, "wb") as wrt:
+        #     pickle.dump(s_r, wrt)
+        # print(f"seed:{seed}, random completed.")
+        # print(s_r)
 
         save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
             args.task, 'greedy', seed))
@@ -145,10 +161,10 @@ if __name__ == "__main__":
         print(f"seed:{seed}, greedy completed.")
         print(s_g)
 
-        save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
-            args.task, 'upper', seed))
-
-        with open(save_path, "wb") as wrt:
-            pickle.dump(s_u, wrt)
-        print(f"seed:{seed}, upper completed.")
-        print(s_u)
+        # save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
+        #     args.task, 'upper', seed))
+        #
+        # with open(save_path, "wb") as wrt:
+        #     pickle.dump(s_u, wrt)
+        # print(f"seed:{seed}, upper completed.")
+        # print(s_u)

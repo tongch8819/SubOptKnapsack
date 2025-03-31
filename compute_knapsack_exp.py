@@ -30,7 +30,7 @@ from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_ma
 
 cost_mode = ""
 upper_bounds = ["ub1", "ub1m", "ub7", "ub7m"]
-algos = ["modified_greedy_nis"]
+algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
@@ -510,8 +510,8 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 50
-    end_seed = 100
+    start_seed = 0
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()

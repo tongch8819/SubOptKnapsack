@@ -507,6 +507,7 @@ def modified_greedy_ub12(model: BaseTask):
 
     return res
 
+
 def modified_greedy_plain(model: BaseTask):
     sol = set()
     remaining_elements = set(model.ground_set)
