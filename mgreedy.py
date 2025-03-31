@@ -109,10 +109,10 @@ def modified_greedy_nis(model: BaseTask, upb: str = None):
 
     lambda_capital = 0
 
-    if upb is not None:
-        delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
-        lambda_capital = delta
-        parameters = p1
+    # if upb is not None:
+    #     delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
+    #     lambda_capital = delta
+    #     parameters = p1
 
     while len(remaining_elements):
         u, max_density = None, -1.
