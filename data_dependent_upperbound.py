@@ -1997,7 +1997,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
         return max(M_plus_gain), parameters
 
     def M_plus(x):
-        if x == 0:
+        if x <= 0:
             return 0
         idx = bisect.bisect_left(M_plus_budget, x) - 1
         if idx < 0:
@@ -2038,7 +2038,6 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     ept_m_idx = 0
     slopes_p = [f_over_base({e})/model.cost_of_singleton(e) for e in t_ele_outside]
     slopes_m = [model.cutout_density(e, model.ground_set) for e in ele_inside]
-
 
     ub = max(M_plus(minimal_budget), M_plus(model.budget) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside))
     if len(slopes_p) <= 0 or len(slopes_m) <= 0:

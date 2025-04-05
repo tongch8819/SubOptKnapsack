@@ -1028,7 +1028,9 @@ class MultilinearOptimizer:
         self.base = base
 
     def build(self):
-        self.sample_count = 100  # self.evaluate_sample_count()
+        # self.sample_count = 2485
+        self.sample_count = 1564
+        # self.evaluate_sample_count()
 
     def optimize(self):
         # here we optimize x - a rather than x

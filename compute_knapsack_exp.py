@@ -206,7 +206,7 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 4039
+    n = 500
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -215,8 +215,8 @@ def compute_facebook_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 31
+        num_points = 1
+        start_point = 10
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -348,8 +348,8 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
-        start_point = 40
+        num_points = 5
+        start_point = 36
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -435,17 +435,17 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 100
+    n = 50
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 1
+        start_point = 10
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -508,17 +508,17 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 100
+    n = 50
     seed_interval = 1
-    start_seed = 0
-    end_seed = 200
+    start_seed = 15
+    end_seed = 16
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 1
+        start_point = 10
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
