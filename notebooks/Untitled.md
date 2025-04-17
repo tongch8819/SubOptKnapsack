@@ -255,3 +255,14 @@ ub:ub7, mean:0.9606578890075489, median:0.969701250363297
 ub:ub7m, mean:0.9606578890075489, median:0.969701250363297
 count:1/5 youtube_v.jpg completed.
 count:2/5 youtube_v.jpg completed.
+
+
+
+
+
+ub:ub1, mean:0.7484970755952174, median:0.7543544865376011
+ub:ub1m, mean:0.7484970755952174, median:0.7543544865376011
+ub:ub7, mean:0.8979419845778251, median:0.9122014020556792
+ub:ub7m, mean:0.8979419845778251, median:0.9122014020556792
+count:1/5 youtube_v.jpg completed.
+count:2/5 youtube_v.jpg completed.
