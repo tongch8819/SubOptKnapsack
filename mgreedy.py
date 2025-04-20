@@ -23,9 +23,10 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
     update_upb = True
 
+    print(f"sol start, budget 0")
+
     if upb is not None:
         delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
-        print(f"updated:{sol}, delta:{delta}")
         lambda_capital = delta
         parameters = p1
 
@@ -44,7 +45,9 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
             delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
             fs = model.objective(sol)
-            print(f"updated:{sol}, delta:{delta}, f:{fs}, total:{fs + delta}")
+
+            print(f"sol:{sol}, budget:{cur_cost}")
+
             if lambda_capital > fs + delta and update_upb:
                 lambda_capital = fs + delta
                 parameters = p1
@@ -110,10 +113,10 @@ def modified_greedy_nis(model: BaseTask, upb: str = None):
 
     lambda_capital = 0
 
-    # if upb is not None:
-    #     delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
-    #     lambda_capital = delta
-    #     parameters = p1
+    if upb is not None:
+        delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
+        lambda_capital = delta
+        parameters = p1
 
     while len(remaining_elements):
         u, max_density = None, -1.
@@ -507,6 +510,7 @@ def modified_greedy_ub12(model: BaseTask):
     res['Time'] = stop_time - start_time
 
     return res
+
 
 def modified_greedy_plain(model: BaseTask):
     sol = set()

@@ -11,6 +11,7 @@ import os
 from typing import Set, List
 import networkx as nx
 
+
 class AdultIncomeFeatureSelection(BaseTask):
     def __init__(self, budget: float, n: int = None, data_path: str = None, knapsack=True, seed = 0,
                  prepare_max_pair=True, print_curvature=False, sample_count = 1000, construct_graph = False, min_cost = 0.4, factor = 4.0, cost_mode="normal", graph_suffix="", enable_packing = False, constraint_count = 4):
@@ -61,7 +62,6 @@ class AdultIncomeFeatureSelection(BaseTask):
                     f.write(ss)
 
             self.objs = list(range(0, self.samples.shape[1] - 1))
-
             self.objs = random.sample(self.objs, n)
 
             for i in range(0, len(self.objs)):

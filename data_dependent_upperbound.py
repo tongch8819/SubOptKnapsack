@@ -1998,7 +1998,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
         return max(M_plus_gain), parameters
 
     def M_plus(x):
-        if x == 0:
+        if x <= 0:
             return 0
         idx = bisect.bisect_left(M_plus_budget, x) - 1
         if idx < 0:

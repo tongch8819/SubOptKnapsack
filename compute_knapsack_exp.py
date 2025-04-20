@@ -181,12 +181,6 @@ def compute_facebook(root_dir, skip_mode=False):
         budget=0, n=n, seed=0, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
         print_curvature=False, cost_mode='facebook', construct_graph=True, graph_suffix=s)
 
-    # print(f"what f:{model.objective({4036})}, c:{model.cost_of_set({4036})}")
-    # for i in range(1946,1950):
-    #     print(f"i:{i}, f:{model.objective({i})}")
-    # print(f"f:{model.objective({4036})}")
-
-
     for budget in bds:
         model.budget = budget
         for up in upper_bounds:
@@ -206,10 +200,10 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 500
+    n = 1000
     seed_interval = 1
-    start_seed = 20
-    end_seed = 30
+    start_seed = 150
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -339,10 +333,10 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 500
+    n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 30
+    start_seed = 30
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -435,10 +429,10 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 50
+    n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 30
+    start_seed = 30
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -508,10 +502,10 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 50
+    n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 30
+    start_seed = 30
+    end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()

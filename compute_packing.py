@@ -17,7 +17,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     task = args.task
-    n = args.num
+    n = int(args.num)
     budget = 0
 
     root_dir = os.path.join("./result", f"archive-{args.archive}")
@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     constraint_count = 4
 
-    for seed in range(90, 100):
-        for budget in range(16, 17):
+    for seed in range(0, 50):
+        for budget in range(11, 21):
             start = time.time()
 
             if opt == 'matroid':
