@@ -112,7 +112,7 @@ if __name__ == "__main__":
     stop_seed = args.spseed
 
     for seed in range(start_seed, stop_seed):
-        save_dir = os.path.join('./result', 'archive-35', f"{args.task}", f"{args.num}")
+        save_dir = os.path.join('./result', 'archive-34', f"{args.task}", f"{args.num}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
@@ -126,8 +126,8 @@ if __name__ == "__main__":
         processor.build()
 
         s_r = processor.get_random()
-        s_g = processor.get_greedy()
-        s_u = processor.get_upb0()
+        # s_g = processor.get_greedy()
+        # s_u = processor.get_upb0()
 
         save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
             args.task, 'random', seed))
@@ -140,15 +140,15 @@ if __name__ == "__main__":
         save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
             args.task, 'greedy', seed))
 
-        with open(save_path, "wb") as wrt:
-            pickle.dump(s_g, wrt)
-        print(f"seed:{seed}, greedy completed.")
-        print(s_g)
+        # with open(save_path, "wb") as wrt:
+        #     pickle.dump(s_g, wrt)
+        # print(f"seed:{seed}, greedy completed.")
+        # print(s_g)
 
         save_path = os.path.join(save_dir, "{}-{}-{}.pckl".format(
             args.task, 'upper', seed))
 
-        with open(save_path, "wb") as wrt:
-            pickle.dump(s_u, wrt)
-        print(f"seed:{seed}, upper completed.")
-        print(s_u)
+        # with open(save_path, "wb") as wrt:
+        #     pickle.dump(s_u, wrt)
+        # print(f"seed:{seed}, upper completed.")
+        # print(s_u)

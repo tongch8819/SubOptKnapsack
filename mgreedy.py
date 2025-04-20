@@ -25,6 +25,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
     if upb is not None:
         delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
+        print(f"updated:{sol}, delta:{delta}")
         lambda_capital = delta
         parameters = p1
 
@@ -43,7 +44,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
             delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
             fs = model.objective(sol)
-
+            print(f"updated:{sol}, delta:{delta}, f:{fs}, total:{fs + delta}")
             if lambda_capital > fs + delta and update_upb:
                 lambda_capital = fs + delta
                 parameters = p1
