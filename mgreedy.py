@@ -184,6 +184,7 @@ def modified_greedy_nis(model: BaseTask, upb: str = None):
 
     return res
 
+
 def modified_greedy_ub10(model: BaseTask):
     start_time = time.time()
 
@@ -262,7 +263,7 @@ def modified_greedy_ub10(model: BaseTask):
     lambda_capital = sol_fv / (1 - beta)
 
     for i in range(0, len(betas) - 1):
-        temp_beta = beta/betas[i]
+        temp_beta = beta / betas[i]
         mg = sol_fv - model.objective(bases[i])
         temp_lambda = mg / (1 - temp_beta)
         # print(f"i:{i}, temp_b:{temp_beta}, mg:{mg}, bases:{bases[i]}, temp_l:{temp_lambda}, S:{sol}")
@@ -357,6 +358,7 @@ def modified_greedy_ub11(model: BaseTask):
 
     return res
 
+
 def modified_greedy_ub11m(model: BaseTask):
     start_time = time.time()
 
@@ -434,6 +436,7 @@ def modified_greedy_ub11m(model: BaseTask):
 
     return res
 
+
 def modified_greedy_ub12(model: BaseTask):
     start_time = time.time()
 
@@ -463,6 +466,84 @@ def modified_greedy_ub12(model: BaseTask):
             # satisfy the knapsack constraint
             sol.add(u)
             opt.add_intermediate_set(sol)
+            cur_cost += model.cost_of_singleton(u)
+
+        remaining_elements.remove(u)
+        # filter out violating elements
+        to_remove = set()
+        for v in remaining_elements:
+            if model.cost_of_singleton(v) + cur_cost > model.budget:
+                to_remove.add(v)
+        remaining_elements -= to_remove
+
+    # find the maximum singleton
+    v_star, v_star_fv = None, float('-inf')
+    for e in model.ground_set:
+        if model.cost_of_singleton(e) > model.budget:
+            # filter out singleton whose cost is larger than budget
+            continue
+        fv = model.objective([e])
+        if fv > v_star_fv:
+            v_star, v_star_fv = e, fv
+
+    sol_fv = model.objective(list(sol))
+
+    if v_star_fv > sol_fv:
+        res = {
+            'S': [v_star],
+            'f(S)': v_star_fv,
+            'c(S)': model.cost_of_singleton(v_star),
+        }
+    else:
+        res = {
+            'S': sol,
+            'f(S)': sol_fv,
+            'c(S)': cur_cost,
+        }
+
+    opt.build()
+    lambda_capital = opt.optimize()['upb']
+
+    res['Lambda'] = lambda_capital
+    res['AF'] = res['f(S)'] / lambda_capital
+    res['parameters'] = parameters
+    res['updated'] = updated
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+
+    return res
+
+
+def modified_greedy_ub13(model: BaseTask):
+    start_time = time.time()
+
+    sol = set()
+    remaining_elements = set(model.ground_set)
+    ground_set = set(model.ground_set)
+    cur_cost = 0.
+    parameters = {}
+
+    updated = False
+
+    update_upb = True
+
+    opt = optimizer.Slicing2AugmentedOptimizer()
+    opt.setModel(model)
+    opt.addIntermediate(set())
+
+    while len(remaining_elements):
+        u, max_density = None, -1.
+        for e in remaining_elements:
+            # e is an object
+            ds = model.density(e, list(sol))
+            if u is None or ds > max_density:
+                u, max_density = e, ds
+        assert u is not None
+        if cur_cost + model.cost_of_singleton(u) <= model.budget:
+            # satisfy the knapsack constraint
+            sol.add(u)
+            opt.addIntermediate(sol)
             cur_cost += model.cost_of_singleton(u)
 
         remaining_elements.remove(u)
