@@ -2216,7 +2216,7 @@ class Slicing2AugmentedOptimizer:
 
         self.A = np.zeros(shape=(t + self.n * t + 1, self.n + 1))
 
-        print(f"interds:{[self.model.objective(list(v)) for v in self.intermediate_sets]}")
+        # print(f"interds:{[self.model.objective(list(v)) for v in self.intermediate_sets]}")
 
         for r_idx in range(0, t):
             intermediate_set = list(self.intermediate_sets[r_idx])
@@ -2243,7 +2243,7 @@ class Slicing2AugmentedOptimizer:
             intermediate_set = list(self.intermediate_sets[r_idx])
             self.b[r_idx] = self.model.objective(intermediate_set)
 
-        start_r_idx = 1
+        start_r_idx = t
 
         for s_idx in range(0, t):
             intermediate_set = list(self.intermediate_sets[s_idx])
@@ -2251,7 +2251,7 @@ class Slicing2AugmentedOptimizer:
             for e_idx in range(0, self.n):
                 r_idx = start_r_idx + s_idx * self.n + e_idx
                 self.b[r_idx] = self.model.objective(list(set(intermediate_set) | set(range(0, e_idx + 1)))) - intermediate_set_value
-                print(f"s_idx:{s_idx}, e:{e_idx}, b:{self.model.objective(list(set(intermediate_set) | set(range(0, e_idx + 1)))) - intermediate_set_value}, inter:{intermediate_set_value}")
+                # print(f"s_idx:{s_idx}, e:{e_idx}, b:{self.model.objective(list(set(intermediate_set) | set(range(0, e_idx + 1)))) - intermediate_set_value}, inter:{intermediate_set_value}")
 
         start_r_idx = t + t * self.n
         self.b[start_r_idx] = self.model.budget
@@ -2261,7 +2261,87 @@ class Slicing2AugmentedOptimizer:
         bounds[int(self.n)] = (0, np.inf)
 
         x = scipy.optimize.linprog(c=self.c, A_ub=self.A, b_ub=self.b, bounds=bounds).x
-        print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b} x:{x}")
+        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b} x:{x}")
+        return {
+            "upb": -self.c @ x
+        }
+
+class Slicing3AugmentedOptimizer:
+    def __init__(self):
+        self.model = None
+        self.intermediate_sets = []
+        self.upb = 'ub0'
+        self.n = 0
+
+        self.c = None
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def addIntermediate(self, intermediate):
+        self.intermediate_sets.append(copy.deepcopy(intermediate))
+
+    def setUpb(self, upb):
+        self.upb = upb
+
+    def build(self):
+        # prepare c
+        self.n = len(self.model.ground_set)
+
+        self.c = np.zeros(self.n + 1)
+        self.c[self.n] = -1
+
+        # prepare lambda
+        t = 1
+
+        self.A = np.zeros(shape=(len(self.intermediate_sets) + self.n * t + 1, self.n + 1))
+
+        for r_idx in range(0, len(self.intermediate_sets)):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            for e in range(0, self.n):
+                self.A[r_idx, e] = -self.model.marginal_gain(e, intermediate_set)
+            self.A[r_idx, self.n] = 1
+
+        start_r_idx = len(self.intermediate_sets)
+
+        for s_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[s_idx])
+            for e_idx in range(0, self.n):
+                r_idx = start_r_idx + s_idx * self.n + e_idx
+                for e_idx_2 in range(0, e_idx + 1):
+                    self.A[r_idx, e_idx_2] = self.model.marginal_gain(e_idx_2, intermediate_set)
+
+        start_r_idx = len(self.intermediate_sets) + t * self.n
+        for e in range(0, self.n):
+            self.A[start_r_idx, e] = self.model.cost_of_singleton(e)
+
+        # prepare b
+        self.b = np.zeros(len(self.intermediate_sets) + t * self.n + 1)
+        for r_idx in range(0, len(self.intermediate_sets)):
+            intermediate_set = list(self.intermediate_sets[r_idx])
+            self.b[r_idx] = self.model.objective(intermediate_set)
+
+        start_r_idx = len(self.intermediate_sets)
+
+        for s_idx in range(0, t):
+            intermediate_set = list(self.intermediate_sets[s_idx])
+            intermediate_set_value = self.model.objective(intermediate_set)
+            for e_idx in range(0, self.n):
+                r_idx = start_r_idx + s_idx * self.n + e_idx
+                self.b[r_idx] = self.model.objective(list(set(intermediate_set) | set(range(0, e_idx + 1)))) - intermediate_set_value
+                # print(f"s_idx:{s_idx}, e:{e_idx}, b:{self.model.objective(list(set(intermediate_set) | set(range(0, e_idx + 1)))) - intermediate_set_value}, inter:{intermediate_set_value}")
+
+        start_r_idx = len(self.intermediate_sets) + t * self.n
+        self.b[start_r_idx] = self.model.budget
+
+    def optimize(self):
+        bounds = [(0, 1)] * (self.n + 1)
+        bounds[int(self.n)] = (0, np.inf)
+
+        x = scipy.optimize.linprog(c=self.c, A_ub=self.A, b_ub=self.b, bounds=bounds).x
+        # print(f"inter:{self.intermediate_sets}, A:{self.A}, b:{self.b} x:{x}")
         return {
             "upb": -self.c @ x
         }

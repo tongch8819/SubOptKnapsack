@@ -24,12 +24,12 @@ import argparse
 
 from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
     modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11, modified_greedy_nis_ub1, modified_greedy_nis_ub1m, \
-    modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13
+    modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, modified_greedy_ub14
 
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-upper_bounds = ["ub13"]
+upper_bounds = ['ub7', 'ub13', 'ub14']
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -200,16 +200,16 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 10
+    n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 1
+    end_seed = 10
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
+        num_points = 10
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -231,6 +231,8 @@ def compute_facebook_series(root_dir, skip_mode=False):
                         algo, up + suffix, model.__class__.__name__, budget))
                     func_call = eval(algo + "_" + up)
                     res = func_call(model)  # dict
+                    af = res['AF']
+                    # assert af <= 1.0, "AF error"
                     if skip_mode and os.path.exists(save_path):
                         print("Skip: ", save_path)
                         continue
@@ -333,17 +335,17 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 100
     seed_interval = 1
-    start_seed = 30
-    end_seed = 200
+    start_seed = 0
+    end_seed = 10
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
-        start_point = 10
+        num_points = 10
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -429,17 +431,17 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 100
+    n = 50
     seed_interval = 1
-    start_seed = 30
-    end_seed = 200
+    start_seed = 0
+    end_seed = 10
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
-        start_point = 10
+        num_points = 10
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -502,17 +504,17 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 100
+    n = 50
     seed_interval = 1
-    start_seed = 30
-    end_seed = 200
+    start_seed = 0
+    end_seed = 10
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
-        start_point = 10
+        num_points = 10
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
