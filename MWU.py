@@ -5,7 +5,8 @@ import numpy as np
 
 from base_task import BaseTask
 from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer, \
-    PackingModified1Optimizer, MultilinearOptimizer, MultilinearOptimizer2, MatroidOptimizer
+    PackingModified1Optimizer, MultilinearOptimizer, MultilinearOptimizer2, MatroidOptimizer, PackingNormalOptimizer, \
+    PackingCutOffOptimizer, PackingSlicingOptimizer, PackingSlicingAndCutoffOptimizer
 
 
 def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
@@ -26,7 +27,13 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
     elif opt_type == 'modified2':
         opt = PackingModified2Optimizer()
     elif opt_type == 'normal':
-        opt = PackingOptimizer()
+        opt = PackingNormalOptimizer()
+    elif opt_type == 'cutoff':
+        opt = PackingCutOffOptimizer()
+    elif opt_type == 'slicing':
+        opt = PackingSlicingOptimizer()
+    elif opt_type == 'slicingcutoff':
+        opt = PackingSlicingAndCutoffOptimizer()
     elif opt_type == 'multilinear':
         opt = MultilinearOptimizer()
     elif opt_type == 'multilinear2':
@@ -46,6 +53,7 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
         upb_function.build()
         opt.upb_function = upb_function
 
+    opt.setBase(set())
     opt.build()
     # print(f"0 S:{opt.S.shape}")
     upper_bound_value = 0

@@ -29,13 +29,13 @@ if __name__ == "__main__":
 
     opt = args.opt
 
-    assert opt in ['normal', 'modified1', 'modified2', 'multilinear', 'multilinear2', 'matroid']
+    assert opt in ['normal', 'cutoff', 'slicing', 'slicingcutoff', 'modified1', 'modified2', 'multilinear', 'multilinear2', 'matroid']
 
     Y_p = "max"
 
     constraint_count = 4
 
-    for seed in range(35, 40):
+    for seed in range(0, 50):
         for budget in range(11, 21):
             start = time.time()
 
@@ -48,12 +48,11 @@ if __name__ == "__main__":
                 model = model_factory(task, n, seed, budget, cm="normal", knap=True, enable_packing=True,
                                       constraint_count=constraint_count)
                 model.bv = np.array([budget] * constraint_count)
-                S, upb, w = MWU(model, upb='ub0', upb_function_mode='none', opt_type = opt)
+                S, upb, w = MWU(model, upb='ub0', upb_function_mode='none', opt_type=opt)
 
             stop = time.time()
 
             af = float(model.objective(list(S)) / upb)
-            # assert af <= 1.0
 
             final_res = {
                 "S": S,
