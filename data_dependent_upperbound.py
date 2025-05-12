@@ -2673,6 +2673,20 @@ def marginal_delta_version9(base_set: Set[int], remaining_set: Set[int], model: 
 
     return delta, parameters
 
+def marginal_delta_version7m_lnp(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.SlicingAndCutoffOptimizer()
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+
+    opt.build()
+
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
 
 def marginal_delta_version10(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
     parameters = {}
