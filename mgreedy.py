@@ -23,7 +23,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
 
     update_upb = True
 
-    print(f"sol start, budget 0")
+    # print(f"sol start, budget 0")
 
     if upb is not None:
         delta, p1 = marginal_delta_gate(upb, set({}), ground_set, model)
@@ -46,7 +46,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
             delta, p1 = marginal_delta_gate(upb, sol, ground_set - sol, model)
             fs = model.objective(sol)
 
-            print(f"sol:{sol}, budget:{cur_cost}")
+            # print(f"sol:{sol}, budget:{cur_cost}")
 
             if lambda_capital > fs + delta and update_upb:
                 lambda_capital = fs + delta
@@ -86,7 +86,7 @@ def modified_greedy(model: BaseTask, upb: str = None):
             'c(S)': cur_cost,
         }
 
-    print(model.budget)
+    # print(model.budget)
     if upb is not None:
         res['Lambda'] = lambda_capital
         res['AF'] = res['f(S)'] / lambda_capital
@@ -772,10 +772,14 @@ def modified_greedy_ub7(model: BaseTask):
 def modified_greedy_ub7m(model: BaseTask):
     return modified_greedy(model, "ub7m")
 
+def modified_greedy_ub7ma(model: BaseTask):
+    return modified_greedy(model, "ub7ma")
 
 def modified_greedy_ub1m(model: BaseTask):
     return modified_greedy(model, "ub1m")
 
+def modified_greedy_ub1ma(model: BaseTask):
+    return modified_greedy(model, "ub1ma")
 
 def modified_greedy_ub8(model: BaseTask):
     return modified_greedy(model, "ub8")

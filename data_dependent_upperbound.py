@@ -267,6 +267,46 @@ def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTas
     return ub, parameters
 
 
+def marginal_delta_m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta = 0
+    parameters = {}
+
+    n = len(model.ground_set)
+    ground = list(range(0, n))
+    w = np.zeros(n)
+    additive_value = 0
+
+    # assign weights for each element in ground set
+
+    for i in range(0, n):
+        if i in base_set:
+            w[i] = model.cutout_marginal_gain(i)
+            additive_value += model.cutout_marginal_gain(i)
+        else:
+            w[i] = model.marginal_gain(i, list(base_set))
+
+    ground.sort(key=lambda x: w[x]/model.cost_of_singleton(x), reverse=True)
+
+    cur_cost = 0
+    for i in range(0, n):
+        if cur_cost + model.cost_of_singleton(ground[i]) <= model.budget:
+            cur_cost += model.cost_of_singleton(ground[i])
+            delta += w[ground[i]]
+        else:
+            remaining_budget = model.budget - cur_cost
+            delta += w[ground[i]] * (remaining_budget/model.cost_of_singleton(ground[i]))
+            break
+
+    delta -= additive_value
+
+    return delta, parameters
+
+
 def marginal_delta_version2(base_set: Set[int], remaining_set: Set[int], ground_set: Set[int], model: BaseTask):
     """Cutout"""
     assert len(
@@ -1988,6 +2028,8 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     M_plus_budget = [0] + [x[0] for x in M_plus_res]
     M_plus_gain = [0] + [x[1] for x in M_plus_res]
 
+    # print(f"m_p_g:{ele_outside[:5]}, g:{[model.marginal_gain(ele_outside[i], list(base_set))/model.cost_of_singleton(ele_outside[i]) for i in range(0, 5)]}")
+
     t2 = time.time()
 
     parameters["ScanCount"] = sc
@@ -2040,7 +2082,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     slopes_m = [model.cutout_density(e, model.ground_set) for e in ele_inside]
 
     ub = max(M_plus(minimal_budget), M_plus(model.budget) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside))
-    p = True
+    p = False
     if p:
         print(f"1: base:{base_set_value}, base:{base_set}")
         print(f"ub:{ub}")
@@ -2100,6 +2142,67 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     if p:
         print(f"final ub:{ub}")
     return ub, parameters
+
+
+def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta = 0
+    parameters = {}
+
+    additive_value = 0
+
+    n = len(model.ground_set)
+    ground = list(range(0, n))
+    w = np.zeros(n)
+    s = np.zeros(n)
+
+    ground.sort(key=lambda x: model.marginal_gain(x, list(base_set))/model.cost_of_singleton(x), reverse=True)
+
+    # print(f"start*****************")
+    cur_cost = 0
+    for i in range(0, n):
+        a_i = list(set(ground[:i]) | base_set)
+        s[ground[i]] = model.marginal_gain(ground[i], a_i)/model.marginal_gain(ground[i], list(base_set))
+        cur_cost += s[ground[i]] * model.cost_of_singleton(ground[i])
+        w[ground[i]] = model.marginal_gain(ground[i], list(base_set))
+
+        if cur_cost >= model.budget:
+            break
+
+    for i in base_set:
+        w[i] = model.cutout_marginal_gain(i)
+        additive_value += model.cutout_marginal_gain(i)
+        s[i] = 1
+
+    cur_cost = 0
+    ground.sort(key=lambda x: w[x] / model.cost_of_singleton(x), reverse=True)
+
+    # t = [w[ground[i]] for i in range(0, 10)]
+    # print(f"m2_p_g:{[ground[i] for i in range(0, 5)]}, g:{[model.marginal_gain(ground[i], list(base_set))/model.cost_of_singleton(ground[i]) for i in range(0, 5)]}")
+    for i in range(0, n):
+        if cur_cost + model.cost_of_singleton(ground[i]) * s[ground[i]] <= model.budget:
+            cur_cost += model.cost_of_singleton(ground[i]) * s[ground[i]]
+            delta += w[ground[i]] * s[ground[i]]
+            # print(f"cur_cost:{cur_cost},i:{i}, ground:{ground[i]}")
+            if cur_cost == model.budget:
+                break
+        else:
+            remaining_budget = model.budget - cur_cost
+            ratio = remaining_budget / model.cost_of_singleton(ground[i])
+            delta += w[ground[i]] * ratio
+            break
+
+    examine_range = 5
+    delta -= additive_value
+
+    # print(f"delta:{delta}, additive_value:{additive_value}, w[i]:{[w[ground[i]] for i in range(0, examine_range)]}, s[i]:{[s[ground[i]] for i in range(0, examine_range)]}")
+
+    return delta, parameters
+
 
 def marginal_delta_for_streaming_version1(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
@@ -2706,6 +2809,8 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta(base_set, remaining_set, model)
         elif upb == "ub1m":
             delta, parameters = marginal_delta_m(base_set, remaining_set, model)
+        elif upb == "ub1ma":
+            delta, parameters = marginal_delta_m_acc(base_set, remaining_set, model)
         elif upb == "ub2":
             delta, parameters = marginal_delta_version2(base_set, remaining_set, model)
         elif upb == "ub3":
@@ -2730,6 +2835,8 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model)
         elif upb == 'ub7m':
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model, minus=True)
+        elif upb == 'ub7ma':
+            delta, parameters = marginal_delta_version7m_acc(base_set, remaining_set, model, minus=True)
         elif upb == 'ub8':
             delta, parameters = marginal_delta_version8(base_set, remaining_set, model, minus=True)
         elif upb == 'ub9':
