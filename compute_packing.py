@@ -29,13 +29,13 @@ if __name__ == "__main__":
 
     opt = args.opt
 
-    assert opt in ['normal', 'cutoff', 'slicing', 'slicingcutoff', 'modified1', 'modified2', 'multilinear', 'multilinear2', 'matroid']
+    assert opt in ['normal', 'cutoff', 'slicing', 'orderedslicing', 'oas', 'slicingcutoff', 'modified1', 'modified2', 'multilinear','multilinearcutoff','matroid']
 
     Y_p = "max"
 
     constraint_count = 4
 
-    for seed in range(0, 50):
+    for seed in range(0, 10):
         for budget in range(11, 21):
             start = time.time()
 

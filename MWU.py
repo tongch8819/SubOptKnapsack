@@ -6,7 +6,8 @@ import numpy as np
 from base_task import BaseTask
 from optimizer import PackingOptimizer, UpperBoundFunction, PackingModifiedOptimizer, PackingModified2Optimizer, \
     PackingModified1Optimizer, MultilinearOptimizer, MultilinearOptimizer2, MatroidOptimizer, PackingNormalOptimizer, \
-    PackingCutOffOptimizer, PackingSlicingOptimizer, PackingSlicingAndCutoffOptimizer
+    PackingCutOffOptimizer, PackingSlicingOptimizer, PackingSlicingAndCutoffOptimizer, PackingOrderedSlicingOptimizer, \
+    PackingOrderedAllSlicingOptimizer, MultilinearCutoffOptimizer
 
 
 def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
@@ -34,10 +35,16 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
         opt = PackingSlicingOptimizer()
     elif opt_type == 'slicingcutoff':
         opt = PackingSlicingAndCutoffOptimizer()
+    elif opt_type == 'orderedslicing':
+        opt = PackingOrderedSlicingOptimizer()
+    elif opt_type == 'oas':
+        opt = PackingOrderedAllSlicingOptimizer()
     elif opt_type == 'multilinear':
         opt = MultilinearOptimizer()
     elif opt_type == 'multilinear2':
         opt = MultilinearOptimizer2()
+    elif opt_type == 'multilinearcutoff':
+        opt = MultilinearCutoffOptimizer()
 
     opt.setModel(model)
     opt.permutation_mode = 'none'

@@ -42,7 +42,8 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     parameters["method3"] = t1 - t0
 
     # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]}")
-    # print(f"1, delta:{delta}, base:{model.objective(base_set)}, total:{}")
+    # print(f"1, delta:{delta}, base:{model.objective(base_set)}, total:{delta + model.objective(base_set)}, c:{}")
+
     return delta, parameters
 
 def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
@@ -194,8 +195,7 @@ def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTas
     ept_m_idx = 0
     slopes_p = [f_over_base({e})/model.cost_of_singleton(e) for e in t_ele_outside]
     slopes_m = [model.cutout_density(e, model.ground_set) for e in ele_inside]
-    # print(f"slopes_p:{slopes_p[:5]}, S:{base_set}")
-    # print(f"slopes_m:{slopes_m}, S:{base_set}")
+
     # calculate initial value of ub
     ub = max(G_plus(minimal_budget, model=model,remaining_set=remaining_set, base_set=base_set, cumsum_costs=csc_outside, elements=ele_outside),
              G_plus(model.budget, model=model,remaining_set=remaining_set, base_set=base_set, cumsum_costs=csc_outside, elements=ele_outside) - G_minus(cost_baseset, model, model.ground_set, csc_inside, ele_inside))
@@ -264,6 +264,8 @@ def marginal_delta_m(base_set: Set[int], remaining_set: Set[int], model: BaseTas
         print(f"1 final ub:{ub}, total:{ub + base_set_value}")
 
     p = False
+
+    # print(f"delta:{ub}, base:{base_set}, total:{ub + base_set_value}")
     return ub, parameters
 
 
@@ -2673,6 +2675,48 @@ def marginal_delta_version9(base_set: Set[int], remaining_set: Set[int], model: 
 
     return delta, parameters
 
+def marginal_delta_version_lnp(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.NormalOptimizer()
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
+def marginal_delta_version_r(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.RefinedNormalOptimizer()
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
+
+
+def marginal_delta_version_m_lnp(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.CutoffOptimizer()
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
+
 def marginal_delta_version7m_lnp(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
     parameters = {}
 
@@ -2704,8 +2748,14 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
         parameters = {}
         if upb == "ub1":
             delta, parameters = marginal_delta(base_set, remaining_set, model)
+        elif upb == "ub1l":
+            delta, parameters = marginal_delta_version_lnp(base_set, remaining_set, model)
+        elif upb == "ub1r":
+            delta, parameters = marginal_delta_version_r(base_set, remaining_set, model)
         elif upb == "ub1m":
             delta, parameters = marginal_delta_m(base_set, remaining_set, model)
+        elif upb == "ub1ml":
+            delta, parameters = marginal_delta_version_m_lnp(base_set, remaining_set, model)
         elif upb == "ub2":
             delta, parameters = marginal_delta_version2(base_set, remaining_set, model)
         elif upb == "ub3":
