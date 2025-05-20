@@ -3034,6 +3034,7 @@ class PackingOrderedAllSlicingOptimizer:
             "upb": - self.w @ x + self.model.objective(self.base),
         }
 
+
 class RefinedNormalOptimizer:
     def __init__(self):
         self.model: BaseTask = None
@@ -3103,7 +3104,94 @@ class RefinedNormalOptimizer:
             "upb": - self.w @ x + self.model.objective(self.base),
         }
 
+
 class AugmentedRefinedNormalOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+        self.intermediate_sets = []
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def build(self, i):
+        self.L_c.clear()
+        self.n = len(self.model.ground_set)
+        m = len(self.intermediate_sets)
+
+        self.w = np.zeros(self.n)
+        A = np.zeros(shape=(1, self.n))
+        b = np.zeros(1)
+
+        current = list(self.base)
+        count = 0
+        for j in range(0, len(self.base)):
+            A[0, count] = self.model.cost_of_singleton(list(self.base)[j])
+            count = count + 1
+
+        # print(f"start, base:{self.base},m:{m},i:{i}")
+        for j in range(i + 1, m):
+            diff = list(set(self.intermediate_sets[j]) - set(current))
+            # print(f"j:{j}, diff:{diff}")
+            for k in diff:
+                self.w[count] = -self.model.marginal_gain(k, current)
+                A[0, count] = self.model.cost_of_singleton(k)
+                count = count + 1
+            current = list(self.intermediate_sets[j])
+
+        remaining = set(self.model.ground_set) - set(self.intermediate_sets[len(self.intermediate_sets)-1])
+        for k in remaining:
+            self.w[count] = -self.model.marginal_gain(k, current)
+            A[0, count] = self.model.cost_of_singleton(k)
+            count = count + 1
+
+        b[0] = self.model.budget
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b)
+        )
+
+
+    def suboptimize(self):
+        bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+
+        x = scipy.optimize.minimize(
+            lambda y: self.w @ y ,
+            x0=np.zeros(self.n),
+            constraints=self.L_c,
+            bounds=bounds).x
+
+        # print(f"delta:{-self.w @ x}, base:{self.base}, total:{- self.w @ x + self.model.objective(self.base)}")
+        return -self.w @ x + self.model.objective(self.base)
+
+    def optimize(self):
+        m = len(self.intermediate_sets)
+        delta = None
+        # print(self.intermediate_sets)
+        for i in range(0, m):
+            self.base = self.intermediate_sets[i]
+            self.build(i)
+            temp = self.suboptimize()
+            if delta is None or temp < delta:
+                delta = temp
+            # print(f"i:{i}, base:{self.base}, temp:{temp}")
+
+        return {
+            "upb": delta
+        }
+
+    
+class UnifiedAugmentedRefinedNormalOptimizer:
     def __init__(self):
         self.model: BaseTask = None
         self.base = None
