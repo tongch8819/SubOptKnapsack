@@ -2408,9 +2408,9 @@ class PackingSlicingOptimizer:
         ub = np.zeros(self.n)
 
         for i in range(0, self.n):
-            for j in range(0, i+1):
+            for j in range(0, i + 1):
                 A[i, j] = self.model.marginal_gain(j, self.base)
-            ub[i] = self.model.objective(list(set(range(0, i+1)) | set(self.base))) - self.model.objective(self.base)
+            ub[i] = self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base)
         return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
 
     def build(self):
@@ -2499,7 +2499,7 @@ class PackingSlicingAndCutoffOptimizer:
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
         x = scipy.optimize.minimize(
-            lambda y: self.w @ y ,
+            lambda y: self.w @ y,
             x0=np.zeros(self.n),
             constraints=self.L_c,
             bounds=bounds).x
@@ -2581,7 +2581,7 @@ class SlicingAndCutoffOptimizer:
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
         x = scipy.optimize.minimize(
-            lambda y: self.w @ y ,
+            lambda y: self.w @ y,
             x0=np.zeros(self.n),
             constraints=self.L_c,
             bounds=bounds).x

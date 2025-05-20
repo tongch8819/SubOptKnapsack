@@ -2166,9 +2166,10 @@ def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], mo
     cur_cost = 0
     for i in range(0, n):
         a_i = list(set(ground[:i]) | base_set)
-        s[ground[i]] = model.marginal_gain(ground[i], a_i)/model.marginal_gain(ground[i], list(base_set))
-        cur_cost += s[ground[i]] * model.cost_of_singleton(ground[i])
-        w[ground[i]] = model.marginal_gain(ground[i], list(base_set))
+        if model.marginal_gain(ground[i], list(base_set)) > 0:
+            s[ground[i]] = model.marginal_gain(ground[i], a_i)/model.marginal_gain(ground[i], list(base_set))
+            cur_cost += s[ground[i]] * model.cost_of_singleton(ground[i])
+            w[ground[i]] = model.marginal_gain(ground[i], list(base_set))
 
         if cur_cost >= model.budget:
             break
