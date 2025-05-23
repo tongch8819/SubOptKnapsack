@@ -25,12 +25,13 @@ import argparse
 from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
     modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11, modified_greedy_nis_ub1, modified_greedy_nis_ub1m, \
     modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, \
-    modified_greedy_ub1ma, modified_greedy_ub7ma
+    modified_greedy_ub1ma, modified_greedy_ub7ma, \
+    modified_greedy_ub1r, modified_greedy_ub1ru
 
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-upper_bounds = ["ub7m", "ub7ma"]
+upper_bounds = ["ub1r", "ub1ru"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -505,7 +506,7 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 41
+    start_seed = 150
     end_seed = 200
 
     for seed in range(start_seed, end_seed, seed_interval):

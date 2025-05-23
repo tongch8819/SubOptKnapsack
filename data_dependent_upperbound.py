@@ -2130,7 +2130,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             if slope_p - slope_m <= 0:
                 if ept_m_idx == 0:
                     # print(f"7 >?:ub:{ub},ub:{ub + base_set_value} 1, S:{base_set}, slope p:{slope_p}, slope_m:{slope_m}, pidx:{ept_p_idx},m_idx:{ept_m_idx}")
-                    print(f"s3")
+                    # print(f"s3")
                     break
                 ept = endpoints_minus[ept_m_idx - 1]
                 ub = max(ub,
