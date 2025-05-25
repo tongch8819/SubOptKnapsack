@@ -3098,7 +3098,7 @@ class RefinedNormalOptimizer:
             constraints=self.L_c,
             bounds=bounds).x
 
-        # print(f"delta:{-self.w @ x}, base:{self.base}, total:{- self.w @ x + self.model.objective(self.base)}")
+        print(f"delta:{-self.w @ x}, base:{self.base}, total:{- self.w @ x + self.model.objective(self.base)}")
         return {
             "delta": - self.w @ x,
             "upb": - self.w @ x + self.model.objective(self.base),

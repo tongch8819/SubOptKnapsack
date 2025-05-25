@@ -853,6 +853,7 @@ def modified_greedy_ub1r(model: BaseTask):
     opt = optimizer.RefinedNormalOptimizer()
     opt.setModel(model)
     opt.setBase(set())
+    opt.addIntermediate(set())
 
     while len(remaining_elements):
         u, max_density = None, -1.
