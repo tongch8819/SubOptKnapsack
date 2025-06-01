@@ -2798,6 +2798,7 @@ class SlicingOptimizer:
             "upb": - self.w @ x + self.model.objective(self.base),
         }
 
+
 class CutoffOptimizer:
     def __init__(self):
         self.model: BaseTask = None
@@ -3231,7 +3232,6 @@ class UnifiedAugmentedRefinedNormalOptimizer:
             count = count + 1
 
         b[0] = self.model.objective(list(base))
-
         self.L_c.append(
             scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b)
         )

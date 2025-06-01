@@ -792,6 +792,8 @@ def modified_greedy_ub9(model: BaseTask):
 def modified_greedy_nis_ub1(model: BaseTask):
     return modified_greedy_nis(model, "ub1")
 
+def modified_greedy_nis_ub1ma(model: BaseTask):
+    return modified_greedy_nis(model, "ub1ma")
 
 def modified_greedy_nis_ub1m(model: BaseTask):
     return modified_greedy_nis(model, "ub1m")
@@ -800,6 +802,8 @@ def modified_greedy_nis_ub1m(model: BaseTask):
 def modified_greedy_nis_ub7(model: BaseTask):
     return modified_greedy_nis(model, "ub7")
 
+def modified_greedy_nis_ub7ma(model: BaseTask):
+    return modified_greedy_nis(model, "ub7ma")
 
 def modified_greedy_nis_ub7m(model: BaseTask):
     return modified_greedy_nis(model, "ub7m")
