@@ -30,7 +30,7 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-upper_bounds = ["ub7m", "ub7ma"]
+upper_bounds = ["ub1", "ub8"]
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -201,7 +201,7 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 50
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -211,7 +211,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
 
         interval = 1
         num_points = 1
-        start_point = 6
+        start_point = 35
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
