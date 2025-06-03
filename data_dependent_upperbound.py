@@ -2036,6 +2036,8 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     parameters["method3"] = t1-t0
     parameters["retrievehighest"] = t2-t1
 
+    print(f"start, base:{base_set}")
+
     if not minus:
         return max(M_plus_gain), parameters
 
@@ -2088,6 +2090,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
         print(f"ub:{ub}")
 
     if len(slopes_p) <= 0 or len(slopes_m) <= 0:
+        print(f"out here, t 3:{t2 - t0}, total:{time.time() - t0}")
         return ub, parameters
 
     slope_p = slopes_p[ept_p_idx]
@@ -2130,7 +2133,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             if slope_p - slope_m <= 0:
                 if ept_m_idx == 0:
                     # print(f"7 >?:ub:{ub},ub:{ub + base_set_value} 1, S:{base_set}, slope p:{slope_p}, slope_m:{slope_m}, pidx:{ept_p_idx},m_idx:{ept_m_idx}")
-                    print(f"s3")
+                    # print(f"s3")
                     break
                 ept = endpoints_minus[ept_m_idx - 1]
                 ub = max(ub,
@@ -2141,6 +2144,9 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
             ept_m_idx += 1
     if p:
         print(f"final ub:{ub}")
+
+
+    print(f"t 3:{t2-t0}, total:{time.time()-t0}")
     return ub, parameters
 
 
@@ -2149,6 +2155,9 @@ def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], mo
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
     if len(remaining_set) == 0:
         return 0
+
+    print(f"start, base:{base_set}")
+    t0 = time.time()
 
     delta = 0
     parameters = {}
@@ -2162,16 +2171,21 @@ def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], mo
 
     ground.sort(key=lambda x: model.marginal_gain(x, list(base_set))/model.cost_of_singleton(x), reverse=True)
 
-    # print(f"start*****************")
     cur_cost = 0
     for i in range(0, n):
         a_i = list(set(ground[:i]) | base_set)
-        s[ground[i]] = model.marginal_gain(ground[i], a_i)/model.marginal_gain(ground[i], list(base_set))
-        cur_cost += s[ground[i]] * model.cost_of_singleton(ground[i])
-        w[ground[i]] = model.marginal_gain(ground[i], list(base_set))
+
+        if model.marginal_gain(ground[i], list(base_set)) > 0:
+            s[ground[i]] = model.marginal_gain(ground[i], a_i)/model.marginal_gain(ground[i], list(base_set))
+            cur_cost += s[ground[i]] * model.cost_of_singleton(ground[i])
+            w[ground[i]] = model.marginal_gain(ground[i], list(base_set))
+        else:
+            break
 
         if cur_cost >= model.budget:
             break
+
+    t1 = time.time()
 
     for i in base_set:
         w[i] = model.cutout_marginal_gain(i)
@@ -2196,9 +2210,10 @@ def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], mo
             delta += w[ground[i]] * ratio
             break
 
-    examine_range = 5
+    t2 = time.time()
     delta -= additive_value
 
+    # print(f"t0-1:{t1-t0}, t1-2:{t2-t1}, total:{t2-t0}")
     # print(f"delta:{delta}, additive_value:{additive_value}, w[i]:{[w[ground[i]] for i in range(0, examine_range)]}, s[i]:{[s[ground[i]] for i in range(0, examine_range)]}")
 
     return delta, parameters
