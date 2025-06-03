@@ -3291,3 +3291,281 @@ class UnifiedAugmentedRefinedNormalOptimizer:
         return {
             "upb": -self.w @ x
         }
+
+class RefinedCutoffOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+        self.intermediate_sets = []
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def build(self):
+        self.L_c.clear()
+        self.additive_value = 0
+        self.n = len(self.model.ground_set)
+        m = len(self.intermediate_sets)
+
+        self.w = np.zeros(self.n)
+        A = np.zeros(shape=(1, self.n))
+        b = np.zeros(1)
+
+        current = self.base
+        count = 0
+        for i in range(0, len(self.base)):
+            A[0, count] = self.model.cost_of_singleton(self.base[i])
+            self.w[count] = -self.model.cutout_marginal_gain(self.base[i])
+            self.additive_value += self.model.cutout_marginal_gain(self.base[i])
+
+            count = count + 1
+
+        for i in range(1, m):
+            diff = list(set(self.intermediate_sets[i]) - set(current))
+            for j in diff:
+                self.w[count] = -self.model.marginal_gain(j, current)
+                A[0, count] = self.model.cost_of_singleton(j)
+                count = count + 1
+            current = list(self.intermediate_sets[i])
+
+        remaining = set(self.model.ground_set) - set(self.intermediate_sets[len(self.intermediate_sets)-1])
+        for i in remaining:
+            self.w[count] = -self.model.marginal_gain(i, current)
+            A[0, count] = self.model.cost_of_singleton(i)
+            count = count + 1
+
+        b[0] = self.model.budget
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b)
+        )
+
+    def optimize(self):
+        bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+
+        x = scipy.optimize.minimize(
+            lambda y: self.w @ y ,
+            x0=np.zeros(self.n),
+            constraints=self.L_c,
+            bounds=bounds).x
+
+        print(f"delta:{-self.w @ x}, base:{self.base}, total:{- self.w @ x + self.model.objective(self.base)}")
+        return {
+            "delta": - self.w @ x - self.additive_value,
+            "upb": - self.w @ x + self.model.objective(self.base),
+        }
+
+class RefinedSlicingOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+        self.intermediate_sets = []
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def slicing_constraint(self):
+        A = np.zeros(shape=(self.n, self.n))
+        ub = np.zeros(self.n)
+
+        mag = np.zeros(self.n)
+
+        for i in range(0, self.n):
+            mag[i] = self.model.marginal_gain(i, self.base)
+
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                A[i, j] = mag[j]
+            ub[i] = self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base)
+
+        return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
+
+    def build(self):
+        self.L_c.clear()
+        self.n = len(self.model.ground_set)
+        m = len(self.intermediate_sets)
+
+        self.w = np.zeros(self.n)
+        A = np.zeros(shape=(1, self.n))
+        b = np.zeros(1)
+
+        slicing_A = np.zeros(shape=(self.n, self.n))
+        slicing_b = np.zeros(self.n)
+
+        current = self.base
+        count = 0
+        for i in range(0, len(self.base)):
+            A[0, count] = self.model.cost_of_singleton(self.base[i])
+            count = count + 1
+
+        current_V = list(self.base)
+        base_value = self.model.objective(list(self.base))
+
+        for i in range(1, m):
+            diff = list(set(self.intermediate_sets[i]) - set(current))
+            for j in diff:
+                self.w[count] = -self.model.marginal_gain(j, current)
+                A[0, count] = self.model.cost_of_singleton(j)
+
+                current_V.append(j)
+
+                # print(f"count:{count}, j:{j}, v:{self.model.marginal_gain(j, current)}, current_V:{current_V}, v:{self.model.objective(current_V) - base_value}")
+                slicing_b[count] = self.model.objective(current_V) - base_value
+
+                count = count + 1
+            current = list(self.intermediate_sets[i])
+
+        remaining = set(self.model.ground_set) - set(self.intermediate_sets[len(self.intermediate_sets)-1])
+        for i in remaining:
+            self.w[count] = -self.model.marginal_gain(i, current)
+            A[0, count] = self.model.cost_of_singleton(i)
+
+            current_V.append(i)
+            slicing_b[count] = self.model.objective(list(current_V)) - base_value
+            count = count + 1
+
+        b[0] = self.model.budget
+
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                slicing_A[i, j] = -self.w[j]
+
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b)
+        )
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=slicing_A, lb = -np.inf, ub = slicing_b)
+        )
+
+    def optimize(self):
+        bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+
+        x = scipy.optimize.minimize(
+            lambda y: self.w @ y ,
+            x0=np.zeros(self.n),
+            constraints=self.L_c,
+            bounds=bounds).x
+
+        print(f"delta:{-self.w @ x}, base:{self.base}, total:{- self.w @ x + self.model.objective(self.base)}")
+        return {
+            "delta": - self.w @ x,
+            "upb": - self.w @ x + self.model.objective(self.base),
+        }
+
+class RefinedSlicingAndCutoffOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+        self.intermediate_sets = []
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def build(self):
+        self.L_c.clear()
+        self.additive_value = 0
+        self.n = len(self.model.ground_set)
+        m = len(self.intermediate_sets)
+
+        self.w = np.zeros(self.n)
+        A = np.zeros(shape=(1, self.n))
+        b = np.zeros(1)
+
+        slicing_A = np.zeros(shape=(self.n, self.n))
+        slicing_b = np.zeros(self.n)
+
+        current = self.base
+        count = 0
+        for i in range(0, len(self.base)):
+            A[0, count] = self.model.cost_of_singleton(self.base[i])
+            self.w[count] = -self.model.cutout_marginal_gain(i)
+            self.additive_value += self.model.cutout_marginal_gain(i)
+            count = count + 1
+
+        current_V = list(self.base)
+        base_value = self.model.objective(list(self.base))
+
+        for i in range(1, m):
+            diff = list(set(self.intermediate_sets[i]) - set(current))
+            for j in diff:
+                self.w[count] = -self.model.marginal_gain(j, current)
+                A[0, count] = self.model.cost_of_singleton(j)
+
+                current_V.append(j)
+
+                # print(f"count:{count}, j:{j}, v:{self.model.marginal_gain(j, current)}, current_V:{current_V}, v:{self.model.objective(current_V) - base_value}")
+                slicing_b[count] = self.model.objective(current_V) - base_value
+
+                count = count + 1
+            current = list(self.intermediate_sets[i])
+
+        remaining = set(self.model.ground_set) - set(self.intermediate_sets[len(self.intermediate_sets)-1])
+        for i in remaining:
+            self.w[count] = -self.model.marginal_gain(i, current)
+            A[0, count] = self.model.cost_of_singleton(i)
+
+            current_V.append(i)
+            slicing_b[count] = self.model.objective(list(current_V)) - base_value
+            count = count + 1
+
+        b[0] = self.model.budget
+
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                slicing_A[i, j] = -self.w[j]
+
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b)
+        )
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=slicing_A, lb = -np.inf, ub = slicing_b)
+        )
+
+    def optimize(self):
+        bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+
+        x = scipy.optimize.minimize(
+            lambda y: self.w @ y ,
+            x0=np.zeros(self.n),
+            constraints=self.L_c,
+            bounds=bounds).x
+
+        print(f"delta:{-self.w @ x}, base:{self.base}, total:{- self.w @ x + self.model.objective(self.base)}")
+        return {
+            "delta": - self.w @ x - self.additive_value,
+            "upb": - self.w @ x + self.model.objective(self.base),
+        }
