@@ -31,7 +31,7 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-upper_bounds = ["ub1", "ub1ma", "ub7", "ub7ma"]
+upper_bounds = ["ub1", "ub1ma"]
 algos = ["modified_greedy_nis"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -436,14 +436,14 @@ def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 1
+        start_point = 18
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
