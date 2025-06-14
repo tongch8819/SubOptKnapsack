@@ -374,7 +374,7 @@ def modified_greedy_ub11m(model: BaseTask):
 
     opt = optimizer.CutoffAugmentedOptimizer()
     opt.setModel(model)
-    opt.add_intermediate_set(set())
+    opt.addIntermediate(set())
 
     while len(remaining_elements):
         u, max_density = None, -1.
@@ -387,7 +387,7 @@ def modified_greedy_ub11m(model: BaseTask):
         if cur_cost + model.cost_of_singleton(u) <= model.budget:
             # satisfy the knapsack constraint
             sol.add(u)
-            opt.add_intermediate_set(sol)
+            opt.addIntermediate(sol)
             cur_cost += model.cost_of_singleton(u)
 
         remaining_elements.remove(u)
