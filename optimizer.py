@@ -636,7 +636,7 @@ class PackingModifiedOptimizer:
     #     n = len(self.remaining)
     #     bounds = []
     #     for i in range(0, n):
-    #         bounds.append((0, 100))
+    #         bounds.append((0,100))
     #
     #     cost_bound = np.zeros(n)
     #     for e_idx in range(0, n):
@@ -1105,7 +1105,6 @@ class MultilinearCutoffOptimizer:
         }
         pass
 
-
 class MultilinearOptimizer2:
     def __init__(self):
         self.eps = 0.1
@@ -1356,7 +1355,6 @@ class MultilinearOptimizer2:
             "x": fs
         }
         pass
-
 
 class MatroidOptimizer:
     def __init__(self):
@@ -3942,4 +3940,159 @@ class UnifiedRefinedSlicingAndCutoffOptimizer:
         return {
             "delta": - self.w @ x - self.additive_value,
             "upb": - self.w @ x + self.model.objective(self.base),
+        }
+
+class InterploatedsMultilinearOptimizer:
+    def __init__(self):
+        self.eps = 0.1
+        self.alpha = 0.8
+        self.sample_count = 0
+
+        self.model = None
+        self.n = 0
+
+        # intermediate points
+        self.intermediate_sets = []
+        # the base points
+        self.basis = []
+
+        #
+        self.cost = None
+        self.b = None
+
+    def F(self, x):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            s = []
+            for i in range(0, self.n):
+                if random.random() < x[i]:
+                    s.append(i)
+
+            value = self.model.objective(s)
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def partial_derivative(self, x, i):
+        total_value = 0
+        for _ in range(0, self.sample_count):
+            s = []
+            for j in range(0, self.n):
+                if random.random() < x[j]:
+                    s.append(j)
+
+            value = self.model.objective(list(set(s) | {i})) - self.model.objective(s)
+            total_value = total_value + value
+        return total_value / self.sample_count
+
+    def gradient(self, x):
+        g = np.zeros(x.shape)
+        for i in range(0, self.n):
+            g[i] = self.partial_derivative(x=x, i=i)
+        return g
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def set_to_vec(self, inter):
+        x = np.zeros(self.n)
+        for i in inter:
+            x[i] = 1
+        return x
+
+    def prepareBasis(self):
+        self.basis.clear()
+        for inter in self.intermediate_sets:
+            self.basis.append(self.set_to_vec(inter))
+
+        for i in range(0, len(self.basis) - 1):
+            self.basis.append((self.basis[i] + self.basis[i+1])/2)
+
+    def evaluate_sample_count(self):
+        nominator = 4 * math.log(1.0 / (1 - self.alpha), math.e)
+        denominator = math.pow(self.eps, 2)
+        return math.ceil(nominator / denominator)
+
+    def setModel(self, model):
+        self.model = model
+
+    def build(self):
+        self.sample_count = 100
+        self.n = len(self.model.ground_set)
+
+        self.cost = np.zeros(shape=(1, self.n))
+        for i in range(0, self.n):
+            self.cost[0, i] = self.model.cost_of_singleton(i)
+
+        self.b = np.zeros(1)
+        self.b[0] = self.model.budget
+
+        # prepare base points
+        self.prepareBasis()
+
+    def suboptimize(self, a):
+        # here we optimize x - a rather than x
+        # thus the constraint should be A(x-a) <= b - Aa
+
+        # build w
+        # print(f"ground:{self.F(self.a)}, f:{self.model.objective(self.base)}, base:{self.base}")
+        w = self.gradient(a)
+        # for i in range(0, self.n):
+        #     w[i] = -w[i]
+
+        base_value = self.F(a)
+
+        # bounds = np.array([(0, 1)] * self.n)
+
+        # x = scipy.optimize.linprog(c=w, A_ub=self.cost, b_ub=self.b, bounds=bounds).x
+
+        ground = list(range(0, self.n))
+        ground.sort(key = lambda x: w[x]/self.model.cost_of_singleton(x), reverse=True)
+
+        b = self.b[0]
+        # print(f"b:{b}, ground:{ground[:10]}, w:{[float(w[ground[i]]) for i in range(0, 10)]}")
+        delta = 0
+        cur_cost = 0
+        for i in range(0, self.n):
+            if cur_cost + self.model.cost_of_singleton(ground[i]) <= b:
+                cur_cost += self.model.cost_of_singleton(ground[i])
+                delta += w[ground[i]]
+            else:
+                remaining_budget = b - cur_cost
+                current = self.model.cost_of_singleton(ground[i])
+                ratio = remaining_budget / current
+                delta += w[ground[i]] * ratio
+                break
+
+        # fs = {}
+        # for i in range(0, len(x)):
+        #     if x[i] > 0:
+        #         fs[i] = float(x[i])
+                # print(f"i:{i}, xi:{x[i]}")
+
+        # print(f"item1:{item1}, item2:{item2}, b:{b}, v1:{-np.matmul(w, x)}, v2:{base}, total:{-np.matmul(w, x) + base}")
+        # print(f"delta:{delta}, base:{base_value}")
+        return delta + base_value
+
+    def optimize(self):
+        upb = None
+
+        # print(f"b:{len(self.basis)}")
+
+        for b_idx in range(0, len(self.basis)):
+            b = self.basis[b_idx]
+            t = []
+            for i in range(0, self.n):
+                if b[i] > 0:
+                    t.append((i, b[i]))
+            # print(f"{b_idx}, {t}")
+
+        for a_idx in range(0, len(self.basis)):
+            a = self.basis[a_idx]
+            temp = self.suboptimize(a)
+            # print(f"idx:{a_idx}, temp:{temp}")
+            if upb is None or temp < upb:
+                upb = temp
+
+        return {
+            "upb": upb
         }
