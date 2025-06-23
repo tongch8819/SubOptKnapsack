@@ -42,7 +42,7 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     parameters["method3"] = t1 - t0
 
     # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]}")
-    # print(f"1, delta:{delta}, base:{model.objective(base_set)}, total:{}")
+    print(f"delta:{delta}, base:{base_set}, bv:{model.objective(base_set)} total:{model.objective(base_set) + delta}")
     return delta, parameters
 
 def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
