@@ -27,12 +27,12 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
     modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_nis_ub7ma, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, \
     modified_greedy_ub1ma, modified_greedy_ub7ma, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
-    modified_greedy_ub15
+    modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu
 
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-upper_bounds = ['ub1', 'ub15']
+upper_bounds = ['ub7', 'ub11', 'ub7u', 'ub7mu']
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -212,7 +212,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -345,7 +345,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -443,7 +443,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 15
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -509,15 +509,15 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 50
     seed_interval = 1
-    start_seed = 0
+    start_seed = 19
     end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 6
+        num_points = 1
+        start_point = 10
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
