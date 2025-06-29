@@ -4108,6 +4108,12 @@ class UnifiedSlicingOptimizer:
         self.additive_value = 0
         self.intermediate_sets = []
 
+        self.A_list = []
+        self.b_list = []
+        self.final_A = None
+        self.final_b = None
+
+
     def setModel(self, model):
         self.model = model
 
@@ -4120,6 +4126,7 @@ class UnifiedSlicingOptimizer:
     def slicing_constraint(self, inter_idx):
         inter_set = self.intermediate_sets[inter_idx]
         inter_value = self.model.objective(list(inter_set))
+
         A = np.zeros(shape=(self.n, self.n + self.m * self.n + 1))
         b = np.zeros(self.n)
 
@@ -4130,6 +4137,7 @@ class UnifiedSlicingOptimizer:
             b[i] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
 
         # remaining_set = list(set(range(0, self.n)) - set(inter_set))
+
         # remaining_set.sort(key=lambda x:self.model.marginal_gain(x, list(inter_set)), reverse=True)
 
         # start_row = 0
@@ -4138,24 +4146,31 @@ class UnifiedSlicingOptimizer:
         #         A[start_row + i, start_index + remaining_set[j]] = 1
         #     b[start_row + i] = self.model.objective(list(set(inter_set) | set(remaining_set[:i + 1]))) - inter_value
 
-        return scipy.optimize.LinearConstraint(A=A, lb=0, ub=b)
+        return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b), A, b
 
     def v_to_x_constraint(self, inter_idx):
         A = np.zeros(shape=(self.n, self.n + self.m * self.n + 1))
         b = np.zeros(self.n)
+        inter_set = self.intermediate_sets[inter_idx]
 
         start_index = self.n + self.n * inter_idx
         for i in range(0, self.n):
             A[i, start_index + i] = 1
-            A[i, i] = -self.model.marginal_gain(i, list(self.intermediate_sets[inter_idx]))
+            if i not in inter_set:
+                A[i, i] = -self.model.marginal_gain(i, list(self.intermediate_sets[inter_idx]))
 
-        return scipy.optimize.LinearConstraint(A=A, lb=0, ub=b)
+        return scipy.optimize.LinearConstraint(A=A, lb=0, ub=b), A, b
 
     def build(self):
         self.L_c.clear()
         self.n = len(self.model.ground_set)
         self.m = len(self.intermediate_sets)
         total_n = self.n + self.m * self.n + 1
+
+        # print(f"m:{self.m}, s:{self.intermediate_sets}")
+
+        self.A_list.clear()
+        self.b_list.clear()
 
         # first constraint
         A1 = np.zeros(shape=(self.m, total_n))
@@ -4171,6 +4186,8 @@ class UnifiedSlicingOptimizer:
             b1[i] = self.model.objective(list(self.intermediate_sets[i]))
 
         self.L_c.append(scipy.optimize.LinearConstraint(A=A1, lb=-np.inf, ub=b1))
+        self.A_list.append(A1)
+        self.b_list.append(b1)
 
         # second constraint
         # A2 = np.zeros(shape=(self.m * self.n, total_n))
@@ -4185,61 +4202,120 @@ class UnifiedSlicingOptimizer:
         # self.L_c.append(scipy.optimize.LinearConstraint(A=A2, lb=-np.inf, ub=b2))
 
         for i in range(0, self.m):
-            self.L_c.append(self.v_to_x_constraint(i))
+            c, a, b = self.v_to_x_constraint(i)
+            self.L_c.append(c)
+            self.A_list.append(a)
+            self.b_list.append(b)
 
         # the slicing constraint
         for i in range(0, self.m):
-            self.L_c.append(self.slicing_constraint(i))
+            c, a, b = self.slicing_constraint(i)
+            self.L_c.append(c)
+            self.A_list.append(a)
+            self.b_list.append(b)
 
         # the last constraint
         A3 = np.zeros(shape=(1, total_n))
         b3 = np.zeros(1)
+        print(f"b:{b3.shape}")
         for i in range(0, self.n):
             A3[0, i] = self.model.cost_of_singleton(i)
         b3[0] = self.model.budget
 
         self.L_c.append(scipy.optimize.LinearConstraint(A=A3, lb=0, ub=b3))
+        self.A_list.append(A3)
+        self.b_list.append(b3)
 
     def optimize(self):
         total_n = self.n + self.m * self.n + 1
         bounds = [(0, 1) for _ in range(0, self.n)]
         for i in range(self.n, total_n):
-            bounds.append((0, np.inf))
+            bounds.append((0, 1000))
 
-        x = scipy.optimize.minimize(
-            lambda y: -y[total_n - 1],
-            x0=np.zeros(total_n),
-            constraints=self.L_c,
-            method="COBYLA",
-            bounds=bounds).x
+        x0 = np.zeros(total_n)
+        # x0[0] = 0.829
+        # x0[1] = 0.046
+        # x0[2] = 0.964
+        # x0[4] = 0.932
+        # x0[5] = 0.402
+        # x0[7] = 0.201
+        # x0[9] = 1.0
 
-        print(f"x #####3")
-        for i in range(0, self.m):
-            c = 0
-            start_idx = self.n + self.n * i
-            for j in range(0, self.n):
-                c += x[start_idx + j]
+        # print(f"x0:{x0[:10]}")
 
-            print(f"v:{i}, v:{self.model.objective(list(self.intermediate_sets[i])) + c}")
+        # x = scipy.optimize.minimize(
+        #     lambda y: -y[total_n - 1],
+        #     x0=x0,
+        #     constraints=self.L_c,
+        #     bounds=bounds).x
 
-            c = 0
-            for j in range(0, self.n):
-                c += x[j] * self.model.cost_of_singleton(j)
-            print(f"total cost:{i}, v:{c}")
+        # x = scipy.optimize.shgo(
+        #     lambda y: -y[total_n - 1],
+        #     constraints=self.L_c,
+        #     bounds=bounds).x
 
-            c = 0
-            for j in range(0, self.n):
-                c += x[j] * self.model.marginal_gain(j, list(self.intermediate_sets[i]))
-            print(f"wr:{i}, v:{c}, 43:{self.model.marginal_gain(43, list(self.intermediate_sets[i]))}, 45:{self.model.marginal_gain(45, list(self.intermediate_sets[i]))}, 47:{self.model.marginal_gain(47, list(self.intermediate_sets[i]))}, 21:{self.model.marginal_gain(21, list(self.intermediate_sets[i]))}")
+        A = np.vstack(self.A_list)
+        b = np.hstack(self.b_list)
 
-            for j in range(0, self.n):
-                if x[j] > 0.1:
-                    print(f"j:{j}, x[j]:{x[j]}, m:{self.model.marginal_gain(j, list(self.intermediate_sets[i])) * x[j]}, v:{x[start_idx + j]}")
+        c = np.zeros(total_n)
+        c[total_n-1] = -1
 
+        # print(f"A:{A.shape}, b:{b.shape}")
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=A,
+            b_ub=b,
+            bounds=bounds
+        ).x
+
+        # print(f"x:{x.shape}")
+        # print(f"x #####3")
+        # for i in range(0, self.m):
+        #     c = 0
+        #     start_idx = self.n + self.n * i
+        #     for j in range(0, self.n):
+        #         c += x[start_idx + j]
+        #
+        #     print(f"v:{i}, v:{self.model.objective(list(self.intermediate_sets[i])) + c}")
+        #
+        #     c = 0
+        #     for j in range(0, self.n):
+        #         c += x[j] * self.model.cost_of_singleton(j)
+        #     print(f"total cost:{i}, v:{c}")
+        #
+        #     # c = 0
+        #     # for j in range(0, self.n):
+        #     #     c += x[j] * self.model.marginal_gain(j, list(self.intermediate_sets[i]))
+        #     # print(f"wr:{i}, v:{c}, 43:{self.model.marginal_gain(43, list(self.intermediate_sets[i]))}, 45:{self.model.marginal_gain(45, list(self.intermediate_sets[i]))}, 47:{self.model.marginal_gain(47, list(self.intermediate_sets[i]))}, 21:{self.model.marginal_gain(21, list(self.intermediate_sets[i]))}")
+        #
+        #     for j in range(0, self.n):
+        #         if x[j] > 0.1:
+        #             print(f"j:{j}, x[j]:{x[j]}, m:{self.model.marginal_gain(j, list(self.intermediate_sets[i])) * x[j]}, v:{x[start_idx + j]}")
+        #
+        #     start_index = self.n
+        #     c = 0
+        #     cc = 0
+        #     for j in range(0, 10):
+        #         b = self.model.objective(list(range(0, j + 1)))
+        #         c += b
+        #         cc += self.model.cost_of_singleton(j)
+        #         print(f"i:{i}, b:{b}. c:{c}, cc:{cc}")
+        #
+        #     inter_set = self.intermediate_sets[i]
+        #     inter_value = self.model.objective(list(inter_set))
+        #
+        #     start_index = self.n + self.n * i
+        #     print(f"i:{i}, base:{inter_value}")
+        #     for j in range(0, self.n):
+        #         c = 0
+        #         for k in range(0, j + 1):
+        #             c += x[start_index + k]
+        #         print(f"i:{i}, j:{j}, c:{c}, addded:{x[start_index + j]}, gate:{self.model.marginal_gain(j, list(inter_set)) * x[j]}, x[j]:{x[j]}, {self.model.objective(list(set(inter_set) | set(range(0, j + 1)))) - inter_value}")
 
         return {
             "upb": x[total_n - 1],
         }
+
 
 class UnifiedSlicingAndCutoffOptimizer:
     def __init__(self):
@@ -4252,6 +4328,11 @@ class UnifiedSlicingAndCutoffOptimizer:
         self.additive_value = 0
         self.intermediate_sets = []
 
+        self.A_list = []
+        self.b_list = []
+        self.final_A = None
+        self.final_b = None
+
     def setModel(self, model):
         self.model = model
 
@@ -4262,10 +4343,11 @@ class UnifiedSlicingAndCutoffOptimizer:
         self.intermediate_sets.append(inter)
 
     def slicing_constraint(self, inter_idx):
-        A = np.zeros(shape=(self.n, self.n + self.m * self.n + 1))
-        b = np.zeros(self.n)
         inter_set = self.intermediate_sets[inter_idx]
         inter_value = self.model.objective(list(inter_set))
+
+        A = np.zeros(shape=(self.n, self.n + self.m * self.n + 1))
+        b = np.zeros(self.n)
 
         start_index = self.n + self.n * inter_idx
         for i in range(0, self.n):
@@ -4273,24 +4355,41 @@ class UnifiedSlicingAndCutoffOptimizer:
                 A[i, start_index + j] = 1
             b[i] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
 
-        return scipy.optimize.LinearConstraint(A=A, lb=0, ub=b)
+        # remaining_set = list(set(range(0, self.n)) - set(inter_set))
+
+        # remaining_set.sort(key=lambda x:self.model.marginal_gain(x, list(inter_set)), reverse=True)
+
+        # start_row = 0
+        # for i in range(0, len(remaining_set)):
+        #     for j in range(0, i + 1):
+        #         A[start_row + i, start_index + remaining_set[j]] = 1
+        #     b[start_row + i] = self.model.objective(list(set(inter_set) | set(remaining_set[:i + 1]))) - inter_value
+
+        return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b), A, b
 
     def v_to_x_constraint(self, inter_idx):
         A = np.zeros(shape=(self.n, self.n + self.m * self.n + 1))
         b = np.zeros(self.n)
+        inter_set = self.intermediate_sets[inter_idx]
 
         start_index = self.n + self.n * inter_idx
         for i in range(0, self.n):
             A[i, start_index + i] = 1
-            A[i, i] = -self.model.marginal_gain(i, list(self.intermediate_sets[inter_idx]))
+            if i not in inter_set:
+                A[i, i] = -self.model.marginal_gain(i, list(self.intermediate_sets[inter_idx]))
 
-        return scipy.optimize.LinearConstraint(A=A, lb=0, ub=b)
+        return scipy.optimize.LinearConstraint(A=A, lb=0, ub=b), A, b
 
     def build(self):
         self.L_c.clear()
         self.n = len(self.model.ground_set)
         self.m = len(self.intermediate_sets)
         total_n = self.n + self.m * self.n + 1
+
+        # print(f"m:{self.m}, s:{self.intermediate_sets}")
+
+        self.A_list.clear()
+        self.b_list.clear()
 
         # first constraint
         A1 = np.zeros(shape=(self.m, total_n))
@@ -4300,72 +4399,78 @@ class UnifiedSlicingAndCutoffOptimizer:
             A1[i, total_n - 1] = 1
 
             start_idx = self.n + i * self.n
-            additive_value = 0
             for j in range(0, self.n):
                 A1[i, start_idx + j] = -1
-                if j in self.intermediate_sets[i]:
-                    A1[i, j] = -self.model.cutout_marginal_gain(j)
-                    additive_value += self.model.cutout_marginal_gain(j)
-                # A1[i, j] = -self.model.marginal_gain(j, list(self.intermediate_sets[i]))
+
+            additive_value = 0
+            for j in self.intermediate_sets[i]:
+                A1[i, j] = -self.model.cutout_marginal_gain(j)
+                additive_value += self.model.cutout_marginal_gain(j)
 
             b1[i] = self.model.objective(list(self.intermediate_sets[i])) - additive_value
 
         self.L_c.append(scipy.optimize.LinearConstraint(A=A1, lb=-np.inf, ub=b1))
+        self.A_list.append(A1)
+        self.b_list.append(b1)
 
-        # the second constraint
+        # second constraint
+        # A2 = np.zeros(shape=(self.m * self.n, total_n))
+        # b2 = np.zeros(self.m * self.n)
+        #
+        # for i in range(0, self.m):
+        #     for j in range(0, self.n):
+        #         start_idx = self.n + i * self.n
+        #         A2[i * self.n + j, start_idx + j] = 1
+        #         A2[i * self.n + j, j] = -self.model.marginal_gain(j, list(self.intermediate_sets[i]))
+        #
+        # self.L_c.append(scipy.optimize.LinearConstraint(A=A2, lb=-np.inf, ub=b2))
+
         for i in range(0, self.m):
-            self.L_c.append(self.v_to_x_constraint(i))
+            c, a, b = self.v_to_x_constraint(i)
+            self.L_c.append(c)
+            self.A_list.append(a)
+            self.b_list.append(b)
 
         # the slicing constraint
         for i in range(0, self.m):
-            self.L_c.append(self.slicing_constraint(i))
+            c, a, b = self.slicing_constraint(i)
+            self.L_c.append(c)
+            self.A_list.append(a)
+            self.b_list.append(b)
 
         # the last constraint
         A3 = np.zeros(shape=(1, total_n))
         b3 = np.zeros(1)
+        print(f"b:{b3.shape}")
         for i in range(0, self.n):
             A3[0, i] = self.model.cost_of_singleton(i)
         b3[0] = self.model.budget
 
         self.L_c.append(scipy.optimize.LinearConstraint(A=A3, lb=0, ub=b3))
+        self.A_list.append(A3)
+        self.b_list.append(b3)
 
     def optimize(self):
         total_n = self.n + self.m * self.n + 1
         bounds = [(0, 1) for _ in range(0, self.n)]
         for i in range(self.n, total_n):
-            bounds.append((0, np.inf))
+            bounds.append((0, 1000))
 
-        # print(f"start, f:{len(self.intermediate_sets)}")
+        x0 = np.zeros(total_n)
 
-        x = scipy.optimize.minimize(
-            lambda y: -y[total_n - 1],
-            x0=np.zeros(total_n),
-            constraints=self.L_c,
-            bounds=bounds).x
+        A = np.vstack(self.A_list)
+        b = np.hstack(self.b_list)
 
-        # print(f"x #####3")
-        # for i in range(0, self.m):
-        #     c = 0
-        #     start_idx = self.n + self.n * i
-        #     for j in range(0, self.n):
-        #         c += x[start_idx + j]
-        #
-        #     # print(f"v:{i}, v:{self.model.objective(list(self.intermediate_sets[i])) + c}")
-        #
-        #     c = 0
-        #     for j in range(0, self.n):
-        #         c += x[j] * self.model.cost_of_singleton(j)
-        #     # print(f"total cost:{i}, v:{c}")
-        #
-        #     c = 0
-        #     for j in range(0, self.n):
-        #         c += x[j] * self.model.marginal_gain(j, list(self.intermediate_sets[i]))
-        #     # print(f"wr:{i}, v:{c}, 13:{self.model.marginal_gain(13, list(self.intermediate_sets[i]))}, 53:{self.model.marginal_gain(53, list(self.intermediate_sets[i]))}, 22:{self.model.marginal_gain(22, list(self.intermediate_sets[i]))}")
-        #
-        #     for j in range(0, self.n):
-        #         if x[j] > 0.1:
-        #             # print(f"j:{j}, x[j]:{x[j]}, m:{self.model.marginal_gain(j, list(self.intermediate_sets[i])) * x[j]}, v:{x[start_idx + j]}")
+        c = np.zeros(total_n)
+        c[total_n-1] = -1
 
+        # print(f"A:{A.shape}, b:{b.shape}")
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=A,
+            b_ub=b,
+            bounds=bounds
+        ).x
 
         return {
             "upb": x[total_n - 1],
