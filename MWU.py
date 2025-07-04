@@ -130,7 +130,6 @@ def MWU(model: BaseTask, upb=None, upb_function_mode='m1+', opt_type=""):
         R.remove(j)
         final_j = j
 
-        # print(f"A:{A.shape}, m:{m}, w:{w.shape}, j:{j}, c:{A[i, j]}")
         for i in range(0, m):
             w[i] = w[i] * math.pow(update_factor, A[i, j] / bv[i])
 

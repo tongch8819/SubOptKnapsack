@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     constraint_count = 4
 
-    for seed in range(0, 10):
-        for budget in range(11, 21):
+    for seed in range(0, 50):
+        for budget in range(6, 21):
             start = time.time()
 
             if opt == 'matroid':
