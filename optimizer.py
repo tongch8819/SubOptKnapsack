@@ -481,6 +481,249 @@ class PackingModified1Optimizer:
         }
 
 
+# class PackingModifiedOptimizer:
+#     def __init__(self):
+#         self.A = None
+#         self.bv = None
+#
+#         self.model: BaseTask = None
+#
+#         self.w = None
+#         self.base = set()
+#         self.base_value = 0
+#         self.remaining = None
+#
+#         self.d = None
+#         # f(A_i)
+#         self.fA = None
+#         self.permutation_mode = None
+#
+#     def budget(self, bv):
+#         self.bv = bv
+#         return self
+#
+#     def f_s(self, s):
+#         return self.model.objective(list(set(s) | self.base)) - self.base_value
+#
+#     def setBase(self, base):
+#         self.base = set(base)
+#         self.base_value = self.model.objective(list(base))
+#         return self
+#
+#     def setModel(self, model: BaseTask):
+#         self.model = model
+#         self.remaining = self.model.ground_set
+#         self.A = model.A
+#         self.b = model.bv
+#         self.S = np.identity(len(self.remaining))
+#
+#         self.w = np.array([
+#             -model.objective([x]) for x in self.model.ground_set
+#         ])
+#         return self
+#
+#     def sample(self, n):
+#         return random.sample(self.remaining, n)
+#
+#     def build(self):
+#         # update base
+#         self.remaining = list(set(self.model.ground_set) - set(self.base))
+#         self.bv = self.model.bv
+#         # update d and fA
+#         m = len(self.bv)
+#         n = len(self.remaining)
+#         self.d = np.zeros(shape=(m, n))
+#
+#         for c_idx in range(0, m):
+#             for e_idx in range(0, n):
+#                 self.d[c_idx, e_idx] = self.model.density_A(self.remaining[e_idx], list(self.base), c_idx)
+#
+#         self.fA = np.zeros(n)
+#         for e_idx in range(0, n):
+#             self.fA[e_idx] = self.f_s(self.remaining[:e_idx + 1])
+#
+#         self.base_value = self.model.objective(list(self.base))
+#         self.remaining = list(set(self.model.ground_set) - set(self.base))
+#         self.A = self.model.A[:, list(self.remaining)]
+#
+#     def optimize(self):
+#         # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
+#         m = len(self.bv)
+#         n = len(self.remaining)
+#         bounds = []
+#         for i in range(0, n):
+#             bounds.append((0, 100))
+#
+#         cost_bound = np.zeros(m * n)
+#         for c_idx in range(0, m):
+#             for e_idx in range(0, n):
+#                 cost_bound[e_idx + c_idx * n] = self.model.A[c_idx, self.remaining[e_idx]]
+#
+#         for i in range(n, n + m * n):
+#             bounds.append((0, cost_bound[i - n]))
+#
+#         bounds.append((1, 1))
+#         # vector d
+#         # vector A
+#         # vector b
+#
+#         # the constraint matrix should be in shape (mn + n) * (n + m * n + 1)
+#         A = np.zeros(shape=(m * n + n + m, n + m * n + 1))
+#         b = np.zeros(shape=(m * n + n + m, 1))
+#         # the vector to optimize is in the form of (v_1, v_2, ..., v_n, s^1_1, s^1_2, ..., s^1_n, ..., s^m_1, s^m_2, ..., s^m_n 1)
+#
+#         # the additive bit
+#         additive_idx = n + m * n
+#
+#         # condition (ii)
+#         # this type of constraints occupies the first m rows
+#         for c_idx in range(0, m):
+#             for e_idx in range(0, n):
+#                 A[c_idx, e_idx + (c_idx + 1) * n] = 1
+#                 A[c_idx, additive_idx] = -self.model.bv[c_idx]
+#
+#         # condition (iii)
+#         # this type of constraints occupies the following m * n rows
+#
+#         # outer loop: constraint index
+#         # inner loop: element index
+#         for c_idx in range(0, m):
+#             for e_idx in range(0, n):
+#                 # row of this constraint in A
+#                 r = c_idx * n + e_idx + m
+#                 # v_i
+#                 A[r, e_idx] = 1
+#                 # s_i
+#                 # print(f"A:{type(A)}, d:{type(self.d)}")
+#                 A[r, e_idx + (c_idx + 1) * n] = -self.d[c_idx][e_idx]
+#
+#         # condition (iv)
+#         # this type of constraints occupies the following n rows
+#
+#         start_row = m * n + m
+#         for c_iii_offset in range(0, n):
+#             r = start_row + c_iii_offset
+#             for v_idx in range(0, c_iii_offset + 1):
+#                 A[r, v_idx] = 1
+#             A[r][additive_idx] = -self.fA[c_iii_offset]
+#         # print(f"A:{A}")
+#
+#         # just accumulate all v_i
+#         w = np.zeros(n + m * n + 1)
+#         for i in range(0, n):
+#             w[i] = -1
+#
+#         # upb_base = 0.
+#         # if self.upb_function is not None:
+#         #     upb_base = self.upb_function.base_value
+#         # print(f"A:{A.shape}, b:{b.shape},bounds:{len(bounds)}")
+#         x = scipy.optimize.linprog(c=w, A_ub=A, b_ub=b, bounds=bounds).x
+#
+#         fs = {}
+#         for i in range(0, len(x)):
+#             if x[i] > 0:
+#                 fs[i] = float(x[i])
+#
+#         return {
+#             "upb": -np.matmul(w, x) + self.base_value,
+#             "x": fs
+#         }
+#
+#     # def optimize(self):
+#     #     # print(f"2 S:{self.S.shape}, A:{self.A.shape}")
+#     #
+#     #     m = len(self.bv)
+#     #     n = len(self.remaining)
+#     #     bounds = []
+#     #     for i in range(0, n):
+#     #         bounds.append((0,100))
+#     #
+#     #     cost_bound = np.zeros(n)
+#     #     for e_idx in range(0, n):
+#     #         max_cost = self.model.A[0, e_idx]
+#     #         for c_idx in range(1, m):
+#     #             # print(f"a:{self.model.A.shape}, c:{c_idx}, e:{e_idx}")
+#     #             if self.model.A[c_idx, e_idx] > max_cost:
+#     #                 max_cost = self.model.A[c_idx, e_idx]
+#     #         cost_bound[e_idx] = max_cost
+#     #
+#     #     for i in range(n, 2 * n):
+#     #         bounds.append((0, cost_bound[i - n]))
+#     #     bounds.append((1, 1))
+#     #     # vector d
+#     #     # vector A
+#     #     # vector b
+#     #
+#     #     # the constraint matrix should be in shape (mn + n) * (2n + 1)
+#     #     A = np.zeros(shape=(m * n + n + m, 2 * n + 1))
+#     #     b = np.zeros(shape=(m * n + n + m, 1))
+#     #     # the vector to optimize is in the form of (v_1, v_2, ..., v_n, s_1, s_2, ..., s_n, 1)
+#     #
+#     #     # the additive bit
+#     #     additive_idx = 2 * n
+#     #
+#     #     # condition (ii)
+#     #     # this type of constraints occupies the first m rows
+#     #     for c_idx in range(0, m):
+#     #         for e_idx in range(0, n):
+#     #             A[c_idx, e_idx + n] = 1
+#     #             A[c_idx, additive_idx] = -self.model.bv[c_idx]
+#     #
+#     #     # condition (iii)
+#     #     # this type of constraints occupies the following m * n rows
+#     #
+#     #     # outer loop: constraint index
+#     #     # inner loop: element index
+#     #     for c_idx in range(0, m):
+#     #         for e_idx in range(0, n):
+#     #             # row of this constraint in A
+#     #             r = c_idx * n + e_idx + m
+#     #             # v_i
+#     #             A[r][e_idx] = 1
+#     #             # s_i
+#     #             # print(f"A:{type(A)}, d:{type(self.d)}")
+#     #             A[r][e_idx + n] = -self.d[c_idx][e_idx]
+#     #
+#     #     # condition (iv)
+#     #     # this type of constraints occupies the following n rows
+#     #
+#     #     start_row = m * n + m
+#     #     for c_iii_offset in range(0, n):
+#     #         r = start_row + c_iii_offset
+#     #         for v_idx in range(0, c_iii_offset + 1):
+#     #             A[r][v_idx] = 1
+#     #         A[r][additive_idx] = -self.fA[c_iii_offset]
+#     #     # print(f"A:{A}")
+#     #
+#     #     # just accumulate all v_i
+#     #     w = np.zeros(2 * n + 1)
+#     #     for i in range(0, n):
+#     #         w[i] = -1
+#     #
+#     #     # upb_base = 0.
+#     #     # if self.upb_function is not None:
+#     #     #     upb_base = self.upb_function.base_value
+#     #
+#     #     x = scipy.optimize.linprog(c=w, A_ub=A, b_ub=b, bounds=bounds).x
+#     #
+#     #     print(f"x:{x}")
+#     #     print(f"d:{self.d}")
+#     #     print(f"A:{self.fA}")
+#     #     print(f"bv:{self.model.bv}")
+#     #     print(f"total budget:{np.sum(x[n: 2*n])}")
+#     #     print(f"base:{self.base_value}")
+#     #     print(f"l1:{-np.matmul(w, x)}")
+#     #     print(f"l2:{-np.matmul(w, x)+ self.base_value}")
+#     #     fs = {}
+#     #     for i in range(0, len(x)):
+#     #         if x[i] > 0:
+#     #             fs[i] = float(x[i])
+#     #
+#     #     return {
+#     #         "upb": -np.matmul(w, x) + self.base_value,
+#     #         "x": fs
+#     #     }
+
 class PackingModifiedOptimizer:
     def __init__(self):
         self.A = None
@@ -723,7 +966,6 @@ class PackingModifiedOptimizer:
     #         "upb": -np.matmul(w, x) + self.base_value,
     #         "x": fs
     #     }
-
 
 class PackingModified2Optimizer:
     def __init__(self):
@@ -2574,13 +2816,55 @@ class SlicingAndCutoffAugmentedOptimizer:
         }
         pass
 
+
+# class PackingNormalOptimizer:
+#     def __init__(self):
+#         self.model: BaseTask = None
+#         self.base = None
+#         self.n = 0
+#         self.w = None
+#         self.L_c = []
+#
+#     def setModel(self, model):
+#         self.model = model
+#
+#     def setBase(self, base):
+#         self.base = base
+#
+#     def build(self):
+#         self.L_c.clear()
+#         self.n = len(self.model.ground_set)
+#
+#         self.w = np.zeros(self.n)
+#         for i in range(0, self.n):
+#             self.w[i] = -self.model.marginal_gain(i, self.base)
+#
+#         self.L_c.append(
+#             scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
+#         )
+#
+#     def optimize(self):
+#         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+#
+#         x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c,
+#                                     bounds=bounds).x
+#
+#         return {
+#             "upb": - self.w @ x + self.model.objective(self.base),
+#         }
+
 class PackingNormalOptimizer:
     def __init__(self):
         self.model: BaseTask = None
         self.base = None
         self.n = 0
         self.w = None
-        self.L_c = []
+
+        # replace with a united constraint matrix A...
+        # self.L_c = []
+
+        self.A_list = []
+        self.b_list = []
 
     def setModel(self, model):
         self.model = model
@@ -2589,27 +2873,81 @@ class PackingNormalOptimizer:
         self.base = base
 
     def build(self):
-        self.L_c.clear()
         self.n = len(self.model.ground_set)
 
         self.w = np.zeros(self.n)
         for i in range(0, self.n):
             self.w[i] = -self.model.marginal_gain(i, self.base)
 
-        self.L_c.append(
-            scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
-        )
+        # self.L_c.append(
+        #     scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
+        # )
+        self.A_list.append(self.model.A)
+        self.b_list.append(self.model.bv)
 
     def optimize(self):
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
-        x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c,
-                                    bounds=bounds).x
+        A = np.vstack(self.A_list)
+        b = np.hstack(self.b_list)
+
+        # x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c,
+        #                             bounds=bounds).x
+
+        x = scipy.optimize.linprog(
+            c=self.w,
+            A_ub=A,
+            b_ub=b,
+            bounds=bounds
+        ).x
 
         return {
             "upb": - self.w @ x + self.model.objective(self.base),
         }
 
+# class PackingCutOffOptimizer:
+#     def __init__(self):
+#         self.model: BaseTask = None
+#         self.base = None
+#         self.n = 0
+#         self.w = None
+#         self.L_c = []
+#
+#         self.additive_value = 0
+#
+#     def setModel(self, model):
+#         self.model = model
+#
+#     def setBase(self, base):
+#         self.base = base
+#
+#     def build(self):
+#         self.L_c.clear()
+#         self.additive_value = 0
+#         self.n = len(self.model.ground_set)
+#
+#         self.w = np.zeros(self.n)
+#         for i in range(0, self.n):
+#             if not i in self.base:
+#                 self.w[i] = -self.model.marginal_gain(i, self.base)
+#             else:
+#                 self.w[i] = -self.model.cutout_marginal_gain(i)
+#                 self.additive_value += self.model.cutout_marginal_gain(i)
+#
+#         self.L_c.append(
+#             scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
+#         )
+#
+#     def optimize(self):
+#         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+#
+#         x = scipy.optimize.minimize(lambda y: self.w @ y + self.additive_value, x0=np.zeros(self.n),
+#                                     constraints=self.L_c,
+#                                     bounds=bounds).x
+#
+#         return {
+#             "upb": - self.w @ x + self.model.objective(self.base) - self.additive_value,
+#         }
 
 class PackingCutOffOptimizer:
     def __init__(self):
@@ -2617,7 +2955,10 @@ class PackingCutOffOptimizer:
         self.base = None
         self.n = 0
         self.w = None
-        self.L_c = []
+
+        # self.L_c = []
+        self.A_list = []
+        self.b_list = []
 
         self.additive_value = 0
 
@@ -2628,7 +2969,9 @@ class PackingCutOffOptimizer:
         self.base = base
 
     def build(self):
-        self.L_c.clear()
+        self.A_list.clear()
+        self.b_list.clear()
+
         self.additive_value = 0
         self.n = len(self.model.ground_set)
 
@@ -2640,21 +2983,30 @@ class PackingCutOffOptimizer:
                 self.w[i] = -self.model.cutout_marginal_gain(i)
                 self.additive_value += self.model.cutout_marginal_gain(i)
 
-        self.L_c.append(
-            scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
-        )
+        self.A_list.append(self.model.A)
+        self.b_list.append(self.model.bv)
 
     def optimize(self):
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
-        x = scipy.optimize.minimize(lambda y: self.w @ y + self.additive_value, x0=np.zeros(self.n),
-                                    constraints=self.L_c,
-                                    bounds=bounds).x
+        A = np.vstack(self.A_list)
+        b = np.hstack(self.b_list)
+
+        # x = scipy.optimize.minimize(lambda y: self.w @ y + self.additive_value, x0=np.zeros(self.n),
+        #                             constraints=self.L_c,
+        #                             bounds=bounds).x
+
+        x = scipy.optimize.linprog(
+            c=self.w,
+            A_ub=A,
+            b_ub=b,
+            bounds=bounds
+        ).x
+
 
         return {
             "upb": - self.w @ x + self.model.objective(self.base) - self.additive_value,
         }
-
 
 class PackingSlicingOptimizer:
     def __init__(self):
@@ -2662,7 +3014,9 @@ class PackingSlicingOptimizer:
         self.base = None
         self.n = 0
         self.w = None
-        self.L_c = []
+
+        self.A_list = []
+        self.b_list = []
 
     def setModel(self, model):
         self.model = model
@@ -2678,10 +3032,13 @@ class PackingSlicingOptimizer:
             for j in range(0, i + 1):
                 A[i, j] = self.model.marginal_gain(j, self.base)
             ub[i] = self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base)
-        return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
+
+        self.A_list.append(A)
+        self.b_list.append(ub)
 
     def build(self):
-        self.L_c.clear()
+        self.A_list.clear()
+        self.b_list.clear()
         self.n = len(self.model.ground_set)
 
         self.w = np.zeros(self.n)
@@ -2689,23 +3046,152 @@ class PackingSlicingOptimizer:
             if i not in self.base:
                 self.w[i] = -self.model.marginal_gain(i, self.base)
 
-        self.L_c.append(
-            scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
-        )
-        self.L_c.append(
-            self.slicing_constraint()
-        )
+        self.A_list.append(self.model.A)
+        self.b_list.append(self.model.bv)
+
+        self.slicing_constraint()
+
 
     def optimize(self):
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
-        x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c,
-                                    bounds=bounds).x
+        # x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c,
+        #                             bounds=bounds).x
         # print(f"wx:{- self.w @ x}, base:{self.model.objective(self.base)}, total:{- self.w @ x + self.model.objective(self.base)}")
+
+        A = np.vstack(self.A_list)
+        b = np.hstack(self.b_list)
+
+        x = scipy.optimize.linprog(
+            c=self.w,
+            A_ub=A,
+            b_ub=b,
+            bounds=bounds
+        ).x
+
         return {
             "upb": - self.w @ x + self.model.objective(self.base),
         }
 
+# class PackingSlicingOptimizer:
+#     def __init__(self):
+#         self.model: BaseTask = None
+#         self.base = None
+#         self.n = 0
+#         self.w = None
+#         self.L_c = []
+#
+#     def setModel(self, model):
+#         self.model = model
+#
+#     def setBase(self, base):
+#         self.base = base
+#
+#     def slicing_constraint(self):
+#         A = np.zeros(shape=(self.n, self.n))
+#         ub = np.zeros(self.n)
+#
+#         for i in range(0, self.n):
+#             for j in range(0, i + 1):
+#                 A[i, j] = self.model.marginal_gain(j, self.base)
+#             ub[i] = self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base)
+#         return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
+#
+#     def build(self):
+#         self.L_c.clear()
+#         self.n = len(self.model.ground_set)
+#
+#         self.w = np.zeros(self.n)
+#         for i in range(0, self.n):
+#             if i not in self.base:
+#                 self.w[i] = -self.model.marginal_gain(i, self.base)
+#
+#         self.L_c.append(
+#             scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
+#         )
+#         self.L_c.append(
+#             self.slicing_constraint()
+#         )
+#
+#     def optimize(self):
+#         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+#
+#         x = scipy.optimize.minimize(lambda y: self.w @ y, x0=np.zeros(self.n), constraints=self.L_c,
+#                                     bounds=bounds).x
+#         # print(f"wx:{- self.w @ x}, base:{self.model.objective(self.base)}, total:{- self.w @ x + self.model.objective(self.base)}")
+#         return {
+#             "upb": - self.w @ x + self.model.objective(self.base),
+#         }
+
+
+# class PackingSlicingAndCutoffOptimizer:
+#     def __init__(self):
+#         self.model: BaseTask = None
+#         self.base = None
+#         self.n = 0
+#         self.w = None
+#         self.L_c = []
+#
+#         self.additive_value = 0
+#
+#     def setModel(self, model):
+#         self.model = model
+#
+#     def setBase(self, base):
+#         self.base = base
+#
+#     def slicing_constraint(self):
+#         A = np.zeros(shape=(self.n, self.n))
+#         ub = np.zeros(self.n)
+#
+#         for i in range(0, self.n):
+#             for j in range(0, i + 1):
+#                 A[i, j] = self.model.marginal_gain(j, self.base)
+#             ub[i] = self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base)
+#
+#         return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
+#
+#     def build(self):
+#         self.L_c.clear()
+#         self.additive_value = 0
+#         self.n = len(self.model.ground_set)
+#
+#         self.w = np.zeros(self.n)
+#         for i in range(0, self.n):
+#             if not i in self.base:
+#                 self.w[i] = -self.model.marginal_gain(i, self.base)
+#             else:
+#                 self.w[i] = -self.model.cutout_marginal_gain(i)
+#                 self.additive_value += self.model.cutout_marginal_gain(i)
+#
+#         self.L_c.append(
+#             scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
+#         )
+#         self.L_c.append(
+#             self.slicing_constraint()
+#         )
+#
+#     def removing_item(self, x):
+#         ret = 0
+#
+#         for i in range(0, self.n):
+#             if i in self.base:
+#                 ret += self.model.cutout_marginal_gain(i) * (1 - x[i])
+#
+#         return ret
+#
+#     def optimize(self):
+#         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+#
+#         x = scipy.optimize.minimize(
+#             lambda y: self.w @ y,
+#             x0=np.zeros(self.n),
+#             constraints=self.L_c,
+#             bounds=bounds).x
+#
+#         return {
+#             "upb": - self.w @ x + self.model.objective(self.base) - self.additive_value,
+#         }
 
 class PackingSlicingAndCutoffOptimizer:
     def __init__(self):
@@ -2713,7 +3199,9 @@ class PackingSlicingAndCutoffOptimizer:
         self.base = None
         self.n = 0
         self.w = None
-        self.L_c = []
+
+        self.A_list = []
+        self.b_list = []
 
         self.additive_value = 0
 
@@ -2732,10 +3220,12 @@ class PackingSlicingAndCutoffOptimizer:
                 A[i, j] = self.model.marginal_gain(j, self.base)
             ub[i] = self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base)
 
-        return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
+        self.A_list.append(A)
+        self.b_list.append(ub)
 
     def build(self):
-        self.L_c.clear()
+        self.A_list.clear()
+        self.b_list.clear()
         self.additive_value = 0
         self.n = len(self.model.ground_set)
 
@@ -2747,12 +3237,10 @@ class PackingSlicingAndCutoffOptimizer:
                 self.w[i] = -self.model.cutout_marginal_gain(i)
                 self.additive_value += self.model.cutout_marginal_gain(i)
 
-        self.L_c.append(
-            scipy.optimize.LinearConstraint(A=self.model.A, lb=-np.inf, ub=self.model.bv)
-        )
-        self.L_c.append(
-            self.slicing_constraint()
-        )
+        self.A_list.append(self.model.A)
+        self.b_list.append(self.model.bv)
+
+        self.slicing_constraint()
 
     def removing_item(self, x):
         ret = 0
@@ -2766,16 +3254,19 @@ class PackingSlicingAndCutoffOptimizer:
     def optimize(self):
         bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
 
-        x = scipy.optimize.minimize(
-            lambda y: self.w @ y,
-            x0=np.zeros(self.n),
-            constraints=self.L_c,
-            bounds=bounds).x
+        A = np.vstack(self.A_list)
+        b = np.hstack(self.b_list)
+
+        x = scipy.optimize.linprog(
+            c=self.w,
+            A_ub=A,
+            b_ub=b,
+            bounds=bounds
+        ).x
 
         return {
             "upb": - self.w @ x + self.model.objective(self.base) - self.additive_value,
         }
-
 
 # for single knapsack
 
