@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     constraint_count = 4
 
-    for seed in range(0, 50):
+    for seed in range(25, 50):
         for budget in range(6, 21):
             start = time.time()
 
