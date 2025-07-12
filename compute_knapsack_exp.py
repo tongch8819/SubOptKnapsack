@@ -32,7 +32,7 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
 from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
 
 cost_mode = ""
-upper_bounds = ['ub7u']
+upper_bounds = ['ub7mu']
 algos = ["modified_greedy"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
