@@ -59,21 +59,21 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 0
-    seed_end = 10
-    n = 100
+    seed_start = 1
+    seed_end = 20
+    n = 1000
     root_dir = f"./result/archive-{archive}"
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
-        num_points = 10
-        start_value = 1
-        interval = 1
-
         # num_points = 10
-        # start_value = 25
-        # interval = int(n/20)
+        # start_value = 10
+        # interval = 5
+
+        num_points = 10
+        start_value = 250
+        interval = int(n/20)
 
         # num_points = 1
         # start_value = 550
