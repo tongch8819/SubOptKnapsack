@@ -2873,8 +2873,12 @@ def marginal_delta_min_gate(upb: str, base_set, remaining_set, model:BaseTask):
         parameters = {}
         if upb == "ub0":
             delta, parameters = marginal_delta_min(base_set, remaining_set, model)
+        elif upb == "ub1":
+            delta, parameters = marginal_delta_min_version2(base_set, remaining_set, model.ground_set, model)
         elif upb == "ub2":
             delta, parameters = marginal_delta_min_version2(base_set, remaining_set, model.ground_set, model)
+        elif upb == "ub3":
+            delta, parameters = marginal_delta_min_version3(base_set, remaining_set, model.ground_set, model)
         else:
             raise ValueError("Unsupported Upperbound")
         return delta, parameters
