@@ -59,7 +59,7 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 1
+    seed_start = 0
     seed_end = 20
     n = 1000
     root_dir = f"./result/archive-{archive}"
@@ -73,7 +73,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
 
         num_points = 10
         start_value = 250
-        interval = int(n/20)
+        interval = int(n/40)
 
         # num_points = 1
         # start_value = 550
