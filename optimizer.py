@@ -5357,6 +5357,8 @@ class UnifiedMinSlicingCutoffOptimizer:
         x0 = np.zeros(total_n)
 
         A = np.vstack(self.A_list)
+        A = scipy.sparse.csr_matrix(A)
+
         b = np.hstack(self.b_list)
 
         c = np.zeros(total_n)
