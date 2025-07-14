@@ -283,6 +283,8 @@ def greedy_mintss(model: BaseTask, upb=None):
 
     return ret
 
+def greedy_mintss_lbd0(model: BaseTask):
+    return greedy_mintss(model, 'ub0')
 
 def greedy_mintss_lbd0u(model: BaseTask, upb=None):
     start_time = time.time()

@@ -433,6 +433,82 @@ def marginal_delta_min_version2(base_set: Set[int], remaining_set: Set[int], gro
 
     return max(delta, min_c), parameters
 
+def marginal_delta_min_version3(base_set: Set[int], remaining_set: Set[int], ground_set: Set[int], model: BaseTask):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0, {}
+
+    parameters = {}
+
+    t = list(remaining_set)
+    t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    bv = model.objective(list(base_set))
+
+    def f_s(A):
+        return model.objective(list(set(A) | set(base_set))) - bv
+
+    # nominator = [model.marginal_gain(t[i], list(set(base_set) | set(t[:i]))) for i in range(0, len(t))]
+
+    cutoff = 0
+
+    nominator = []
+    t_v = 0
+    assigned = False
+    for i in range(0, len(t)):
+        temp = model.marginal_gain(t[i], list(set(base_set) | set(t[:i])))
+        nominator.append(temp)
+        t_v += temp
+        # print(f"tv:{t_v}, mv:{model.value}")
+        if t_v >= model.value:
+            cutoff = i + 1
+            assigned = True
+            break
+
+    if not assigned:
+        cutoff = len(t)
+
+    denominator = [model.marginal_gain(t[i], list(base_set)) for i in range(0, cutoff)]
+
+    idx = 0
+    while idx < len(denominator) and denominator[idx] > 0:
+        idx = idx + 1
+
+    sigma = [nominator[i]/denominator[i] for i in range(0, min(idx, cutoff))]
+
+    # print(f"sigma:{len(sigma)}")
+    def H_plus(x):
+        idx = 0
+        cur_cost = 0.
+        prev_ai = 0
+        while True:
+            assert idx < len(sigma), f"sigma error:{idx}, {len(sigma), x:{x}, prev:{prev_ai}}"
+            assert idx < len(t), f"t error:{idx}, {len(t), x:{x}, prev:{prev_ai}}"
+            if x > f_s(set(t[:idx+1])):
+                cur_cost = cur_cost + model.cost_of_singleton(t[idx]) * sigma[idx]
+                prev_ai = f_s(set(t[:idx+1]))
+            elif x == f_s(set(t[:idx+1])):
+                cur_cost = cur_cost + model.cost_of_singleton(t[idx]) * sigma[idx]
+                break
+            else:
+                assert idx < len(sigma), f"sigma!:{idx}"
+                assert idx < len(t), f"t!:{idx}, lt:{len(t)}"
+
+                density = f_s({t[idx]})/model.cost_of_singleton(t[idx])
+                x = x - prev_ai
+                cur_cost = cur_cost + sigma[idx] * x/density
+                break
+            idx = idx + 1
+        return cur_cost
+
+    delta = H_plus(model.value - bv)
+    # start2 = time.time()
+
+    # print(f"0:{start0 - start}, 05:{start0_5-start0}, 1:{start1-start0_5}, 2:{start2 - start1}")
+    min_c = np.min([model.cost_of_singleton(x) for x in t])
+
+    return max(delta, min_c), parameters
 
 def G_plus(x: float, model: BaseTask, remaining_set: Set[int], base_set: Set[int], cumsum_costs: List[float],
            elements: List[int], p = False):

@@ -5,7 +5,7 @@ import os
 import pickle
 
 import greedy_min
-from greedy_min import greedy_mintss_lbd0u, greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u
+from greedy_min import greedy_mintss_lbd0, greedy_mintss_lbd0u, greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u
 from compute_knapsack_exp import model_factory
 import numpy as np
 
