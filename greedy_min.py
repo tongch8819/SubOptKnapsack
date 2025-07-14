@@ -420,7 +420,7 @@ def greedy_mintss_lbd2u(model: BaseTask, upb=None):
     # print("gonna go")
     # print("gonna go1")
 
-    opt = optimizer.UnifiedMinSlicingOptimizer()
+    opt = optimizer.UnifiedSparseMinSlicingOptimizer()
     opt.setModel(model)
     opt.addIntermediate([])
 
@@ -477,7 +477,7 @@ def greedy_mintss_lbd3u(model: BaseTask, upb=None):
     # print("gonna go")
     # print("gonna go1")
 
-    opt = optimizer.UnifiedMinSlicingCutoffOptimizer()
+    opt = optimizer.UnifiedSparseMinSlicingCutoffOptimizer()
     opt.setModel(model)
     opt.addIntermediate([])
 
