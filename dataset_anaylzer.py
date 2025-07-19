@@ -96,7 +96,7 @@ def parse_m_2():
     plt.rc('font', **font)
 
     start = 0
-    stop = 200
+    stop = 20
     count = stop - start
 
     for task in tasks_list:

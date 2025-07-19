@@ -283,8 +283,99 @@ def greedy_mintss(model: BaseTask, upb=None):
 
     return ret
 
+
 def greedy_mintss_lbd0(model: BaseTask):
-    return greedy_mintss(model, 'ub0')
+    return greedy_mintss_with_optimizer(model, 'lbd0')
+
+
+def greedy_mintss_lbd1(model: BaseTask):
+    return greedy_mintss_with_optimizer(model, 'lbd1')
+
+
+def greedy_mintss_lbd2(model: BaseTask):
+    return greedy_mintss_with_optimizer(model, 'lbd2')
+
+
+def greedy_mintss_lbd3(model: BaseTask):
+    return greedy_mintss_with_optimizer(model, 'lbd3')
+
+
+def greedy_mintss_with_optimizer(model: BaseTask, upb=None):
+    start_time = time.time()
+    parameters = {}
+    lambda_capital = 0
+
+    def g(x):
+        return min(model.objective(list(x)), model.value)
+
+    def g_s(x, base):
+        item1 = set(base) | {x}
+        item2 = base
+
+        return g(item1) - g(item2)
+
+    def d_g_s(x, base):
+        return g_s(x, base) / model.cost_of_singleton(x)
+
+    remaining_elements = set(model.ground_set)
+
+    # print("gonna go")
+    # print("gonna go1")
+
+    opt = None
+
+    if upb == 'lbd0':
+        opt = optimizer.NormalMinOptimizer()
+    elif upb == 'lbd1':
+        opt = optimizer.CutoffMinOptimizer()
+    elif upb == 'lbd2':
+        opt = optimizer.SlicingMinOptimizer()
+    elif upb == 'lbd3':
+        opt = optimizer.SlicingCutoffMinOptimizer()
+    elif upb == 'lbd0u':
+        opt = optimizer.UnifiedSparseMinOptimizer()
+    elif upb == 'lbd1u':
+        opt = optimizer.UnifiedSparseMinCutoffOptimizer()
+    elif upb == 'lbd2u':
+        opt = optimizer.UnifiedSparseMinSlicingOptimizer()
+    elif upb == 'lbd3u':
+        opt = optimizer.UnifiedSparseMinSlicingCutoffOptimizer()
+
+    opt.setModel(model)
+    opt.setBase([])
+    opt.addIntermediate([])
+
+    s = set()
+    while g(s) < model.value:
+        max_i, max_d = None, 0
+        for i in remaining_elements:
+            if max_i is None or d_g_s(i, s) > max_d:
+                max_i = i
+                max_d = g_s(i, s)
+
+        s.add(max_i)
+        remaining_elements.remove(max_i)
+
+        # print(f"s updated:{s}")
+
+        opt.addIntermediate(copy.deepcopy(list(s)))
+
+    stop_time = time.time()
+
+    opt.build()
+    lambda_capital = opt.optimize()['lbd']
+
+    ret = {
+        "S": s,
+        "f(S)": model.objective(list(s)),
+        "c(S)": model.cost_of_set(list(s)),
+        "upb": lambda_capital,
+        "AF": model.cost_of_set(list(s)) / lambda_capital,
+        "time": stop_time - start_time
+    }
+
+    return ret
+
 
 def greedy_mintss_lbd0u(model: BaseTask, upb=None):
     start_time = time.time()
@@ -308,7 +399,7 @@ def greedy_mintss_lbd0u(model: BaseTask, upb=None):
     # print("gonna go")
     # print("gonna go1")
 
-    opt = optimizer.UnifiedMinOptimizer()
+    opt = optimizer.UnifiedSparseMinOptimizer()
     opt.setModel(model)
     opt.addIntermediate([])
 
@@ -342,6 +433,7 @@ def greedy_mintss_lbd0u(model: BaseTask, upb=None):
     }
 
     return ret
+
 
 def greedy_mintss_lbd1u(model: BaseTask, upb=None):
     start_time = time.time()
@@ -365,7 +457,7 @@ def greedy_mintss_lbd1u(model: BaseTask, upb=None):
     # print("gonna go")
     # print("gonna go1")
 
-    opt = optimizer.UnifiedMinCutoffOptimizer()
+    opt = optimizer.UnifiedSparseMinCutoffOptimizer()
     opt.setModel(model)
     opt.addIntermediate([])
 
@@ -399,6 +491,7 @@ def greedy_mintss_lbd1u(model: BaseTask, upb=None):
     }
 
     return ret
+
 
 def greedy_mintss_lbd2u(model: BaseTask, upb=None):
     start_time = time.time()
