@@ -27,14 +27,16 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
     modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_nis_ub7ma, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, \
     modified_greedy_ub1ma, modified_greedy_ub7ma, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
-    modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu
+    modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
+    modified_greedy_ub1si
 
 from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_max_nis_ept_ub7, greedy_max_nis_ept_ub7ma, \
                       greedy_max_nis_sol_ub1, greedy_max_nis_sol_ub1ma, greedy_max_nis_sol_ub7, greedy_max_nis_sol_ub7ma, \
-                      greedy_max_ub1, greedy_max_ub1ma, greedy_max_ub7, greedy_max_ub7ma
+                      greedy_max_ub1, greedy_max_ub1ma, greedy_max_ub7, greedy_max_ub7ma, \
+                      greedy_max_ub11, greedy_max_ub11m, greedy_max_ub7u, greedy_max_ub7mu
 
 cost_mode = ""
-upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
+upper_bounds = ['ub11', 'ub11m', 'ub7u', 'ub7mu']
 algos = ["greedy_max"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -438,7 +440,7 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
+    start_seed = 2
     end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
