@@ -4977,6 +4977,222 @@ class UnifiedSlicingAndCutoffOptimizer:
         }
 
 
+class UnifiedSparseSlicingOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.m = 0
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+        self.intermediate_sets = []
+
+        self.A = None
+        self.b = None
+        self.constraint_count = 0
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def slicing_constraint(self, inter_idx):
+        inter_set = self.intermediate_sets[inter_idx]
+        inter_value = self.model.objective(list(inter_set))
+
+        start_index = self.n + self.n * inter_idx
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                self.A[self.constraint_count, start_index + j] = 1
+            self.b[self.constraint_count] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+            self.constraint_count += 1
+
+    def v_to_x_constraint(self, inter_idx):
+        inter_set = self.intermediate_sets[inter_idx]
+
+        start_index = self.n + self.n * inter_idx
+        for i in range(0, self.n):
+            self.A[self.constraint_count, start_index + i] = 1
+            if i not in inter_set:
+                self.A[self.constraint_count, i] = -self.model.marginal_gain(i, list(self.intermediate_sets[inter_idx]))
+            self.constraint_count += 1
+
+    def build(self):
+        self.L_c.clear()
+        self.n = len(self.model.ground_set)
+        self.m = len(self.intermediate_sets)
+        total_n = self.n + self.m * self.n + 1
+        self.constraint_count = 0
+
+        # print(f"m:{self.m}, s:{self.intermediate_sets}")
+
+        self.A = scipy.sparse.lil_matrix((self.m + 2 * self.m * self.n + 1, total_n), dtype=float)
+        self.b = np.zeros(self.m + 2 * self.m * self.n + 1)
+
+        # first constraint
+        for i in range(0, self.m):
+            self.A[self.constraint_count, total_n - 1] = 1
+
+            start_idx = self.n + i * self.n
+            for j in range(0, self.n):
+                self.A[self.constraint_count, start_idx + j] = -1
+
+            self.b[self.constraint_count] = self.model.objective(list(self.intermediate_sets[i]))
+            self.constraint_count += 1
+
+        for i in range(0, self.m):
+            self.v_to_x_constraint(i)
+
+        # the slicing constraint
+        for i in range(0, self.m):
+            self.slicing_constraint(i)
+
+        # the last constraint
+        for i in range(0, self.n):
+            self.A[self.constraint_count, i] = self.model.cost_of_singleton(i)
+        self.b[self.constraint_count] = self.model.budget
+        self.constraint_count += 1
+
+    def optimize(self):
+        total_n = self.n + self.m * self.n + 1
+        bounds = [(0, 1) for _ in range(0, self.n)]
+        for i in range(self.n, total_n):
+            bounds.append((0, 1000))
+
+        x0 = np.zeros(total_n)
+
+        c = np.zeros(total_n)
+        c[total_n - 1] = -1
+
+        # print(f"A:{A.shape}, b:{b.shape}")
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "upb": x[total_n - 1],
+        }
+
+
+class UnifiedSparseSlicingAndCutoffOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.m = 0
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+        self.intermediate_sets = []
+
+        self.A = None
+        self.b = None
+        self.constraint_count = 0
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def slicing_constraint(self, inter_idx):
+        inter_set = self.intermediate_sets[inter_idx]
+        inter_value = self.model.objective(list(inter_set))
+
+        start_index = self.n + self.n * inter_idx
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                self.A[self.constraint_count, start_index + j] = 1
+            self.b[self.constraint_count] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+            self.constraint_count += 1
+
+    def v_to_x_constraint(self, inter_idx):
+        inter_set = self.intermediate_sets[inter_idx]
+
+        start_index = self.n + self.n * inter_idx
+        for i in range(0, self.n):
+            self.A[self.constraint_count, start_index + i] = 1
+            if i not in inter_set:
+                self.A[self.constraint_count, i] = -self.model.marginal_gain(i, list(self.intermediate_sets[inter_idx]))
+            self.constraint_count += 1
+
+    def build(self):
+        self.L_c.clear()
+        self.n = len(self.model.ground_set)
+        self.m = len(self.intermediate_sets)
+        total_n = self.n + self.m * self.n + 1
+        self.constraint_count = 0
+
+        # print(f"m:{self.m}, s:{self.intermediate_sets}")
+
+        self.A = scipy.sparse.lil_matrix((self.m + 2 * self.m * self.n + 1, total_n), dtype=float)
+        self.b = np.zeros(self.m + 2 * self.m * self.n + 1)
+
+        # first constraint
+        for i in range(0, self.m):
+            self.A[self.constraint_count, total_n - 1] = 1
+
+            start_idx = self.n + i * self.n
+            for j in range(0, self.n):
+                self.A[self.constraint_count, start_idx + j] = -1
+
+            additive_value = 0
+            for j in self.intermediate_sets[i]:
+                self.A[self.constraint_count, j] = -self.model.cutout_marginal_gain(j)
+                additive_value += self.model.cutout_marginal_gain(j)
+
+            self.b[self.constraint_count] = self.model.objective(list(self.intermediate_sets[i])) - additive_value
+            self.constraint_count += 1
+
+        for i in range(0, self.m):
+            self.v_to_x_constraint(i)
+
+        # the slicing constraint
+        for i in range(0, self.m):
+            self.slicing_constraint(i)
+
+        # the last constraint
+        for i in range(0, self.n):
+            self.A[self.constraint_count, i] = self.model.cost_of_singleton(i)
+        self.b[self.constraint_count] = self.model.budget
+        self.constraint_count += 1
+
+    def optimize(self):
+        total_n = self.n + self.m * self.n + 1
+        bounds = [(0, 1) for _ in range(0, self.n)]
+        for i in range(self.n, total_n):
+            bounds.append((0, 1000))
+
+        x0 = np.zeros(total_n)
+
+        c = np.zeros(total_n)
+        c[total_n - 1] = -1
+
+        # print(f"A:{A.shape}, b:{b.shape}")
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "upb": x[total_n - 1],
+        }
+
+
+
 class UnifiedMinOptimizer:
     def __init__(self):
         self.model: BaseTask = None
@@ -5389,6 +5605,441 @@ class UnifiedMinSlicingCutoffOptimizer:
         }
 
 
+class NormalMinOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+
+        self.constraint_count = 0
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        pass
+
+    def build(self):
+        self.n = len(self.model.ground_set)
+        self.constraint_count = 0
+
+        self.A = scipy.sparse.lil_matrix((1, self.n), dtype=float)
+        self.b = np.zeros(1)
+
+        inter_value = self.model.objective(list(self.base))
+        for j in range(0, self.n):
+            self.A[0, j] = -self.model.marginal_gain(j, list(self.base))
+
+        self.b[0] = inter_value - self.model.value
+
+    def optimize(self):
+        total_n = self.n
+        bounds = [(0, 1) for _ in range(0, self.n)]
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "lbd": c @ x,
+        }
+
+
+class CutoffMinOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+
+        self.constraint_count = 0
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        pass
+
+    def build(self):
+        self.n = len(self.model.ground_set)
+        self.constraint_count = 0
+
+        self.A = scipy.sparse.lil_matrix((1, self.n), dtype=float)
+        self.b = np.zeros(1)
+
+        additive_value = 0
+        inter_value = self.model.objective(list(self.base))
+        for j in range(0, self.n):
+            if j in self.base:
+                self.A[0, j] = -self.model.cutout_marginal_gain(j)
+                additive_value += self.model.cutout_marginal_gain(j)
+            else:
+                self.A[0, j] = -self.model.marginal_gain(j, list(self.base))
+
+        self.b[0] = inter_value - self.model.value
+
+    def optimize(self):
+        total_n = self.n
+        bounds = [(0, 1) for _ in range(0, self.n)]
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "lbd": c @ x,
+        }
+
+
+class SlicingMinOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+
+        self.A = None
+        self.b = None
+
+        self.constraint_count = 0
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        pass
+
+    def slicing_constraint(self):
+        inter_set = self.base
+        inter_value = self.model.objective(list(inter_set))
+
+        start_index = self.n
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                self.A[self.constraint_count, start_index + j] = 1
+            self.b[self.constraint_count] = self.model.objective(
+                list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+
+            self.constraint_count += 1
+
+    def v_to_x_constraint(self):
+        inter_set = self.base
+
+        start_index = self.n
+        for i in range(0, self.n):
+            self.A[self.constraint_count, start_index + i] = 1
+            if i not in inter_set:
+                self.A[self.constraint_count, i] = -self.model.marginal_gain(i, list(inter_set))
+
+            self.constraint_count += 1
+
+    def build(self):
+        self.n = len(self.model.ground_set)
+        total_n = self.n + self.n + 1
+        self.constraint_count = 0
+
+        # print(f"m:{self.m}, s:{self.intermediate_sets}")
+        # first constraint
+        # A1 = np.zeros(shape=(self.m, total_n))
+        # b1 = np.zeros(self.m)
+
+        # z \le f(S) + \sum v_i m constraints in total
+        # v to x m * n constraints in total
+        # slicing m * n constraints in total
+        # no budget constraint for the set cover problem
+        # m + 2 * m * n constraints in total
+        self.A = scipy.sparse.lil_matrix((1 + 2 * self.n, total_n), dtype=float)
+        self.b = np.zeros(1 + 2 * self.n)
+
+        start_idx = self.n
+        for j in range(0, self.n):
+            self.A[self.constraint_count, start_idx + j] = -1
+        self.b[self.constraint_count] = self.model.objective(list(self.base)) - self.model.value
+
+        self.constraint_count += 1
+
+        # second constraint
+        self.v_to_x_constraint()
+
+        # the slicing constraint
+        self.slicing_constraint()
+
+    def optimize(self):
+        total_n = self.n + self.n + 1
+        bounds = [(0, 1) for _ in range(0, self.n)]
+        for i in range(self.n, total_n):
+            bounds.append((0, 1000))
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "lbd": c @ x,
+        }
+
+
+class SlicingCutoffMinOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+
+        self.A = None
+        self.b = None
+
+        self.constraint_count = 0
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        pass
+
+    def slicing_constraint(self):
+        inter_set = self.base
+        inter_value = self.model.objective(list(inter_set))
+
+        start_index = self.n
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                self.A[self.constraint_count, start_index + j] = 1
+            self.b[self.constraint_count] = self.model.objective(
+                list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+
+            self.constraint_count += 1
+
+    def v_to_x_constraint(self):
+        inter_set = self.base
+
+        start_index = self.n
+        for i in range(0, self.n):
+            self.A[self.constraint_count, start_index + i] = 1
+            if i not in inter_set:
+                self.A[self.constraint_count, i] = -self.model.marginal_gain(i, list(inter_set))
+
+            self.constraint_count += 1
+
+    def build(self):
+        self.n = len(self.model.ground_set)
+        total_n = self.n + self.n + 1
+        self.constraint_count = 0
+
+        # print(f"m:{self.m}, s:{self.intermediate_sets}")
+        # first constraint
+        # A1 = np.zeros(shape=(self.m, total_n))
+        # b1 = np.zeros(self.m)
+
+        # z \le f(S) + \sum v_i m constraints in total
+        # v to x m * n constraints in total
+        # slicing m * n constraints in total
+        # no budget constraint for the set cover problem
+        # m + 2 * m * n constraints in total
+        self.A = scipy.sparse.lil_matrix((1 + 2 * self.n, total_n), dtype=float)
+        self.b = np.zeros(1 + 2 * self.n)
+
+        start_idx = self.n
+        additive_value = 0
+        for j in range(0, self.n):
+            self.A[self.constraint_count, start_idx + j] = -1
+            if j in self.base:
+                self.A[self.constraint_count, j] = -self.model.cutout_marginal_gain(j)
+                additive_value += self.model.cutout_marginal_gain(j)
+
+        self.b[self.constraint_count] = self.model.objective(list(self.base)) - additive_value - self.model.value
+
+        self.constraint_count += 1
+
+        # second constraint
+        self.v_to_x_constraint()
+
+        # the slicing constraint
+        self.slicing_constraint()
+
+    def optimize(self):
+        total_n = self.n + self.n + 1
+        bounds = [(0, 1) for _ in range(0, self.n)]
+        for i in range(self.n, total_n):
+            bounds.append((0, 1000))
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "lbd": c @ x,
+        }
+
+class UnifiedSparseMinOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.m = 0
+        self.n = 0
+        self.w = None
+
+        self.intermediate_sets = []
+
+        self.constraint_count = 0
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def build(self):
+        self.n = len(self.model.ground_set)
+        self.m = len(self.intermediate_sets)
+        self.constraint_count = 0
+
+        # first constraint
+        self.A = scipy.sparse.lil_matrix((self.m, self.n), dtype=float)
+        self.b = np.zeros(self.m)
+
+        for i in range(0, self.m):
+            inter_value = self.model.objective(list(self.intermediate_sets[i]))
+            for j in range(0, self.n):
+                self.A[i, j] = -self.model.marginal_gain(j, list(self.intermediate_sets[i]))
+
+            self.b[i] = inter_value - self.model.value
+
+    def optimize(self):
+        total_n = self.n
+        bounds = [(0, 1) for _ in range(0, self.n)]
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "lbd": c @ x,
+        }
+
+
+class UnifiedSparseMinCutoffOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.m = 0
+        self.n = 0
+        self.w = None
+
+        self.intermediate_sets = []
+
+        self.A = None
+        self.b = None
+        self.constraint_count = 0
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        self.intermediate_sets.append(inter)
+
+    def build(self):
+        self.n = len(self.model.ground_set)
+        self.m = len(self.intermediate_sets)
+        self.constraint_count = 0
+
+        # first constraint
+        self.A = scipy.sparse.lil_matrix((self.m, self.n), dtype=float)
+        self.b = np.zeros(self.m)
+
+        for i in range(0, self.m):
+            inter_set = list(self.intermediate_sets[i])
+            inter_value = self.model.objective(inter_set)
+            additive_value = 0
+            for j in range(0, self.n):
+                if j in inter_set:
+                    self.A[i, j] = -self.model.cutout_marginal_gain(j)
+                    additive_value += self.model.cutout_marginal_gain(j)
+                else:
+                    self.A[i, j] = -self.model.marginal_gain(j, list(self.intermediate_sets[i]))
+
+            self.b[i] = inter_value - self.model.value - additive_value
+
+    def optimize(self):
+        total_n = self.n
+        bounds = [(0, 1) for _ in range(0, self.n)]
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        return {
+            "lbd": c @ x,
+        }
+
+
 class UnifiedSparseMinSlicingOptimizer:
     def __init__(self):
         self.model: BaseTask = None
@@ -5421,7 +6072,8 @@ class UnifiedSparseMinSlicingOptimizer:
         for i in range(0, self.n):
             for j in range(0, i + 1):
                 self.A[self.constraint_count, start_index + j] = 1
-            self.b[self.constraint_count] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+            self.b[self.constraint_count] = self.model.objective(
+                list(set(inter_set) | set(range(0, i + 1)))) - inter_value
 
             self.constraint_count += 1
 
@@ -5532,7 +6184,8 @@ class UnifiedSparseMinSlicingCutoffOptimizer:
         for i in range(0, self.n):
             for j in range(0, i + 1):
                 self.A[self.constraint_count, start_index + j] = 1
-            self.b[self.constraint_count] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+            self.b[self.constraint_count] = self.model.objective(
+                list(set(inter_set) | set(range(0, i + 1)))) - inter_value
 
             self.constraint_count += 1
 

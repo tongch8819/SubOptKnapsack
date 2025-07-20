@@ -5,7 +5,7 @@ import os
 import pickle
 
 import greedy_min
-from greedy_min import greedy_mintss_lbd0u, greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u
+from greedy_min import greedy_mintss_lbd0, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u, greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u
 from compute_knapsack_exp import model_factory
 import numpy as np
 
@@ -59,21 +59,21 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 10
-    seed_end = 20
+    seed_start = 15
+    seed_end = 16
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
-        # num_points = 10
-        # start_value = 10
-        # interval = 5
-
         num_points = 10
-        start_value = 250
-        interval = int(n/40)
+        start_value = 10
+        interval = 5
+
+        # num_points = 10
+        # start_value = 250
+        # interval = int(n/40)
 
         # num_points = 1
         # start_value = 550

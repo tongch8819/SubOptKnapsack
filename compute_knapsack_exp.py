@@ -27,13 +27,17 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
     modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_nis_ub7ma, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, \
     modified_greedy_ub1ma, modified_greedy_ub7ma, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
-    modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu
+    modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
+    modified_greedy_ub1si
 
-from greedymax import greedy_max_ub1, greedy_max_ub1m, greedy_max_ub7, greedy_max_ub7m
+from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_max_nis_ept_ub7, greedy_max_nis_ept_ub7ma, \
+                      greedy_max_nis_sol_ub1, greedy_max_nis_sol_ub1ma, greedy_max_nis_sol_ub7, greedy_max_nis_sol_ub7ma, \
+                      greedy_max_ub1, greedy_max_ub1ma, greedy_max_ub7, greedy_max_ub7ma, \
+                      greedy_max_ub11, greedy_max_ub11m, greedy_max_ub7u, greedy_max_ub7mu
 
 cost_mode = ""
-upper_bounds = ['ub7mu']
-algos = ["modified_greedy"]
+upper_bounds = ['ub11', 'ub11m', 'ub7u', 'ub7mu']
+algos = ["greedy_max"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
 suffix = ""
@@ -436,8 +440,8 @@ def compute_caltech(root_dir, skip_mode=False):
 def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
-    end_seed = 200
+    start_seed = 2
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -510,14 +514,14 @@ def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 200
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
         num_points = 35
-        start_point = 21
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
