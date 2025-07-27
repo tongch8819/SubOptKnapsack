@@ -36,7 +36,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
                       greedy_max_ub11, greedy_max_ub11m, greedy_max_ub7u, greedy_max_ub7mu
 
 cost_mode = ""
-upper_bounds = ['ub11', 'ub11m', 'ub7u', 'ub7mu']
+upper_bounds = ['ub11',  'ub7u']
 algos = ["greedy_max"]
 # algos = ["greedy_max"]
 # algos = ["gcg"]
@@ -209,7 +209,7 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
+    start_seed = 17
     end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
@@ -342,15 +342,15 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 20
+    start_seed = 16
+    end_seed = 18
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 2
+        start_point = 39
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -513,7 +513,7 @@ def compute_adult(root_dir, skip_mode=False):
 def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
-    start_seed = 0
+    start_seed = 18
     end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):

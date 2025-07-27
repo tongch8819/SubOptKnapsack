@@ -5638,9 +5638,14 @@ class NormalMinOptimizer:
 
         self.b[0] = inter_value - self.model.value
 
+
     def optimize(self):
         total_n = self.n
         bounds = [(0, 1) for _ in range(0, self.n)]
+
+        # margins = [self.model.marginal_gain(j, list(self.base))/self.model.cost_of_singleton(j) for j in range(0, self.n)]
+        # margins.sort(reverse=True)
+        # print(f"top 10:{margins[:10]}, base:{self.base}")
 
         c = np.zeros(total_n)
         for i in range(0, self.n):
