@@ -5,7 +5,12 @@ import os
 import pickle
 
 import greedy_min
-from greedy_min import greedy_mintss_lbd0, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u, greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u
+from greedy_min import (greedy_mintss_lbd0, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u,
+                        greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u,
+                        augmented_greedy_mintss_lbd0, augmented_greedy_mintss_lbd1, augmented_greedy_mintss_lbd2, augmented_greedy_mintss_lbd3,
+                        greedy_mintss_lbd0s, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u,
+                        augmented_greedy_mintss_lbd0u)
+
 from compute_knapsack_exp import model_factory
 import numpy as np
 
@@ -59,21 +64,21 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 21
-    seed_end = 40
+    seed_start = 30
+    seed_end = 31
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
-        # num_points = 1
-        # start_value = 15
-        # interval = 5
+        num_points = 1
+        start_value = 15
+        interval = 5
 
-        num_points = 10
-        start_value = 250
-        interval = int(n/40)
+        # num_points = 10
+        # start_value = 250
+        # interval = int(n/40)
 
         # num_points = 1
         # start_value = 550
@@ -89,6 +94,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
         for value in values:
             model.value = value
             func_call = eval('greedy_mintss' + "_" + upb)
+            # func_call = eval('augmented_greedy_mintss' + "_" + upb)
             res = func_call(model)
             res['ground'] = n
 
