@@ -9,6 +9,7 @@ from greedy_min import (greedy_mintss_lbd0, greedy_mintss_lbd1, greedy_mintss_lb
                         greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u,
                         augmented_greedy_mintss_lbd0, augmented_greedy_mintss_lbd1, augmented_greedy_mintss_lbd2, augmented_greedy_mintss_lbd3,
                         greedy_mintss_lbd0s, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u,
+                        augmented_greedy_mintss_lbd0s,
                         augmented_greedy_mintss_lbd0u)
 
 from compute_knapsack_exp import model_factory
@@ -63,9 +64,9 @@ def compute_min_series(task):
     pass
 
 
-def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
-    seed_start = 30
-    seed_end = 31
+def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='greedy_mintss'):
+    seed_start = 10
+    seed_end = 11
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
@@ -73,7 +74,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
         num_points = 1
-        start_value = 15
+        start_value = 19
         interval = 5
 
         # num_points = 10
@@ -93,7 +94,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
             os.mkdir(save_dir)
         for value in values:
             model.value = value
-            func_call = eval('greedy_mintss' + "_" + upb)
+            func_call = eval(algo + "_" + upb)
             # func_call = eval('augmented_greedy_mintss' + "_" + upb)
             res = func_call(model)
             res['ground'] = n
@@ -107,7 +108,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0'):
             res['worst'] = 1 + math.log(max_v, math.e)
 
             save_path = os.path.join(save_dir,
-                                     "{}-{}-{:.2f}-{}.pckl".format(upb, model.__class__.__name__, value, seed))
+                                     "{}-{}-{}-{:.2f}-{}.pckl".format(algo, upb, model.__class__.__name__, value, seed))
             with open(save_path, "wb") as wrt:
                 pickle.dump(res, wrt)
 
@@ -163,10 +164,11 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--task", default='', help="task name")
     parser.add_argument("-b", "--budget", default=True, help="use budget function")
     parser.add_argument("-a", "--archive", default=29, help="archive")
+    parser.add_argument("-g", "--algorithm", default='greedy_mintss', help="archive")
     parser.add_argument("-k", "--knapsack", default=True, help="knapsack")
     parser.add_argument("-u", "--upb", default=True, help="upper bound")
     args = parser.parse_args()
 
     assert args.task in ["facebook", "youtube"]
 
-    compute_min_series_integer(task=args.task, knap=args.knapsack, archive=args.archive, upb=args.upb)
+    compute_min_series_integer(algo=args.algorithm, task=args.task, knap=args.knapsack, archive=args.archive, upb=args.upb)

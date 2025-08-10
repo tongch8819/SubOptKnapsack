@@ -319,6 +319,8 @@ def greedy_mintss_lbd3s(model: BaseTask):
 def augmented_greedy_mintss_lbd0(model: BaseTask):
     return augmented_greedy_mintss_with_optimizer(model, 'lbd0')
 
+def augmented_greedy_mintss_lbd0s(model: BaseTask):
+    return augmented_greedy_mintss_with_optimizer(model, 'lbd0s')
 
 def augmented_greedy_mintss_lbd1(model: BaseTask):
     return augmented_greedy_mintss_with_optimizer(model, 'lbd1')
@@ -396,6 +398,7 @@ def greedy_mintss_with_optimizer(model: BaseTask, upb=None):
 
     opt.build()
     lambda_capital = opt.optimize()['lbd']
+
 
     stop_time = time.time()
 
@@ -739,6 +742,14 @@ def augmented_greedy_mintss_with_optimizer(model: BaseTask, upb=None):
         opt = optimizer.UnifiedSparseMinSlicingOptimizer()
     elif upb == 'lbd3u':
         opt = optimizer.UnifiedSparseMinSlicingCutoffOptimizer()
+    elif upb == 'lbd0s':
+        opt = optimizer.SievedNormalMinOptimizer()
+    elif upb == 'lbd1s':
+        opt = optimizer.UnifiedSparseMinCutoffOptimizer()
+    elif upb == 'lbd2s':
+        opt = optimizer.UnifiedSparseMinSlicingOptimizer()
+    elif upb == 'lbd3s':
+        opt = optimizer.UnifiedSparseMinSlicingCutoffOptimizer()
 
     opt.setModel(model)
     opt.setBase([])
@@ -754,8 +765,7 @@ def augmented_greedy_mintss_with_optimizer(model: BaseTask, upb=None):
             temp_s = s | {i}
             v = model.objective(list(temp_s))
             if v >= model.value:
-                # print(f"i am here, v:{v}, s:{s}, temp_s:{temp_s}")
-
+                print(f"i am here, v:{v}, s:{s}, temp_s:{temp_s}, cost")
                 if augmented_s is None or model.cost_of_set(temp_s) < augmented_c:
                     augmented_s = temp_s
                     augmented_c = model.cost_of_set(temp_s)
@@ -777,6 +787,7 @@ def augmented_greedy_mintss_with_optimizer(model: BaseTask, upb=None):
     lambda_capital = opt.optimize()['lbd']
 
     if augmented_c < model.cost_of_set(list(s)):
+        print("agu")
         s = augmented_s
 
     stop_time = time.time()

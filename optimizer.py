@@ -5741,7 +5741,7 @@ class SievedNormalMinOptimizer:
         sieved_min = c @ x
 
         lbd = 0
-        if sieved_min < min_b_c:
+        if (min_b_c is None) or (sieved_min < min_b_c):
             lbd = sieved_min
         else:
             lbd = min_b_c
