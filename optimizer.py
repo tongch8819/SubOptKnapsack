@@ -5638,9 +5638,14 @@ class NormalMinOptimizer:
 
         self.b[0] = inter_value - self.model.value
 
+
     def optimize(self):
         total_n = self.n
         bounds = [(0, 1) for _ in range(0, self.n)]
+
+        # margins = [self.model.marginal_gain(j, list(self.base))/self.model.cost_of_singleton(j) for j in range(0, self.n)]
+        # margins.sort(reverse=True)
+        # print(f"top 10:{margins[:10]}, base:{self.base}")
 
         c = np.zeros(total_n)
         for i in range(0, self.n):
@@ -5656,6 +5661,95 @@ class NormalMinOptimizer:
         return {
             "lbd": c @ x,
         }
+
+class SievedNormalMinOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+
+        self.big_elements = None
+        self.small_elements = None
+
+        self.base = None
+        self.n = 0
+        self.w = None
+
+        self.constraint_count = 0
+        self.A = None
+        self.b = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def addIntermediate(self, inter):
+        pass
+
+    def build(self):
+        self.big_elements = set()
+        self.small_elements = set()
+
+        for i in self.model.ground_set:
+            if self.model.objective(i) >= self.model.value:
+                self.big_elements.add(i)
+
+        self.small_elements = set(self.model.ground_set) - self.big_elements
+
+        self.n = len(self.model.ground_set)
+        self.constraint_count = 0
+
+        self.A = scipy.sparse.lil_matrix((1, self.n), dtype=float)
+        self.b = np.zeros(1)
+
+        inter_value = self.model.objective(list(self.base))
+        for j in range(0, self.n):
+            self.A[0, j] = -self.model.marginal_gain(j, list(self.base))
+
+        self.b[0] = inter_value - self.model.value
+
+
+    def optimize(self):
+        # the optimal for big elements
+        min_b_i, min_b_c = None, None
+        for i in self.big_elements:
+            if min_b_i is None or self.model.cost_of_singleton(i) < min_b_c:
+                min_b_i = i
+                min_b_c = self.model.cost_of_singleton(i)
+
+
+        total_n = self.n
+        bounds = [(0, 1) for _ in range(0, self.n)]
+        for i in self.big_elements:
+            bounds[i] = [0, 0]
+
+        # margins = [self.model.marginal_gain(j, list(self.base))/self.model.cost_of_singleton(j) for j in range(0, self.n)]
+        # margins.sort(reverse=True)
+        # print(f"top 10:{margins[:10]}, base:{self.base}")
+
+        c = np.zeros(total_n)
+        for i in range(0, self.n):
+            c[i] = self.model.cost_of_singleton(i)
+
+        x = scipy.optimize.linprog(
+            c=c,
+            A_ub=self.A,
+            b_ub=self.b,
+            bounds=bounds
+        ).x
+
+        sieved_min = c @ x
+
+        lbd = 0
+        if (min_b_c is None) or (sieved_min < min_b_c):
+            lbd = sieved_min
+        else:
+            lbd = min_b_c
+
+        return {
+            "lbd": lbd,
+        }
+
 
 
 class CutoffMinOptimizer:
@@ -5915,6 +6009,7 @@ class SlicingCutoffMinOptimizer:
         return {
             "lbd": c @ x,
         }
+
 
 class UnifiedSparseMinOptimizer:
     def __init__(self):
