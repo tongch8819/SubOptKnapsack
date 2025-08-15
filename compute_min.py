@@ -65,8 +65,8 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='greedy_mintss'):
-    seed_start = 10
-    seed_end = 11
+    seed_start = 30
+    seed_end = 31
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
@@ -74,7 +74,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='gre
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
         num_points = 1
-        start_value = 19
+        start_value = 15
         interval = 5
 
         # num_points = 10
