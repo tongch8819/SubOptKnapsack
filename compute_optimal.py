@@ -6,6 +6,7 @@ import random
 import numpy as np
 
 import a_star
+import data_correcting
 import filter_search
 import model_factory
 
@@ -25,10 +26,10 @@ if __name__ == "__main__":
     alpha = float(args.alpha)
 
     start_seed = 0
-    stop_seed = 50
+    stop_seed = 1
 
     interval = 1
-    num_points = 3
+    num_points = 1
     start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -40,7 +41,10 @@ if __name__ == "__main__":
             for ub in ub_list:
                 random.seed(seed)
                 model = model_factory.model_factory(args.task, int(args.num), seed, budget, knap=True)
+
                 alg = filter_search.FS(model)
+                # alg = data_correcting.DCA(model)
+
                 alg.alpha = alpha
                 alg.setOpt(ub)
                 alg.build()

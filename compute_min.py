@@ -8,8 +8,8 @@ import greedy_min
 from greedy_min import (greedy_mintss_lbd0, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u,
                         greedy_mintss_lbd1u, greedy_mintss_lbd2u, greedy_mintss_lbd3u,
                         augmented_greedy_mintss_lbd0, augmented_greedy_mintss_lbd1, augmented_greedy_mintss_lbd2, augmented_greedy_mintss_lbd3,
-                        greedy_mintss_lbd0s, greedy_mintss_lbd1, greedy_mintss_lbd2, greedy_mintss_lbd3, greedy_mintss_lbd0u,
-                        augmented_greedy_mintss_lbd0s,
+                        greedy_mintss_lbd0s, greedy_mintss_lbd1s, greedy_mintss_lbd2s, greedy_mintss_lbd3s,
+                        greedy_mintss_lbd0us, greedy_mintss_lbd1us, greedy_mintss_lbd2us, greedy_mintss_lbd3us,
                         augmented_greedy_mintss_lbd0u)
 
 from compute_knapsack_exp import model_factory
@@ -65,16 +65,16 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='greedy_mintss'):
-    seed_start = 10
-    seed_end = 11
+    seed_start = 0
+    seed_end = 20
     n = 1000
     root_dir = f"./result/archive-{archive}"
 
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
-        num_points = 1
-        start_value = 19
+        num_points = 10
+        start_value = 10
         interval = 5
 
         # num_points = 10
