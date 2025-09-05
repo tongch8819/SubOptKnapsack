@@ -2112,7 +2112,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
     parameters["method3"] = t1-t0
     parameters["retrievehighest"] = t2-t1
 
-    print(f"start, base:{base_set}")
+    # print(f"start, base:{base_set}")
 
     if not minus:
         return max(M_plus_gain), parameters

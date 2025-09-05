@@ -68,6 +68,7 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='gre
     seed_start = 15
     seed_end = 20
     n = 1000
+
     root_dir = f"./result/archive-{archive}"
 
     for seed in range(seed_start, seed_end):

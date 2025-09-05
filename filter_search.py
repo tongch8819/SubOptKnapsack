@@ -15,11 +15,17 @@ class FS(OptimalAlg):
         self.f = None
         self.h = None
 
+        self.lbd = -1
+        self.augmentation = False
+
         self.E = set()
 
     def build(self):
         self.closed_list.clear()
         self.heap.clear()
+        self.lbd = -1
+        self.augmentation = False
+
         self.f = self.model.objective
         if self.opt == 'ub0':
             self.h = self.h_ub0
@@ -27,6 +33,12 @@ class FS(OptimalAlg):
             self.h = self.h_ub1
         elif self.opt == 'ub2':
             self.h = self.h_ub2
+        elif self.opt == 'ub1+':
+            self.h = self.h_ub1
+            self.augmentation = True
+        elif self.opt == 'ub2+':
+            self.h = self.h_ub2
+            self.augmentation = True
 
     # the heuristic function
     def h_ub0(self, S):
@@ -43,6 +55,10 @@ class FS(OptimalAlg):
         delta, _ = marginal_delta_m(set(S), set(self.model.ground_set) - set(S), self.model)
         return delta
 
+    def h_ub2_plus(self, S):
+        delta, _ = marginal_delta_m(set(S), set(self.model.ground_set) - set(S), self.model)
+        return delta
+
     def is_on_the_edge(self, S):
         base_cost = self.model.cost_of_set(S)
         for ele in set(self.model.ground_set) - S:
@@ -54,7 +70,15 @@ class FS(OptimalAlg):
         if self.is_on_the_edge(S):
             return self.f(list(S))
 
-        return self.f(list(S)) + self.alpha * self.h(S)
+        current_h = self.f(list(S)) + self.alpha * self.h(S)
+
+        if self.augmentation:
+            if self.lbd < 0 or current_h < self.lbd:
+                self.lbd = current_h
+            else:
+                current_h = self.lbd
+
+        return current_h
 
     def optimize(self):
         start_time = time.time()
