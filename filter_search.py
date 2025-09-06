@@ -3,7 +3,7 @@ import time
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
 from MaxHeap import MaxHeap, HeapObj
-from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m
+from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m, marginal_delta_m_acc
 
 
 class FS(OptimalAlg):
@@ -33,6 +33,9 @@ class FS(OptimalAlg):
             self.h = self.h_ub1
         elif self.opt == 'ub2':
             self.h = self.h_ub2
+        elif self.opt == 'ub0+':
+            self.h = self.h_ub0
+            self.augmentation = True
         elif self.opt == 'ub1+':
             self.h = self.h_ub1
             self.augmentation = True
@@ -52,7 +55,7 @@ class FS(OptimalAlg):
 
     # the heuristic function
     def h_ub1(self, S):
-        delta, _ = marginal_delta_m(set(S), set(self.model.ground_set) - set(S), self.model)
+        delta, _ = marginal_delta_m_acc(set(S), set(self.model.ground_set) - set(S), self.model)
         return delta
 
     def h_ub2_plus(self, S):
