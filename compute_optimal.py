@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
     alpha = float(args.alpha)
 
-    start_seed = 0
-    stop_seed = 1
+    start_seed = 33
+    stop_seed = 34
 
     interval = 1
     num_points = 5
