@@ -45,6 +45,37 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     # print(f"delta:{delta}, base:{base_set}, bv:{model.objective(base_set)} total:{model.objective(base_set) + delta}")
     return delta, parameters
 
+def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    parameters = {}
+
+    t0 = time.time()
+
+    t = list(remaining_set)
+    t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    # dt = [model.density(x, base_set) for x in t]
+    # ct = [model.cost_of_singleton(x) for x in t]
+
+    costs = [model.cost_of_singleton(x) for x in t]
+    cumsum_costs = list(accumulate(costs, initial=None))
+    delta = G_plus(budget, model, remaining_set,
+                         base_set, cumsum_costs, t)
+
+    t1 = time.time()
+
+    parameters["ScanCount"] = bisect.bisect_right(cumsum_costs, budget) + 1
+    parameters["MinusCount"] = 0
+    parameters["method3"] = t1 - t0
+
+    # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]}")
+    # print(f"delta:{delta}, base:{base_set}, bv:{model.objective(base_set)} total:{model.objective(base_set) + delta}")
+    return delta, parameters
+
 def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -299,6 +330,46 @@ def marginal_delta_m_acc(base_set: Set[int], remaining_set: Set[int], model: Bas
             delta += w[ground[i]]
         else:
             remaining_budget = model.budget - cur_cost
+            delta += w[ground[i]] * (remaining_budget/model.cost_of_singleton(ground[i]))
+            break
+
+    delta -= additive_value
+
+    return delta, parameters
+
+
+def marginal_delta_m_acc_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta = 0
+    parameters = {}
+
+    n = len(model.ground_set)
+    ground = list(range(0, n))
+    w = np.zeros(n)
+    additive_value = 0
+
+    # assign weights for each element in ground set
+
+    for i in range(0, n):
+        if i in base_set:
+            w[i] = model.cutout_marginal_gain(i)
+            additive_value += model.cutout_marginal_gain(i)
+        else:
+            w[i] = model.marginal_gain(i, list(base_set))
+
+    ground.sort(key=lambda x: w[x]/model.cost_of_singleton(x), reverse=True)
+
+    cur_cost = 0
+    for i in range(0, n):
+        if cur_cost + model.cost_of_singleton(ground[i]) <= budget:
+            cur_cost += model.cost_of_singleton(ground[i])
+            delta += w[ground[i]]
+        else:
+            remaining_budget = budget - cur_cost
             delta += w[ground[i]] * (remaining_budget/model.cost_of_singleton(ground[i]))
             break
 
@@ -876,6 +947,7 @@ def marginal_delta_version4(base_set: Set[int], remaining_set: Set[int], model: 
                             right_k = right / endpoints[0]
                         else:
                             prev_right = f_s(endpoints[endpoint_idx - 1] - c_eps, c_eps)
+
                             right_k = (right - prev_right) / (csc_outside[endpoint_idx] - csc_outside[endpoint_idx - 1])
 
                         i_star = max(endpoints[endpoint_idx] - (left - right) / (left_k - right_k),
@@ -2224,6 +2296,110 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
 
     print(f"t 3:{t2-t0}, total:{time.time()-t0}")
     return ub, parameters
+
+
+def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget=0):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    parameters = {}
+
+    base_set_value = model.objective(base_set)
+    def inside_cumsum_costs():
+        s = list(base_set)
+        # sort density in ascending order, default sort has ascending order
+        s.sort(key=lambda x: model.cutout_density(x, base_set), reverse=False)
+        costs = [model.cost_of_singleton(x) for x in s]
+        cumsum_costs = list(accumulate(costs, initial=None))
+        return cumsum_costs, s
+
+    def local_f(S):
+        S = list(S)
+        while S.count(-1) > 0:
+            S.remove(-1)
+        return model.objective(S)
+
+    def local_density(f, base, ele):
+        return (f(base | {ele}) - f(base)) / model.cost_of_singleton(ele)
+
+    def f_over_base(s):
+        return local_f(base_set | s) - base_set_value
+
+    def method3(f, b):
+        def outside_cumsum_costs(f):
+            eles = list(remaining_set)
+            # sort density in descending order
+            eles.sort(key=lambda x: local_density(f, set(), x), reverse=True)
+            costs = [model.cost_of_singleton(x) for x in eles]
+
+            cumsum_costs = list(accumulate(costs, initial=None))
+            return cumsum_costs, eles
+
+        csc_outside, ele_outside = outside_cumsum_costs(f)
+
+        delta = 0.
+
+        ele_idx = 0
+
+        result = []
+
+        budget_consumed = 0
+
+        scan_count = 0
+        while budget_consumed < b and ele_idx < len(ele_outside):
+            marginal_gain = f(set(ele_outside[:ele_idx+1])) - f(set(ele_outside[:ele_idx]))
+            singleton_gain = f({ele_outside[ele_idx]})
+
+            if singleton_gain <= 0:
+                budget_consumed = b
+                result.append((budget_consumed, delta))
+                # scan_count = ele_idx
+                ele_idx += 1
+                break
+
+            budget_to_use_up = (marginal_gain / singleton_gain) * model.cost_of_singleton(ele_outside[ele_idx])
+
+            if b - budget_consumed >= budget_to_use_up:
+                v_j = marginal_gain
+                bd = budget_to_use_up
+            else:
+                v_j = (b-budget_consumed) * (singleton_gain/model.cost_of_singleton(ele_outside[ele_idx]))
+                bd = b - budget_consumed
+
+            ele_idx = ele_idx + 1
+            delta += v_j
+            budget_consumed += bd
+
+            result.append((budget_consumed, delta))
+
+        scan_count = ele_idx
+        return result, scan_count, ele_outside
+
+    ub = 0
+
+    t0 = time.time()
+
+    M_plus_res, sc, ele_outside = method3(f_over_base, budget)
+
+    t1 = time.time()
+
+    M_plus_budget = [0] + [x[0] for x in M_plus_res]
+    M_plus_gain = [0] + [x[1] for x in M_plus_res]
+
+    # print(f"m_p_g:{ele_outside[:5]}, g:{[model.marginal_gain(ele_outside[i], list(base_set))/model.cost_of_singleton(ele_outside[i]) for i in range(0, 5)]}")
+
+    t2 = time.time()
+
+    parameters["ScanCount"] = sc
+    parameters["method3"] = t1-t0
+    parameters["retrievehighest"] = t2-t1
+
+    # print(f"start, base:{base_set}")
+
+    return max(M_plus_gain), parameters
+
 
 
 def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):
