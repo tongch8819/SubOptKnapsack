@@ -65,7 +65,7 @@ def compute_min_series(task):
 
 
 def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='greedy_mintss'):
-    seed_start = 15
+    seed_start = 19
     seed_end = 20
     n = 1000
 
@@ -74,13 +74,21 @@ def compute_min_series_integer(task, knap=True, archive=29, upb='ub0', algo='gre
     for seed in range(seed_start, seed_end):
         model = model_factory(task, n, seed, budget=0, knap=knap)
 
-        # num_points = 10
-        # start_value = 10
-        # interval = 5
+        eles = list(model.ground_set)
+        eles.sort(key=lambda x:model.density(x, []), reverse=True)
+        print(f"top 10:{eles[:10]}")
+        d = [model.density(x, []) for x in eles]
+        v = [model.objective([x]) for x in eles]
+        c = [model.cost_of_singleton(x) for x in eles]
+        print(f"top 10 v:{c[:10]}")
 
-        num_points = 10
-        start_value = 250
-        interval = int(n/40)
+        num_points = 1
+        start_value = 10
+        interval = 5
+
+        # num_points = 10
+        # start_value = 250
+        # interval = int(n/40)
 
         # num_points = 1
         # start_value = 550

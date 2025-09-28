@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", '--num', default=100, help='size of the ground set')
     parser.add_argument("-a", "--archive", default=27, help="archive index")
     parser.add_argument("-hf", "--heuristic", default='ub0', help="the heuristic function")
-    parser.add_argument("-aa", "--alpha", default=0.8, help="the approximation factor")
+    parser.add_argument("-aa", "--alpha", default=1, help="the approximation factor")
     parser.add_argument("-g", "--algorithm", default='FS', help="the searching algorithm")
     args = parser.parse_args()
 
@@ -26,12 +26,12 @@ if __name__ == "__main__":
 
     alpha = float(args.alpha)
 
-    start_seed = 0
-    stop_seed = 1
+    start_seed = 128
+    stop_seed = 129
 
     interval = 1
-    num_points = 5
-    start_point = 11
+    num_points = 40
+    start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
