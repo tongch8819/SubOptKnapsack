@@ -1,5 +1,6 @@
 import json
 import time
+from itertools import accumulate
 
 import dp
 import mgreedy
@@ -37,8 +38,8 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 
 cost_mode = ""
 
-upper_bounds = ['ub7']
-algos = ["modified_greedy"]
+upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
+algos = ["modified_greedy_nis"]
 
 # upper_bounds = ['ub7']
 # algos = ["greedy_max_nis_sol"]
@@ -127,15 +128,30 @@ def compute_movie_recom(root_dir, skip_mode=False):
     # print(res)
 
     interval = 10
-    num_points = 10
-    start_point = 11
+    num_points = 1
+    start_point = 51
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
+    model = MovieRecommendation(
+        matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=0, k=30, n=100, knapsack=True,
+        prepare_max_pair=False, print_curvature=False)
+
+    ground = list(model.ground_set)
+    print(f"ground:{ground[:10]}\n")
+
+    ground.sort(key=lambda x: model.density(x, []), reverse=True)
+
+    print(f"ground:{[float(model.density(ground[i], [])) for i in range(0, 10)]}\n")
+
+    v_list = [float(model.objective([ground[i]])) for i in range(0, 10)]
+    v_list = list(accumulate(v_list))
+    av_list = [float(model.objective(ground[:i + 1])) for i in range(0, 10)]
+    print(f"e:{ground[:10]} \nv:{v_list} \nA_list:{av_list}")
+
     for budget in bds:
-        model = MovieRecommendation(
-            matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=500, knapsack=True,
-            prepare_max_pair=False, print_curvature=False)
+        model.budget = budget
+
         for up in upper_bounds:
             for algo in algos:
                 save_path = os.path.join(root_dir, "{}-{}-{}-{:.2f}.pckl".format(
