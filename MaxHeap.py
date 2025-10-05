@@ -27,6 +27,16 @@ class MaxHeap(object):
     def pop(self):
         return heapq.heappop(self.h)
 
+    def remove(self, ele):
+        try:
+            self.h.remove(ele)
+            heapq.heapify(self.h)
+        except ValueError:
+            print(f"Element {ele} not found in heap.")
+
+    def top(self):
+        return self.h[0]
+
     def __getitem__(self, item):
         assert item < len(self.h)
         return self.h[item]

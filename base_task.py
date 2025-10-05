@@ -287,6 +287,7 @@ class BaseTask(ABC):
         assert res >= 0., f"f({base}) - f({base2}) = {fS2:.2f} - {fS1:.2f}\n{base - base2}"
         return res
 
+
     def internal_cutout_marginal_gain(self, singleton: int):
         # assert type(base) is set, "{} is not set".format(type(base))
         base = set(self.ground_set)

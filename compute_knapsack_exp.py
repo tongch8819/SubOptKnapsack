@@ -1,6 +1,5 @@
 import json
 import time
-from itertools import accumulate
 
 import dp
 import mgreedy
@@ -38,8 +37,9 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 
 cost_mode = ""
 
-upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
-algos = ["modified_greedy_nis"]
+upper_bounds = ['ub7mu']
+
+algos = ["modified_greedy"]
 
 # upper_bounds = ['ub7']
 # algos = ["greedy_max_nis_sol"]
@@ -127,30 +127,23 @@ def compute_movie_recom(root_dir, skip_mode=False):
     # res = greedy_max_ub1(model)
     # print(res)
 
+    n = 1000
+
     interval = 10
-    num_points = 1
-    start_point = 51
+    num_points = 35
+    start_point = 11
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
-    model = MovieRecommendation(
-        matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=0, k=30, n=100, knapsack=True,
-        prepare_max_pair=False, print_curvature=False)
-
-    ground = list(model.ground_set)
-    print(f"ground:{ground[:10]}\n")
-
-    ground.sort(key=lambda x: model.density(x, []), reverse=True)
-
-    print(f"ground:{[float(model.density(ground[i], [])) for i in range(0, 10)]}\n")
-
-    v_list = [float(model.objective([ground[i]])) for i in range(0, 10)]
-    v_list = list(accumulate(v_list))
-    av_list = [float(model.objective(ground[:i + 1])) for i in range(0, 10)]
-    print(f"e:{ground[:10]} \nv:{v_list} \nA_list:{av_list}")
-
     for budget in bds:
-        model.budget = budget
+        model = MovieRecommendation(
+            matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=n, knapsack=knapsack,
+            prepare_max_pair=False, print_curvature=False)
+
+        # total = 0
+        # for i in model.ground_set:
+        #     total+= model.cost_of_singleton(i)
+        # print(f"t:{total}")
 
         for up in upper_bounds:
             for algo in algos:
@@ -165,6 +158,7 @@ def compute_movie_recom(root_dir, skip_mode=False):
                     pickle.dump(res, wrt)
                 print(res)
                 print("Done: ", save_path)
+
 
 
 def compute_dblp(root_dir, skip_mode=False):
@@ -271,6 +265,54 @@ def compute_facebook_series(root_dir, skip_mode=False):
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
 
+
+def compute_movie_recom_series(root_dir, skip_mode=False):
+    # budget = 30.0
+    # model = MovieRecommendation(matrix_path="/home/ctong/Projects/SubOptKnapsack/dataset/movie/user_by_movies_small_rating.npy", budget=budget, k = 30, n = 50)
+    # print(model.num_movies, model.num_users)
+    # res = greedy_max_ub1(model)
+    # print(res)
+
+    n = 100
+    seed_interval = 1
+    start_seed = 15
+    end_seed = 20
+
+    for seed in range(start_seed, end_seed, seed_interval):
+        interval = 5
+        num_points = 35
+        start_point = 11
+
+        end_point = start_point + (num_points - 1) * interval
+        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
+
+        save_dir = os.path.join(root_dir, archive, "movie", f"{n}", f"{seed}")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+
+        for budget in bds:
+            model = MovieRecommendation(
+                matrix_path="./dataset/movie/user_by_movies_small_rating.npy", budget=budget, k=30, n=n, knapsack=knapsack,
+                prepare_max_pair=False, print_curvature=False)
+
+            # total = 0
+            # for i in model.ground_set:
+            #     total+= model.cost_of_singleton(i)
+            # print(f"t:{total}")
+
+            for up in upper_bounds:
+                for algo in algos:
+                    save_path = os.path.join(save_dir,"{}-{}-{}-{:.2f}.pckl".format(
+                        algo, up + suffix, model.__class__.__name__, budget))
+                    func_call = eval(algo + "_" + up)
+                    res = func_call(model)  # dict
+                    if skip_mode and os.path.exists(save_path):
+                        print("Skip: ", save_path)
+                        continue
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)
+                    print(res)
+                    print("Done: ", save_path)
 
 def compute_custom(root_dir, skip_mode=False):
     model = CustomCoverage(budget=10, n=100, graph_path="./dataset/custom-graph/graphs/100--0.2--0.1--0.5--20",
@@ -987,6 +1029,9 @@ if __name__ == "__main__":
             compute_youtube_series(root_dir)
         elif args.task_num == 17:
             compute_adult_series(root_dir)
+        elif args.task_num == 18:
+            compute_movie_recom_series(root_dir)
+
     elif args.m == '1':
         n = int(args.num)
         mp_procedure = None
