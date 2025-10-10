@@ -1497,7 +1497,7 @@ def modified_greedy_ub7u(model: BaseTask):
 
     update_upb = True
 
-    opt = optimizer.UnifiedSlicingOptimizer()
+    opt = optimizer.UnifiedSparseSlicingOptimizer()
     opt.setModel(model)
     opt.addIntermediate(set())
 
@@ -1574,7 +1574,7 @@ def modified_greedy_ub7mu(model: BaseTask):
 
     update_upb = True
 
-    opt = optimizer.UnifiedSlicingAndCutoffOptimizer()
+    opt = optimizer.UnifiedSparseSlicingAndCutoffOptimizer()
     opt.setModel(model)
     opt.addIntermediate(set())
 

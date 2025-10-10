@@ -37,9 +37,11 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 
 cost_mode = ""
 
-upper_bounds = ['ub7mu']
+upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
+# upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
 
 algos = ["modified_greedy"]
+# algos = ["modified_greedy_nis"]
 
 # upper_bounds = ['ub7']
 # algos = ["greedy_max_nis_sol"]
@@ -223,8 +225,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 10
-    end_seed = 20
+    start_seed = 0
+    end_seed = 3
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -275,8 +277,8 @@ def compute_movie_recom_series(root_dir, skip_mode=False):
 
     n = 100
     seed_interval = 1
-    start_seed = 15
-    end_seed = 20
+    start_seed = 0
+    end_seed = 15
 
     for seed in range(start_seed, end_seed, seed_interval):
         interval = 5
@@ -305,6 +307,8 @@ def compute_movie_recom_series(root_dir, skip_mode=False):
                     save_path = os.path.join(save_dir,"{}-{}-{}-{:.2f}.pckl".format(
                         algo, up + suffix, model.__class__.__name__, budget))
                     func_call = eval(algo + "_" + up)
+
+
                     res = func_call(model)  # dict
                     if skip_mode and os.path.exists(save_path):
                         print("Skip: ", save_path)
@@ -405,7 +409,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
     start_seed = 0
-    end_seed = 20
+    end_seed = 3
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -418,6 +422,7 @@ def compute_youtube_series(root_dir, skip_mode=False):
 
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
+
 
         save_dir = os.path.join(root_dir, archive, "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
@@ -503,7 +508,7 @@ def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 20
+    end_seed = 3
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -576,7 +581,7 @@ def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 20
+    end_seed = 3
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
