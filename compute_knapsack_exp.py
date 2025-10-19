@@ -40,8 +40,8 @@ cost_mode = ""
 upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
 # upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
 
+# algos = ["modified_greedy"]
 algos = ["modified_greedy"]
-# algos = ["modified_greedy_nis"]
 
 # upper_bounds = ['ub7']
 # algos = ["greedy_max_nis_sol"]
@@ -223,10 +223,10 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 4039
     seed_interval = 1
     start_seed = 0
-    end_seed = 3
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -408,8 +408,8 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 3
+    start_seed = 15
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -422,7 +422,6 @@ def compute_youtube_series(root_dir, skip_mode=False):
 
         model = YoutubeCoverage(0, n, "./dataset/com-youtube", seed=seed, knapsack=knapsack, cost_mode=cost_mode,
                                 prepare_max_pair=False, print_curvature=False, construct_graph=True)
-
 
         save_dir = os.path.join(root_dir, archive, "youtube", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
@@ -505,10 +504,10 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 100
+    n = 769
     seed_interval = 1
     start_seed = 0
-    end_seed = 3
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -578,10 +577,10 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 100
+    n = 111
     seed_interval = 1
     start_seed = 0
-    end_seed = 3
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
