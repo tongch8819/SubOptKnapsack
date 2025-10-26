@@ -234,6 +234,7 @@ class FS(OptimalAlg):
         s = None
 
         node_count = 0
+        explored_node_count = 0
 
         self.push_heap(set())
         while self.heap.size() > 0:
@@ -251,15 +252,18 @@ class FS(OptimalAlg):
                 ret['f(S)'] = self.model.objective(s)
                 ret['time'] = stop_time - start_time
                 ret['node_count'] = node_count
+                ret['explored_node_count'] = explored_node_count
                 return ret
 
             if s not in self.closed_list:
                 self.closed_list.append(s)
 
-            for ele in set(self.model.ground_set) - s:
-                s_plus = s | {ele}
-                if self.model.cost_of_set(s_plus) <= self.model.budget:
-                    self.push_heap(s_plus)
+                for ele in set(self.model.ground_set) - s:
+                    s_plus = s | {ele}
+                    if self.model.cost_of_set(s_plus) <= self.model.budget:
+                        explored_node_count += 1
+                        self.push_heap(s_plus)
+
 
         stop_time = time.time()
         ret['S'] = s
@@ -267,6 +271,7 @@ class FS(OptimalAlg):
         ret['f(S)'] = self.model.objective(s)
         ret['time'] = stop_time - start_time
         ret['node_count'] = node_count
+        ret['explored_node_count'] = explored_node_count
         print(f"return from fallback")
 
         return ret
@@ -371,10 +376,10 @@ class AugmentedFS(OptimalAlg):
             if s not in self.closed_list:
                 self.closed_list.append(s)
 
-            for ele in set(self.model.ground_set) - s:
-                s_plus = s | {ele}
-                if self.model.cost_of_set(s_plus) <= self.model.budget:
-                    self.push_heap(s_plus, parent_lbd)
+                for ele in set(self.model.ground_set) - s:
+                    s_plus = s | {ele}
+                    if self.model.cost_of_set(s_plus) <= self.model.budget:
+                        self.push_heap(s_plus, parent_lbd)
 
         stop_time = time.time()
         ret['S'] = s
