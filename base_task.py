@@ -102,11 +102,17 @@ class BaseTask(ABC):
                 # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
                 if cost_mode == "normal":
                     self.costs_obj = [
-                        (0.4 + random.random()) * 4
+                        (0.25 + random.random()) * 4
                         for obj in self.ground_set
                     ]
                     self.A = np.matrix([self.costs_obj])
                     self.cc = 1
+                    # self.costs_obj = [
+                    #     random.random()
+                    #     for obj in self.ground_set
+                    # ]
+                    # self.A = np.matrix([self.costs_obj])
+                    # self.cc = 1
                 elif cost_mode == "integer":
                     self.costs_obj = [
                         random.randint(1, 5)
