@@ -10,6 +10,7 @@ class IDAstar(OptimalAlg):
         super().__init__(model)
         self.threshold = 0
         self.min_upper_bound = None
+
         self.bound = None
         self.h = None
         self.node_count = 0
