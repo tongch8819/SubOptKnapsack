@@ -9,6 +9,15 @@ class IDAstar(OptimalAlg):
     def ida(self):
         pass
 
+    def g(self):
+        pass
+
+    def h(self):
+        pass
+
+    def is_goal(self, node):
+        pass
+
     def search(self):
         pass
 
