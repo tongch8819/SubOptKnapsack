@@ -12,7 +12,6 @@ class A_star(OptimalAlg):
 
         self.closed_list = []
         self.heap = MaxHeap()
-        self.f = None
         self.h = None
         self.alpha = 1
 
@@ -21,11 +20,13 @@ class A_star(OptimalAlg):
     def build(self):
         self.closed_list.clear()
         self.heap.clear()
-        self.f = self.model.objective
         if self.opt == 'ub0':
             self.h = self.h_ub0
         elif self.opt == 'ub2':
             self.h = self.h_ub2
+
+    def f(self, s):
+        return self.g(s) + self.h(s)
 
     # the heuristic function
     def h_ub0(self, S):
@@ -81,12 +82,12 @@ class A_star(OptimalAlg):
         s_star_v = self.model.objective(list(s_star))
 
         L = MaxHeap()
-        L.push(HeapObj(s_star, self.g(s_star)))
+        L.push(HeapObj(s_star, self.f(s_star)))
 
         while L.size() > 0:
             obj = L.pop()
-            s, g_s = obj.s, obj.v
-            if g_s > s_star_v:
+            s, f_s = obj.s, obj.v
+            if f_s > s_star_v:
                 s_plus = self.greedy_with_base(s)
                 if self.model.objective(s_plus) > s_star_v:
                     s_star_v = self.model.objective(s_plus)

@@ -38,7 +38,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 cost_mode = ""
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
+upper_bounds = ['ub7', 'ub7ma']
 
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
@@ -415,8 +415,8 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 31
+        num_points = 1
+        start_point = 30
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -444,7 +444,6 @@ def compute_youtube_series(root_dir, skip_mode=False):
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
                     print("pickled")
-
 
         stop_time = time.time()
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
