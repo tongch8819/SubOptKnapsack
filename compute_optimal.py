@@ -24,7 +24,10 @@ if __name__ == "__main__":
 
     assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+']
 
-    ub_list = [args.heuristic]
+    # ub_list = [args.heuristic]
+
+    ub_list = ['ub0', 'ub2']
+    d_list = ['g', 'b', 'd']
 
     alpha = float(args.alpha)
 
@@ -42,32 +45,32 @@ if __name__ == "__main__":
     for seed in range(start_seed, stop_seed):
         for budget in bds:
             for ub in ub_list:
-                random.seed(seed)
-                model = model_factory.model_factory(args.task, int(args.num), seed, budget, knap=True)
+                for d in d_list:
+                    random.seed(seed)
+                    model = model_factory.model_factory(args.task, int(args.num), seed, budget, knap=True)
 
-                alg = None
-                if args.algorithm == 'FS':
-                    alg = filter_search.FS(model)
-                elif args.algorithm == 'AFS':
-                    alg = filter_search.AugmentedFS(model)
-                    alg.set_d(args.sorting)
-                    alg.set_h(heuristic=args.heuristic)
-                elif args.algorithm == 'IDA':
-                    alg = id_aster.IDAstar(model)
+                    alg = None
+                    if args.algorithm == 'FS':
+                        alg = filter_search.FS(model)
+                    elif args.algorithm == 'AFS':
+                        alg = filter_search.AugmentedFS(model)
+                        alg.set_d(d)
+                        alg.set_h(heuristic=args.heuristic)
+                    elif args.algorithm == 'IDA':
+                        alg = id_aster.IDAstar(model)
 
+                    alg.alpha = alpha
+                    alg.setOpt(ub)
+                    alg.build()
+                    res = alg.optimize()
+                    print(f"Done:seed:{seed}/{stop_seed - start_seed + 1}, ub:{ub}, d:{d}, budget:{budget}, res:{res}")
 
-                alg.alpha = alpha
-                alg.setOpt(ub)
-                alg.build()
-                res = alg.optimize()
-                print(f"Done:seed:{seed}/{stop_seed - start_seed + 1}, budget:{budget}, res:{res}")
+                    save_dir = os.path.join(root_dir, args.task, f'{args.num}', f'{seed}')
+                    if not os.path.exists(save_dir):
+                        os.mkdir(save_dir)
 
-                save_dir = os.path.join(root_dir, args.task, f'{args.num}', f'{seed}')
-                if not os.path.exists(save_dir):
-                    os.mkdir(save_dir)
+                    save_path = os.path.join(save_dir, "{}-{}-{}-{}-{}-{}.pckl".format(
+                        args.algorithm, ub, d, budget, alpha, model.__class__.__name__))
 
-                save_path = os.path.join(save_dir, "{}-{}-{}-{}-{}-{}.pckl".format(
-                    args.algorithm, ub, args.sorting, budget, alpha, model.__class__.__name__))
-
-                with open(save_path, "wb") as wrt:
-                    pickle.dump(res, wrt)
+                    with open(save_path, "wb") as wrt:
+                        pickle.dump(res, wrt)

@@ -1,8 +1,6 @@
 import time
 from functools import total_ordering
 
-from pygments.lexer import inherit
-
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
 from MaxHeap import MaxHeap, HeapObj
@@ -25,6 +23,7 @@ class AugmentedValue:
         if self.av == other.av and self.v < other.v:
             return True
         return False
+
 
 @total_ordering
 class AugmentedFSValue:
@@ -205,18 +204,21 @@ class FS(OptimalAlg):
 
     # the heuristic function
     def h_ub0(self, S):
-        delta, _ = marginal_delta_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
+        delta, _ = marginal_delta_random_budget(set(S), set(self.model.ground_set) - set(S), self.model,
+                                                budget=self.model.budget - self.model.cost_of_set(S))
         return delta
 
     # the heuristic function
     def h_ub2(self, S):
-        delta, _ = marginal_delta_version7_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
+        delta, _ = marginal_delta_version7_random_budget(set(S), set(self.model.ground_set) - set(S), self.model,
+                                                         budget=self.model.budget - self.model.cost_of_set(S))
         return delta
 
     # the heuristic function
     def h_ub1(self, S):
         # delta, _ = marginal_delta_m_acc(set(S), set(self.model.ground_set) - set(S), self.model)
-        delta, _ = marginal_delta_m_acc_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
+        delta, _ = marginal_delta_m_acc_random_budget(set(S), set(self.model.ground_set) - set(S), self.model,
+                                                      budget=self.model.budget - self.model.cost_of_set(S))
         return delta
 
     def is_on_the_edge(self, S):
@@ -282,7 +284,6 @@ class FS(OptimalAlg):
                     if self.model.cost_of_set(s_plus) <= self.model.budget:
                         explored_node_count += 1
                         self.push_heap(s_plus)
-
 
         stop_time = time.time()
         ret['S'] = s
@@ -594,7 +595,7 @@ class AugmentedFS(OptimalAlg):
     def density_for_set(self, n):
         if self.model.cost_of_set(list(n)) == 0:
             return 0
-        return self.g(n)/self.model.cost_of_set(list(n))
+        return self.g(n) / self.model.cost_of_set(list(n))
 
     def set_d(self, sorting):
         if sorting == 'g':
@@ -623,11 +624,13 @@ class AugmentedFS(OptimalAlg):
         return self.g(n) + self.alpha * self.h(n)
 
     def h_ub0(self, n):
-        delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model, budget=self.model.budget - self.model.cost_of_set(n))
+        delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+                                                budget=self.model.budget - self.model.cost_of_set(n))
         return delta
 
     def h_ub2(self, n):
-        delta, _ = marginal_delta_version7_random_budget(set(n), set(self.model.ground_set) - set(n), self.model, budget=self.model.budget - self.model.cost_of_set(n))
+        delta, _ = marginal_delta_version7_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+                                                         budget=self.model.budget - self.model.cost_of_set(n))
         return delta
 
     def push_heap(self, n, inherited_value):
@@ -635,7 +638,7 @@ class AugmentedFS(OptimalAlg):
         if len(n) > 0:
             max_value = max(n)
 
-        v = AugmentedFSValue(self.f(n),inherited_value, self.d(n), min(self.f(n), inherited_value), max_value)
+        v = AugmentedFSValue(self.f(n), inherited_value, self.d(n), min(self.f(n), inherited_value), max_value)
         node = HeapObj(n, v)
         self.max_heap.push(node)
 
@@ -648,7 +651,7 @@ class AugmentedFS(OptimalAlg):
         node_count = 0
         while self.max_heap.size() > 0:
             node = self.max_heap.pop()
-            node_count+=1
+            node_count += 1
             s = node.s
             v = node.v
             max_idx = v.max_idx
@@ -669,7 +672,3 @@ class AugmentedFS(OptimalAlg):
                'time': stop_time - start_time, 'node_count': node_count}
 
         return ret
-
-
-
-
