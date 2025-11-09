@@ -2,10 +2,9 @@ import heapq
 
 
 class HeapObj(object):
-    def __init__(self, s, v, lbd=0):
+    def __init__(self, s, v):
         self.s = s
         self.v = v
-        self.lbd = lbd
 
     def __lt__(self, other):
         return self.v > other.v

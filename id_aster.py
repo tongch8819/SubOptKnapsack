@@ -29,6 +29,7 @@ class IDAstar(OptimalAlg):
             # print(f"node count:{self.node_count}, min:{self.min_upper_bound}")
 
         f_value = self.f(node)
+
         if self.min_upper_bound is None or f_value < self.min_upper_bound:
             self.min_upper_bound = f_value
 

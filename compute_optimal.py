@@ -19,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-hf", "--heuristic", default='ub0', help="the heuristic function")
     parser.add_argument("-aa", "--alpha", default=0.8, help="the approximation factor")
     parser.add_argument("-g", "--algorithm", default='FS', help="the searching algorithm")
+    parser.add_argument("-d", "--sorting", default='g', help="the sorting function for breaking ties")
     args = parser.parse_args()
 
     assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+']
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 3
+    num_points = 5
     start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -49,10 +50,11 @@ if __name__ == "__main__":
                     alg = filter_search.FS(model)
                 elif args.algorithm == 'AFS':
                     alg = filter_search.AugmentedFS(model)
+                    alg.set_d(args.sorting)
+                    alg.set_h(heuristic=args.heuristic)
                 elif args.algorithm == 'IDA':
                     alg = id_aster.IDAstar(model)
-                elif args.algorithm == 'FFS':
-                    alg = filter_search.FFS(model)
+
 
                 alg.alpha = alpha
                 alg.setOpt(ub)
@@ -64,8 +66,8 @@ if __name__ == "__main__":
                 if not os.path.exists(save_dir):
                     os.mkdir(save_dir)
 
-                save_path = os.path.join(save_dir, "{}-{}-{}-{}-{}.pckl".format(
-                    args.algorithm, ub, budget, alpha, model.__class__.__name__))
+                save_path = os.path.join(save_dir, "{}-{}-{}-{}-{}-{}.pckl".format(
+                    args.algorithm, ub, args.sorting, budget, alpha, model.__class__.__name__))
 
                 with open(save_path, "wb") as wrt:
                     pickle.dump(res, wrt)

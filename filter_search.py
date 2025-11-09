@@ -1,6 +1,8 @@
 import time
 from functools import total_ordering
 
+from pygments.lexer import inherit
+
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
 from MaxHeap import MaxHeap, HeapObj
@@ -21,6 +23,25 @@ class AugmentedValue:
         if self.av < other.av:
             return True
         if self.av == other.av and self.v < other.v:
+            return True
+        return False
+
+@total_ordering
+class AugmentedFSValue:
+    def __init__(self, inner_v, inherited_v, sort_v, outlook_v, max_idx):
+        self.inner_v = inner_v
+        self.inherited_v = inherited_v
+        self.outlook_v = outlook_v
+        self.sort_v = sort_v
+        self.max_idx = max_idx
+
+    def __eq__(self, other):
+        return self.outlook_v == other.outlook_v and self.outlook_v == other.outlook_v
+
+    def __lt__(self, other):
+        if self.outlook_v < other.outlook_v:
+            return True
+        if self.outlook_v == other.outlook_v and self.sort_v < other.sort_v:
             return True
         return False
 
@@ -390,176 +411,265 @@ class FS(OptimalAlg):
 #         return ret
 
 # focal filter search
-class FFS(OptimalAlg):
-    def __init__(self, model: BaseTask):
-        super().__init__(model)
-
-        self.closed_list = []
-        self.heap = MaxHeap()
-        self.focal = []
-        self.f = None
-        self.h = None
-
-        self.lbd = -1
-        self.augmentation = False
-
-        self.E = set()
-
-    def build(self):
-        self.closed_list.clear()
-        self.heap.clear()
-        self.focal.clear()
-        self.lbd = -1
-        self.augmentation = False
-
-        self.f = self.model.objective
-        if self.opt == 'ub0':
-            self.h = self.h_ub0
-        elif self.opt == 'ub1':
-            self.h = self.h_ub1
-        elif self.opt == 'ub2':
-            self.h = self.h_ub2
-        elif self.opt == 'ub0+':
-            self.h = self.h_ub0
-            self.augmentation = True
-        elif self.opt == 'ub1+':
-            self.h = self.h_ub1
-            self.augmentation = True
-        elif self.opt == 'ub2+':
-            self.h = self.h_ub2
-            self.augmentation = True
-
-    # the heuristic function
-    def h_ub0(self, S):
-        delta, _ = marginal_delta_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
-        return delta
-
-    # the heuristic function
-    def h_ub2(self, S):
-        delta, _ = marginal_delta_version7_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
-        return delta
-
-    # the heuristic function
-    def h_ub1(self, S):
-        # delta, _ = marginal_delta_m_acc(set(S), set(self.model.ground_set) - set(S), self.model)
-        delta, _ = marginal_delta_m_acc_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
-        return delta
-
-    def is_on_the_edge(self, S):
-        base_cost = self.model.cost_of_set(S)
-        for ele in set(self.model.ground_set) - S:
-            if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
-                return False
-        return True
-
-    def g(self, S):
-        if self.is_on_the_edge(S):
-            return self.f(list(S)), self.f(list(S))
-
-        current_h = self.f(list(S)) + self.alpha * self.h(S)
-        normal_h = current_h
-
-        if self.augmentation:
-            if self.lbd < 0 or current_h < self.lbd:
-                self.lbd = current_h
-            else:
-                current_h = self.lbd
-
-        return current_h, normal_h
-
-    def push_heap(self, S):
-        aug_v, v = self.g(S)
-        t = AugmentedValue(aug_v, v)
-        self.heap.push(HeapObj(S, t))
-
-    def wrap(self, s):
-        aug_v, v = self.g(s)
-        t = AugmentedValue(aug_v, v)
-        obj = HeapObj(s, t)
-        return obj
-
-    def max_focal(self):
-        max_obj = None
-        for obj in self.focal:
-            if max_obj is None or max_obj < obj:
-                max_obj = obj
-        return max_obj
-
-    def update_upper_bound(self, old_bound, new_bound):
-        for obj in self.heap.h:
-            if old_bound > obj.v.v >= new_bound and obj not in self.focal:
-                self.focal.append(obj)
-
-    def optimize(self):
-        start_time = time.time()
-
-        ret = {
-        }
-
-        s = None
-
-        node_count = 0
-        explored_node_count = 0
-
-        obj = self.wrap(set())
-        self.heap.push(obj)
-        self.focal.append(obj)
-        f_max = 0
-
-        while self.heap.size() > 0:
-            obj = self.max_focal()
-            f_max = self.heap.top().v
-
-            self.focal.remove(obj)
-            self.heap.remove(obj)
-
-            s, v = obj.s, obj.v
-            # print(f"s:{s}, v:{v}, lbd:{self.lbd}")
-            node_count += 1
-            if self.is_on_the_edge(s):
-                stop_time = time.time()
-                ret['S'] = s
-                ret['c(S)'] = self.model.cost_of_set(s)
-                ret['f(S)'] = self.model.objective(s)
-                ret['time'] = stop_time - start_time
-                ret['node_count'] = node_count
-                ret['explored_node_count'] = explored_node_count
-                return ret
-
-            if s not in self.closed_list:
-                self.closed_list.append(s)
-
-                for ele in set(self.model.ground_set) - s:
-                    s_plus = s | {ele}
-                    if self.model.cost_of_set(s_plus) <= self.model.budget:
-                        explored_node_count += 1
-                        obj = self.wrap(s_plus)
-                        self.heap.push(obj)
-                        if obj.v.v >= self.alpha * f_max.v:
-                            self.focal.append(obj)
-
-            if self.heap.size() > 0 and f_max > self.heap.top().v:
-                self.update_upper_bound(self.alpha * f_max.v, self.alpha * self.heap.top().v.v)
-
-
-        stop_time = time.time()
-        ret['S'] = s
-        ret['c(S)'] = self.model.cost_of_set(s)
-        ret['f(S)'] = self.model.objective(s)
-        ret['time'] = stop_time - start_time
-        ret['node_count'] = node_count
-        ret['explored_node_count'] = explored_node_count
-        print(f"return from fallback")
-
-        return ret
-
+# class FFS(OptimalAlg):
+#     def __init__(self, model: BaseTask):
+#         super().__init__(model)
+#
+#         self.closed_list = []
+#         self.heap = MaxHeap()
+#         self.focal = []
+#         self.f = None
+#         self.h = None
+#
+#         self.lbd = -1
+#         self.augmentation = False
+#
+#         self.E = set()
+#
+#     def build(self):
+#         self.closed_list.clear()
+#         self.heap.clear()
+#         self.focal.clear()
+#         self.lbd = -1
+#         self.augmentation = False
+#
+#         self.f = self.model.objective
+#         if self.opt == 'ub0':
+#             self.h = self.h_ub0
+#         elif self.opt == 'ub1':
+#             self.h = self.h_ub1
+#         elif self.opt == 'ub2':
+#             self.h = self.h_ub2
+#         elif self.opt == 'ub0+':
+#             self.h = self.h_ub0
+#             self.augmentation = True
+#         elif self.opt == 'ub1+':
+#             self.h = self.h_ub1
+#             self.augmentation = True
+#         elif self.opt == 'ub2+':
+#             self.h = self.h_ub2
+#             self.augmentation = True
+#
+#     # the heuristic function
+#     def h_ub0(self, S):
+#         delta, _ = marginal_delta_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
+#         return delta
+#
+#     # the heuristic function
+#     def h_ub2(self, S):
+#         delta, _ = marginal_delta_version7_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
+#         return delta
+#
+#     # the heuristic function
+#     def h_ub1(self, S):
+#         # delta, _ = marginal_delta_m_acc(set(S), set(self.model.ground_set) - set(S), self.model)
+#         delta, _ = marginal_delta_m_acc_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
+#         return delta
+#
+#     def is_on_the_edge(self, S):
+#         base_cost = self.model.cost_of_set(S)
+#         for ele in set(self.model.ground_set) - S:
+#             if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
+#                 return False
+#         return True
+#
+#     def g(self, S):
+#         if self.is_on_the_edge(S):
+#             return self.f(list(S)), self.f(list(S))
+#
+#         current_h = self.f(list(S)) + self.alpha * self.h(S)
+#         normal_h = current_h
+#
+#         if self.augmentation:
+#             if self.lbd < 0 or current_h < self.lbd:
+#                 self.lbd = current_h
+#             else:
+#                 current_h = self.lbd
+#
+#         return current_h, normal_h
+#
+#     def push_heap(self, S):
+#         aug_v, v = self.g(S)
+#         t = AugmentedValue(aug_v, v)
+#         self.heap.push(HeapObj(S, t))
+#
+#     def wrap(self, s):
+#         aug_v, v = self.g(s)
+#         t = AugmentedValue(aug_v, v)
+#         obj = HeapObj(s, t)
+#         return obj
+#
+#     def max_focal(self):
+#         max_obj = None
+#         for obj in self.focal:
+#             if max_obj is None or max_obj < obj:
+#                 max_obj = obj
+#         return max_obj
+#
+#     def update_upper_bound(self, old_bound, new_bound):
+#         for obj in self.heap.h:
+#             if old_bound > obj.v.v >= new_bound and obj not in self.focal:
+#                 self.focal.append(obj)
+#
+#     def optimize(self):
+#         start_time = time.time()
+#
+#         ret = {
+#         }
+#
+#         s = None
+#
+#         node_count = 0
+#         explored_node_count = 0
+#
+#         obj = self.wrap(set())
+#         self.heap.push(obj)
+#         self.focal.append(obj)
+#         f_max = 0
+#
+#         while self.heap.size() > 0:
+#             obj = self.max_focal()
+#             f_max = self.heap.top().v
+#
+#             self.focal.remove(obj)
+#             self.heap.remove(obj)
+#
+#             s, v = obj.s, obj.v
+#             # print(f"s:{s}, v:{v}, lbd:{self.lbd}")
+#             node_count += 1
+#             if self.is_on_the_edge(s):
+#                 stop_time = time.time()
+#                 ret['S'] = s
+#                 ret['c(S)'] = self.model.cost_of_set(s)
+#                 ret['f(S)'] = self.model.objective(s)
+#                 ret['time'] = stop_time - start_time
+#                 ret['node_count'] = node_count
+#                 ret['explored_node_count'] = explored_node_count
+#                 return ret
+#
+#             if s not in self.closed_list:
+#                 self.closed_list.append(s)
+#
+#                 for ele in set(self.model.ground_set) - s:
+#                     s_plus = s | {ele}
+#                     if self.model.cost_of_set(s_plus) <= self.model.budget:
+#                         explored_node_count += 1
+#                         obj = self.wrap(s_plus)
+#                         self.heap.push(obj)
+#                         if obj.v.v >= self.alpha * f_max.v:
+#                             self.focal.append(obj)
+#
+#             if self.heap.size() > 0 and f_max > self.heap.top().v:
+#                 self.update_upper_bound(self.alpha * f_max.v, self.alpha * self.heap.top().v.v)
+#
+#
+#         stop_time = time.time()
+#         ret['S'] = s
+#         ret['c(S)'] = self.model.cost_of_set(s)
+#         ret['f(S)'] = self.model.objective(s)
+#         ret['time'] = stop_time - start_time
+#         ret['node_count'] = node_count
+#         ret['explored_node_count'] = explored_node_count
+#         print(f"return from fallback")
+#
+#         return ret
+#
 
 class AugmentedFS(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
+        self.max_heap = MaxHeap()
+        self.inner_h = None
+        self.d = None
 
     def build(self):
-        pass
+        self.max_heap.clear()
+
+    def set_h(self, heuristic):
+        if heuristic == 'ub0':
+            self.inner_h = self.h_ub0
+        elif heuristic == 'ub2':
+            self.inner_h = self.h_ub2
+
+    def density_for_set(self, n):
+        if self.model.cost_of_set(list(n)) == 0:
+            return 0
+        return self.g(n)/self.model.cost_of_set(list(n))
+
+    def set_d(self, sorting):
+        if sorting == 'g':
+            self.d = self.g
+        elif sorting == 'b':
+            self.d = lambda x: self.model.cost_of_set(list(x))
+        elif sorting == 'd':
+            self.d = self.density_for_set
+
+    def g(self, n):
+        return self.model.objective(list(n))
+
+    def is_on_the_edge(self, n):
+        base_cost = self.model.cost_of_set(n)
+        for ele in set(self.model.ground_set) - set(n):
+            if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
+                return False
+        return True
+
+    def h(self, n):
+        if self.is_on_the_edge(n):
+            return 0
+        return self.inner_h(n)
+
+    def f(self, n):
+        return self.g(n) + self.alpha * self.h(n)
+
+    def h_ub0(self, n):
+        delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model, budget=self.model.budget - self.model.cost_of_set(n))
+        return delta
+
+    def h_ub2(self, n):
+        delta, _ = marginal_delta_version7_random_budget(set(n), set(self.model.ground_set) - set(n), self.model, budget=self.model.budget - self.model.cost_of_set(n))
+        return delta
+
+    def push_heap(self, n, inherited_value):
+        max_value = 0
+        if len(n) > 0:
+            max_value = max(n)
+
+        v = AugmentedFSValue(self.f(n),inherited_value, self.d(n), min(self.f(n), inherited_value), max_value)
+        node = HeapObj(n, v)
+        self.max_heap.push(node)
 
     def optimize(self):
-        pass
+        start_time = time.time()
+        root = []
+        self.push_heap(root, self.f(root))
+
+        sol = None
+        node_count = 0
+        while self.max_heap.size() > 0:
+            node = self.max_heap.pop()
+            node_count+=1
+            s = node.s
+            v = node.v
+            max_idx = v.max_idx
+            if self.h(s) == 0:
+                sol = s
+                break
+
+            for i in set(self.model.ground_set) - set(s):
+                if i > max_idx and self.model.cost_of_set(s) + self.model.cost_of_singleton(i) <= self.model.budget:
+                    inherited_value = min(self.f(list(set(s) | {i})), v.inherited_v)
+                    self.push_heap(list(set(s) | {i}), inherited_value)
+
+        stop_time = time.time()
+
+        assert sol is not None, "No solution found."
+
+        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
+               'time': stop_time - start_time, 'node_count': node_count}
+
+        return ret
+
+
+
+
