@@ -25,7 +25,7 @@ import argparse
 from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
     modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11, modified_greedy_nis_ub1, modified_greedy_nis_ub1m, modified_greedy_nis_ub1ma, \
     modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_nis_ub7ma, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, \
-    modified_greedy_ub1ma, modified_greedy_ub7ma, \
+    modified_greedy_ub1ma, modified_greedy_ub7ma, modified_greedy_ub7o, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
     modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
     modified_greedy_ub1si, modified_greedy_ub1msi, modified_greedy_ub7si, modified_greedy_ub7msi
@@ -38,7 +38,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 cost_mode = ""
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub1', 'ub1ma', 'ub7', 'ub7ma']
+upper_bounds = ['ub7', 'ub7o']
 
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
@@ -223,7 +223,7 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 4039
+    n = 100
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -233,7 +233,7 @@ def compute_facebook_series(root_dir, skip_mode=False):
 
         interval = 1
         num_points = 6
-        start_point = 35
+        start_point = 15
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -406,7 +406,7 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 39841
+    n = 100
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -415,8 +415,8 @@ def compute_youtube_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
-        start_point = 31
+        num_points = 6
+        start_point = 15
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -504,7 +504,7 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 769
+    n = 50
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -513,8 +513,8 @@ def compute_caltech_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 6
+        start_point = 15
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
@@ -577,7 +577,7 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 111
+    n = 50
     seed_interval = 1
     start_seed = 0
     end_seed = 1
@@ -586,8 +586,8 @@ def compute_adult_series(root_dir, skip_mode=False):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 6
+        start_point = 15
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 

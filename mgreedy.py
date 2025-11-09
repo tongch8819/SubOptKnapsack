@@ -1093,6 +1093,10 @@ def modified_greedy_ub7(model: BaseTask):
     return modified_greedy(model, "ub7")
 
 
+def modified_greedy_ub7o(model: BaseTask):
+    return modified_greedy(model, "ub7o")
+
+
 def modified_greedy_ub7m(model: BaseTask):
     return modified_greedy(model, "ub7m")
 

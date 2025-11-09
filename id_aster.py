@@ -16,7 +16,7 @@ class IDAstar(OptimalAlg):
         self.node_count = 0
 
     def f(self, s):
-        return self.g(s) + self.h(s)
+        return self.g(s) + self.alpha * self.h(s)
 
     def g(self, s):
         # print(f"s:{s}")
@@ -59,7 +59,6 @@ class IDAstar(OptimalAlg):
 
     def is_goal(self, s):
         if self.model.objective(s) >= self.alpha * self.min_upper_bound:
-            # print("test here")
             return True
         return False
 

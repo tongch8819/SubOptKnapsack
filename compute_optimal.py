@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     interval = 1
     num_points = 3
-    start_point = 9
+    start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
