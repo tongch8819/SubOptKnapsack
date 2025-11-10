@@ -10,6 +10,7 @@ import data_correcting
 import filter_search
 import id_aster
 import model_factory
+from a_star import Astar
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -26,8 +27,8 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub0', 'ub2']
-    d_list = ['g', 'b', 'd']
+    ub_list = ['ub2']
+    d_list = ['g']
 
     alpha = float(args.alpha)
 
@@ -35,8 +36,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 5
-    start_point = 6
+    num_points = 2
+    start_point = 9
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -55,9 +56,12 @@ if __name__ == "__main__":
                     elif args.algorithm == 'AFS':
                         alg = filter_search.AugmentedFS(model)
                         alg.set_d(d)
-                        alg.set_h(heuristic=args.heuristic)
+                        alg.set_h(heuristic=ub)
                     elif args.algorithm == 'IDA':
                         alg = id_aster.IDAstar(model)
+                    elif args.algorithm == 'Astar':
+                        alg = a_star.Astar(model)
+                        alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha
                     alg.setOpt(ub)
