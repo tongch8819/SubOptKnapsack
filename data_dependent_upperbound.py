@@ -45,6 +45,7 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
     # print(f"delta:{delta}, base:{base_set}, bv:{model.objective(base_set)} total:{model.objective(base_set) + delta}")
     return delta, parameters
 
+
 def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -341,7 +342,7 @@ def marginal_delta_m_acc(base_set: Set[int], remaining_set: Set[int], model: Bas
 def marginal_delta_version16(base_set, remaining_set, model):
     parameters = {}
 
-    opt = optimizer.MultilinearOptimizer()
+    opt = optimizer.DominantOptimizer()
     model.bv = [model.budget]
 
     opt.setModel(model=model)
@@ -3139,9 +3140,8 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version9(base_set, remaining_set, model, minus=True)
         elif upb == 'ub10':
             delta, parameters = marginal_delta_version10(base_set, remaining_set, model, minus=True)
-        elif upb == 'ub12':
+        elif upb == 'ub16':
             delta, parameters = marginal_delta_version16(base_set, remaining_set, model)
-
         else:
             raise ValueError("Unsupported Upperbound")
         return delta, parameters

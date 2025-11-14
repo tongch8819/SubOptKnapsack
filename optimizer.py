@@ -6857,32 +6857,41 @@ class SievedUnifiedSparseMinSlicingCutoffOptimizer:
 
 class DominantOptimizer:
     def __init__(self):
-        self.model = None
+        self.model: BaseTask = None
         self.base = None
-        self.g_s = None
+        self.base_value = 0
 
     def setModel(self, model):
         self.model = model
 
     def setBase(self, base):
         self.base = base
+        self.base_value = self.model.objective(list(self.base))
 
     def build(self):
         pass
+
+    def g_s(self, e):
+        if type(e) is int:
+            return self.model.objective(list({e} | set(self.base))) - self.base_value
+        return self.model.objective(list(set(e) | set(self.base))) - self.base_value
 
     def density(self, e):
         return self.g_s(e) / self.model.cost_of_singleton(e)
 
     def g_s_over(self, e, x):
+        x = set(x)
         return self.g_s({e} | x) - self.g_s(x)
 
     def density_s_over(self, e, x):
         return self.g_s_over(e, x) / self.model.cost_of_singleton(e)
 
     def u_mod(self, y):
-        return marginal_delta_random_budget(set(self.base) | set(y),
-                                            set(self.model.ground_set) - set(self.base) - set(y), self.model,
-                                            budget=self.model.budget - self.model.cost_of_set(self.base))
+        delta, _ = marginal_delta_random_budget(set(self.base) | set(y),
+                                                set(self.model.ground_set) - set(self.base) - set(y), self.model,
+                                                budget=self.model.budget - self.model.cost_of_set(self.base))
+
+        return delta
 
     def optimize(self):
         remaining = set(self.model.ground_set) - set(self.base)
@@ -6892,6 +6901,11 @@ class DominantOptimizer:
         x_array = []
 
         beta = 1
+
+        exist_zero = False
+        count = 0
+
+        # print("start here")
         while len(remaining) > 0:
             max_i, max_d = None, 0
             for i in remaining:
@@ -6900,14 +6914,23 @@ class DominantOptimizer:
                     max_d = self.density_s_over(i, x_array)
 
             if self.model.cost_of_set(x_array) + self.model.cost_of_singleton(max_i) <= remaining_budget:
-                beta_i = 1 - (self.g_s_over(max_i, x_array)) / self.u_mod(x_array)
+                ub0 = self.u_mod(x_array)
+                if ub0 == 0:
+                    exist_zero = True
+                    break
+
+                beta_i = 1 - ((self.g_s_over(max_i, x_array)) / ub0)
+                if beta_i < 0:
+                    print(f"{self.g_s_over(max_i, x_array)}, {ub0}")
+                # print(f"i:{count}, beta_i:{beta_i}")
+                count += 1
                 beta *= beta_i
 
                 x_array.append(max_i)
 
             remaining -= {max_i}
 
-            to_remove = {}
+            to_remove = set()
             for i in remaining:
                 if self.model.cost_of_set(x_array) + self.model.cost_of_singleton(i) > remaining_budget:
                     to_remove |= {i}
@@ -6915,7 +6938,14 @@ class DominantOptimizer:
             for i in to_remove:
                 remaining -= {i}
 
-        lbd = self.g_s(x_array) / (1 - beta)
+        if exist_zero:
+            beta = 0
+
+        if len(x_array) > 0:
+            lbd = self.g_s(x_array) / (1 - beta)
+        else:
+            lbd = 0
+
         ret = {
             'delta': lbd
         }
