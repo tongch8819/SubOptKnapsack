@@ -10,6 +10,7 @@ import numpy as np
 from networkx.algorithms.bipartite.basic import density
 
 from base_task import BaseTask
+from data_dependent_upperbound import marginal_delta_random_budget
 from matroid import Matroid
 
 import scipy
@@ -5009,7 +5010,8 @@ class UnifiedSparseSlicingOptimizer:
         for i in range(0, self.n):
             for j in range(0, i + 1):
                 self.A[self.constraint_count, start_index + j] = 1
-            self.b[self.constraint_count] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+            self.b[self.constraint_count] = self.model.objective(
+                list(set(inter_set) | set(range(0, i + 1)))) - inter_value
             self.constraint_count += 1
 
     def v_to_x_constraint(self, inter_idx):
@@ -5114,7 +5116,8 @@ class UnifiedSparseSlicingAndCutoffOptimizer:
         for i in range(0, self.n):
             for j in range(0, i + 1):
                 self.A[self.constraint_count, start_index + j] = 1
-            self.b[self.constraint_count] = self.model.objective(list(set(inter_set) | set(range(0, i + 1)))) - inter_value
+            self.b[self.constraint_count] = self.model.objective(
+                list(set(inter_set) | set(range(0, i + 1)))) - inter_value
             self.constraint_count += 1
 
     def v_to_x_constraint(self, inter_idx):
@@ -5190,7 +5193,6 @@ class UnifiedSparseSlicingAndCutoffOptimizer:
         return {
             "upb": x[total_n - 1],
         }
-
 
 
 class UnifiedMinOptimizer:
@@ -5638,7 +5640,6 @@ class NormalMinOptimizer:
 
         self.b[0] = inter_value - self.model.value
 
-
     def optimize(self):
         total_n = self.n
         bounds = [(0, 1) for _ in range(0, self.n)]
@@ -5661,6 +5662,7 @@ class NormalMinOptimizer:
         return {
             "lbd": c @ x,
         }
+
 
 class SievedNormalMinOptimizer:
     def __init__(self):
@@ -5707,7 +5709,6 @@ class SievedNormalMinOptimizer:
             self.A[0, j] = -self.model.marginal_gain(j, list(self.base))
 
         self.b[0] = inter_value - self.model.value
-
 
     def optimize(self):
         # the optimal for big elements
@@ -6321,7 +6322,8 @@ class UnifiedSparseMinSlicingCutoffOptimizer:
                     self.A[self.constraint_count, j] = -self.model.cutout_marginal_gain(j)
                     additive_value += self.model.cutout_marginal_gain(j)
 
-            self.b[self.constraint_count] = self.model.objective(list(self.intermediate_sets[i])) - additive_value - self.model.value
+            self.b[self.constraint_count] = self.model.objective(
+                list(self.intermediate_sets[i])) - additive_value - self.model.value
 
             self.constraint_count += 1
 
@@ -6402,8 +6404,8 @@ class SievedUnifiedSparseMinOptimizer:
 
         self.small_elements = set(self.model.ground_set) - self.big_elements
 
-        if self.m > 0 and (set(self.intermediate_sets[self.m-1]) & set(self.big_elements) != set()):
-            self.intermediate_sets.pop(self.m-1)
+        if self.m > 0 and (set(self.intermediate_sets[self.m - 1]) & set(self.big_elements) != set()):
+            self.intermediate_sets.pop(self.m - 1)
             self.m = self.m - 1
 
         # first constraint
@@ -6493,8 +6495,8 @@ class SievedUnifiedSparseMinCutoffOptimizer:
 
         self.small_elements = set(self.model.ground_set) - self.big_elements
 
-        if self.m > 0 and (set(self.intermediate_sets[self.m-1]) & set(self.big_elements) != set()):
-            self.intermediate_sets.pop(self.m-1)
+        if self.m > 0 and (set(self.intermediate_sets[self.m - 1]) & set(self.big_elements) != set()):
+            self.intermediate_sets.pop(self.m - 1)
             self.m = self.m - 1
 
         # first constraint
@@ -6614,8 +6616,8 @@ class SievedUnifiedSparseMinSlicingOptimizer:
 
         self.small_elements = set(self.model.ground_set) - self.big_elements
 
-        if self.m > 0 and (set(self.intermediate_sets[self.m-1]) & set(self.big_elements) != set()):
-            self.intermediate_sets.pop(self.m-1)
+        if self.m > 0 and (set(self.intermediate_sets[self.m - 1]) & set(self.big_elements) != set()):
+            self.intermediate_sets.pop(self.m - 1)
             self.m = self.m - 1
 
         total_n = self.n + self.m * self.n + 1
@@ -6764,8 +6766,8 @@ class SievedUnifiedSparseMinSlicingCutoffOptimizer:
 
         self.small_elements = set(self.model.ground_set) - self.big_elements
 
-        if self.m > 0 and (set(self.intermediate_sets[self.m-1]) & set(self.big_elements) != set()):
-            self.intermediate_sets.pop(self.m-1)
+        if self.m > 0 and (set(self.intermediate_sets[self.m - 1]) & set(self.big_elements) != set()):
+            self.intermediate_sets.pop(self.m - 1)
             self.m = self.m - 1
 
         total_n = self.n + self.m * self.n + 1
@@ -6793,7 +6795,8 @@ class SievedUnifiedSparseMinSlicingCutoffOptimizer:
                     self.A[self.constraint_count, j] = -self.model.cutout_marginal_gain(j)
                     additive_value += self.model.cutout_marginal_gain(j)
 
-            self.b[self.constraint_count] = self.model.objective(list(self.intermediate_sets[i])) - additive_value - self.model.value
+            self.b[self.constraint_count] = self.model.objective(
+                list(self.intermediate_sets[i])) - additive_value - self.model.value
 
             self.constraint_count += 1
 
@@ -6850,3 +6853,71 @@ class SievedUnifiedSparseMinSlicingCutoffOptimizer:
         return {
             "lbd": lbd,
         }
+
+
+class DominantOptimizer:
+    def __init__(self):
+        self.model = None
+        self.base = None
+        self.g_s = None
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def build(self):
+        pass
+
+    def density(self, e):
+        return self.g_s(e) / self.model.cost_of_singleton(e)
+
+    def g_s_over(self, e, x):
+        return self.g_s({e} | x) - self.g_s(x)
+
+    def density_s_over(self, e, x):
+        return self.g_s_over(e, x) / self.model.cost_of_singleton(e)
+
+    def u_mod(self, y):
+        return marginal_delta_random_budget(set(self.base) | set(y),
+                                            set(self.model.ground_set) - set(self.base) - set(y), self.model,
+                                            budget=self.model.budget - self.model.cost_of_set(self.base))
+
+    def optimize(self):
+        remaining = set(self.model.ground_set) - set(self.base)
+        base_cost = self.model.cost_of_set(self.base)
+        remaining_budget = self.model.budget - base_cost
+
+        x_array = []
+
+        beta = 1
+        while len(remaining) > 0:
+            max_i, max_d = None, 0
+            for i in remaining:
+                if max_i is None or max_d < self.density_s_over(i, x_array):
+                    max_i = i
+                    max_d = self.density_s_over(i, x_array)
+
+            if self.model.cost_of_set(x_array) + self.model.cost_of_singleton(max_i) <= remaining_budget:
+                beta_i = 1 - (self.g_s_over(max_i, x_array)) / self.u_mod(x_array)
+                beta *= beta_i
+
+                x_array.append(max_i)
+
+            remaining -= {max_i}
+
+            to_remove = {}
+            for i in remaining:
+                if self.model.cost_of_set(x_array) + self.model.cost_of_singleton(i) > remaining_budget:
+                    to_remove |= {i}
+
+            for i in to_remove:
+                remaining -= {i}
+
+        lbd = self.g_s(x_array) / (1 - beta)
+        ret = {
+            'delta': lbd
+        }
+
+        return ret

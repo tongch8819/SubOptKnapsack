@@ -27,8 +27,8 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub2']
-    d_list = ['g']
+    ub_list = ['ub0', 'ub2']
+    d_list = ['d']
 
     alpha = float(args.alpha)
 
