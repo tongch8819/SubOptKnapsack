@@ -28,7 +28,8 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
     modified_greedy_ub1ma, modified_greedy_ub7ma, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
     modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
-    modified_greedy_ub1si, modified_greedy_ub1msi, modified_greedy_ub7si, modified_greedy_ub7msi
+    modified_greedy_ub1si, modified_greedy_ub1msi, modified_greedy_ub7si, modified_greedy_ub7msi, \
+    modified_greedy_ub16
 
 from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_max_nis_ept_ub7, greedy_max_nis_ept_ub7ma, \
                       greedy_max_nis_sol_ub1, greedy_max_nis_sol_ub1ma, greedy_max_nis_sol_ub7, greedy_max_nis_sol_ub7ma, \
@@ -38,7 +39,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 cost_mode = ""
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub7', 'ub7ma']
+upper_bounds = ['ub16']
 
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
@@ -223,7 +224,7 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 4039
+    n = 100
     seed_interval = 1
     start_seed = 0
     end_seed = 1

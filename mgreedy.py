@@ -1117,6 +1117,10 @@ def modified_greedy_ub8(model: BaseTask):
     return modified_greedy(model, "ub8")
 
 
+def modified_greedy_ub16(model: BaseTask):
+    return modified_greedy(model, "ub16")
+
+
 def modified_greedy_ub9(model: BaseTask):
     return modified_greedy(model, "ub9")
 
