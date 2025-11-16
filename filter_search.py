@@ -6,6 +6,7 @@ from base_task import BaseTask
 from MaxHeap import MaxHeap, HeapObj
 from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m, marginal_delta_m_acc, \
     marginal_delta_random_budget, marginal_delta_version7_random_budget, marginal_delta_m_acc_random_budget
+from optimizer import DominantOptimizer
 
 
 @total_ordering
@@ -591,6 +592,8 @@ class AugmentedFS(OptimalAlg):
             self.inner_h = self.h_ub0
         elif heuristic == 'ub2':
             self.inner_h = self.h_ub2
+        elif heuristic == 'ub4':
+            self.inner_h = self.h_ub4
 
     def density_for_set(self, n):
         if self.model.cost_of_set(list(n)) == 0:
@@ -633,8 +636,12 @@ class AugmentedFS(OptimalAlg):
                                                          budget=self.model.budget - self.model.cost_of_set(n))
         return delta
 
-    def h_ubd(self, n):
-        opt = Domin
+    def h_ub4(self, n):
+        opt = DominantOptimizer()
+        opt.setModel(self.model)
+        opt.setBase(n)
+        opt.build()
+        delta = opt.optimize()['delta']
 
         return delta
 

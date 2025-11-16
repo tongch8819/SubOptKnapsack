@@ -3,6 +3,7 @@ import math
 import random
 import shlex
 import bisect
+import time
 from itertools import accumulate
 from typing import Set, List
 
@@ -10,7 +11,6 @@ import numpy as np
 from networkx.algorithms.bipartite.basic import density
 
 from base_task import BaseTask
-from data_dependent_upperbound import marginal_delta_random_budget
 from matroid import Matroid
 
 import scipy
@@ -6854,6 +6854,63 @@ class SievedUnifiedSparseMinSlicingCutoffOptimizer:
             "lbd": lbd,
         }
 
+def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget):
+    """Delta( b | S )"""
+    assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    parameters = {}
+
+    t0 = time.time()
+
+    t = list(remaining_set)
+    t.sort(key=lambda x: model.density(x, base_set), reverse=True)
+
+    # dt = [model.density(x, base_set) for x in t]
+    # ct = [model.cost_of_singleton(x) for x in t]
+
+    costs = [model.cost_of_singleton(x) for x in t]
+    cumsum_costs = list(accumulate(costs, initial=None))
+    delta = G_plus(budget, model, remaining_set,
+                         base_set, cumsum_costs, t)
+
+    t1 = time.time()
+
+    parameters["ScanCount"] = bisect.bisect_right(cumsum_costs, budget) + 1
+    parameters["MinusCount"] = 0
+    parameters["method3"] = t1 - t0
+
+    # print(f"1,delta:{delta},baseset:{base_set}, t:{t[:5]}")
+    # print(f"delta:{delta}, base:{base_set}, bv:{model.objective(base_set)} total:{model.objective(base_set) + delta}")
+    return delta, parameters
+
+def G_plus(x: float, model: BaseTask, remaining_set: Set[int], base_set: Set[int], cumsum_costs: List[float],
+           elements: List[int], p = False):
+    """
+    Inputs:
+    - x: available budget
+    - cumsum_costs: cumsum_costs[i] = sum(costs[:i+1])
+    - elements: sorted elements corresponding to cumsum_costs
+    """
+    if x <= 0:
+        return 0
+
+    r1 = bisect.bisect_right(cumsum_costs, x)
+    G = 0.
+    if r1 == 0:
+        return x * model.marginal_gain(elements[0], base_set) / model.cost_of_singleton(elements[0])
+    for i in range(r1):
+        # t[i] is a single element
+        G += model.marginal_gain(elements[i], base_set)
+    if r1 >= 1 and r1 < len(cumsum_costs):
+        last_weight = (x - cumsum_costs[r1 - 1]) / \
+                      model.cost_of_singleton(elements[r1])
+        G += last_weight * model.marginal_gain(elements[r1], base_set)
+        if p:
+            print(f"x:{x}, last_weight:{last_weight},mg:{[model.marginal_gain(elements[i], base_set) for i in range(r1)]},ex:{model.marginal_gain(elements[r1], base_set)}, r1:{r1}, G:{G}, cum:{cumsum_costs[:5]}")
+
+    return G
 
 class DominantOptimizer:
     def __init__(self):
@@ -6890,6 +6947,7 @@ class DominantOptimizer:
         delta, _ = marginal_delta_random_budget(set(self.base) | set(y),
                                                 set(self.model.ground_set) - set(self.base) - set(y), self.model,
                                                 budget=self.model.budget - self.model.cost_of_set(self.base))
+
 
         return delta
 

@@ -23,11 +23,11 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--sorting", default='g', help="the sorting function for breaking ties")
     args = parser.parse_args()
 
-    assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+']
+    assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+', 'ub4']
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub0', 'ub2']
+    ub_list = ['ub4']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -36,8 +36,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 2
-    start_point = 9
+    num_points = 5
+    start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
