@@ -633,6 +633,11 @@ class AugmentedFS(OptimalAlg):
                                                          budget=self.model.budget - self.model.cost_of_set(n))
         return delta
 
+    def h_ubd(self, n):
+        opt = Domin
+
+        return delta
+
     def push_heap(self, n, inherited_value):
         max_value = 0
         if len(n) > 0:

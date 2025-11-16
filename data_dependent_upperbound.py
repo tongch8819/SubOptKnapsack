@@ -2401,7 +2401,6 @@ def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set
     return max(M_plus_gain), parameters
 
 
-
 def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
