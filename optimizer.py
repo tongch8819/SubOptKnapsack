@@ -6999,7 +6999,7 @@ class DominantOptimizer:
         if exist_zero:
             beta = 0
 
-        if len(x_array) > 0:
+        if len(x_array) > 0 and beta < 1:
             lbd = self.g_s(x_array) / (1 - beta)
         else:
             lbd = 0
