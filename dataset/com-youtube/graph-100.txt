@@ -1,5 +1,5 @@
 #.\compute_optimal.py -t youtube -a 70 -g AFS
-# GMT Sun Nov 16 10:37:43 2025
+# GMT Sun Nov 16 11:17:55 2025
 # 
 326938
 463338

@@ -6912,6 +6912,7 @@ def G_plus(x: float, model: BaseTask, remaining_set: Set[int], base_set: Set[int
 
     return G
 
+
 class DominantOptimizer:
     def __init__(self):
         self.model: BaseTask = None
@@ -7001,6 +7002,7 @@ class DominantOptimizer:
 
         if len(x_array) > 0 and beta < 1:
             lbd = self.g_s(x_array) / (1 - beta)
+
         else:
             lbd = 0
 
