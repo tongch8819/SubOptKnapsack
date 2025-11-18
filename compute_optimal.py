@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub4']
+    ub_list = ['ub0', 'ub2', 'ub4']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -55,6 +55,10 @@ if __name__ == "__main__":
                         alg = filter_search.FS(model)
                     elif args.algorithm == 'AFS':
                         alg = filter_search.AugmentedFS(model)
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BAFS':
+                        alg = filter_search.BestAugmentedFS(model)
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
                     elif args.algorithm == 'IDA':
