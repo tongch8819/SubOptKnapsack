@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub0', 'ub2', 'ub4']
+    ub_list = ['ub0', 'ub2']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -36,8 +36,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 5
-    start_point = 6
+    num_points = 6
+    start_point = 10
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -57,8 +57,14 @@ if __name__ == "__main__":
                         alg = filter_search.AugmentedFS(model)
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
-                    elif args.algorithm == 'BAFS':
+                    elif args.algorithm == 'BAFSa':
                         alg = filter_search.BestAugmentedFS(model)
+                        alg.use_alpha = True
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BAFSna':
+                        alg = filter_search.BestAugmentedFS(model)
+                        alg.use_alpha = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
                     elif args.algorithm == 'IDA':

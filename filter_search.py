@@ -685,15 +685,22 @@ class AugmentedFS(OptimalAlg):
 
         return ret
 
+
 class BestAugmentedFS(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
         self.max_heap = MaxHeap()
         self.inner_h = None
+        self.f = None
         self.d = None
+        self.use_alpha = False
 
     def build(self):
         self.max_heap.clear()
+        if self.use_alpha:
+            self.f = self.f_with_alpha
+        else:
+            self.f = self.f_without_alpha
 
     def set_h(self, heuristic):
         if heuristic == 'ub0':
@@ -731,8 +738,11 @@ class BestAugmentedFS(OptimalAlg):
             return 0
         return self.inner_h(n)
 
-    def f(self, n):
+    def f_with_alpha(self, n):
         return self.g(n) + self.alpha * self.h(n)
+
+    def f_without_alpha(self, n):
+        return self.g(n) + self.h(n)
 
     def h_ub0(self, n):
         delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
@@ -805,7 +815,6 @@ class BestAugmentedFS(OptimalAlg):
         else:
             return list(sol)
 
-
     def optimize(self):
         start_time = time.time()
         root = []
@@ -815,7 +824,9 @@ class BestAugmentedFS(OptimalAlg):
         s_max = self.greedy_add(root)
         s_max_v = self.g(s_max)
         sol = s_max
+
         node_count = 0
+        open_list_count = 1
 
         while self.max_heap.size() > 0:
             node = self.max_heap.pop()
@@ -824,33 +835,35 @@ class BestAugmentedFS(OptimalAlg):
             v = node.v
             max_idx = v.max_idx
 
-            g_upper = min(g_upper, self.f(s))
+            g_upper = min(g_upper, v.outlook_v)
 
             s_final = self.greedy_add(s)
             if self.g(s_final) > self.g(s_max):
                 s_max = s_final
                 s_max_v = self.g(s_max)
 
-            if self.g(s_max) >= self.alpha * g_upper:
-                sol = s_max
-                break
-
-            if self.h(s) == 0:
-                sol = s
-                break
+            if self.use_alpha:
+                if self.g(s_max) >= g_upper:
+                    sol = s_max
+                    break
+            else:
+                if self.g(s_max) >= self.alpha * g_upper:
+                    sol = s_max
+                    break
 
             for i in set(self.model.ground_set) - set(s):
                 if i > max_idx and self.model.cost_of_set(s) + self.model.cost_of_singleton(i) <= self.model.budget:
-                    final_v = self.f(list(set(s) | {i}))
+                    final_v = self.f_without_alpha(list(set(s) | {i}))
                     if final_v >= s_max_v:
-                        inherited_value = min(final_v, v.inherited_v)
+                        inherited_value = min(self.f(list(set(s) | {i})), v.inherited_v)
                         self.push_heap(list(set(s) | {i}), inherited_value)
+                        open_list_count += 1
 
         stop_time = time.time()
 
         assert sol is not None, "No solution found."
 
         ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-               'time': stop_time - start_time, 'node_count': node_count}
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
 
         return ret
