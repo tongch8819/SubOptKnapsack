@@ -867,3 +867,193 @@ class BestAugmentedFS(OptimalAlg):
                'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
 
         return ret
+
+
+class BestAugmentedMoreFS(OptimalAlg):
+    def __init__(self, model: BaseTask):
+        super().__init__(model)
+        self.max_heap = MaxHeap()
+        self.inner_h = None
+        self.f = None
+        self.d = None
+        self.use_alpha = False
+
+    def build(self):
+        self.max_heap.clear()
+        if self.use_alpha:
+            self.f = self.f_with_alpha
+        else:
+            self.f = self.f_without_alpha
+
+    def set_h(self, heuristic):
+        if heuristic == 'ub0':
+            self.inner_h = self.h_ub0
+        elif heuristic == 'ub2':
+            self.inner_h = self.h_ub2
+        elif heuristic == 'ub4':
+            self.inner_h = self.h_ub4
+
+    def density_for_set(self, n):
+        if self.model.cost_of_set(list(n)) == 0:
+            return 0
+        return self.g(n) / self.model.cost_of_set(list(n))
+
+    def set_d(self, sorting):
+        if sorting == 'g':
+            self.d = self.g
+        elif sorting == 'b':
+            self.d = lambda x: self.model.cost_of_set(list(x))
+        elif sorting == 'd':
+            self.d = self.density_for_set
+
+    def g(self, n):
+        return self.model.objective(list(n))
+
+    def is_on_the_edge(self, n):
+        base_cost = self.model.cost_of_set(n)
+        for ele in set(self.model.ground_set) - set(n):
+            if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
+                return False
+        return True
+
+    def h(self, n):
+        if self.is_on_the_edge(n):
+            return 0
+        return self.inner_h(n)
+
+    def f_with_alpha(self, n):
+        return self.g(n) + self.alpha * self.h(n)
+
+    def f_without_alpha(self, n):
+        return self.g(n) + self.h(n)
+
+    def h_ub0(self, n):
+        delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+                                                budget=self.model.budget - self.model.cost_of_set(n))
+        return delta
+
+    def h_ub2(self, n):
+        delta, _ = marginal_delta_version7_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+                                                         budget=self.model.budget - self.model.cost_of_set(n))
+        return delta
+
+    def h_ub4(self, n):
+        opt = DominantOptimizer()
+        opt.setModel(self.model)
+        opt.setBase(n)
+        opt.build()
+        delta = opt.optimize()['delta']
+
+        return delta
+
+    def push_heap(self, n, inherited_value):
+        max_value = 0
+        if len(n) > 0:
+            max_value = max(n)
+
+        v = AugmentedFSValue(self.f(n), inherited_value, self.d(n), min(self.f(n), inherited_value), max_value)
+        node = HeapObj(n, v)
+        self.max_heap.push(node)
+
+    def greedy_add(self, base):
+        sol = set(base)
+        remaining_elements = set(self.model.ground_set) - set(base)
+        cur_cost = self.model.cost_of_set(list(sol))
+
+        f_local = None
+        while len(remaining_elements):
+            u, max_density = None, -1.
+            for e in remaining_elements:
+                # e is an object
+                ds = self.model.density(e, list(sol))
+                if u is None or ds > max_density:
+                    u, max_density = e, ds
+            assert u is not None
+            if cur_cost + self.model.cost_of_singleton(u) <= self.model.budget:
+                # satisfy the knapsack constraint
+                sol.add(u)
+                cur_cost += self.model.cost_of_singleton(u)
+
+            f_temp = self.f(sol)
+            if f_local is None or f_temp < f_local:
+                f_local = f_temp
+
+            remaining_elements.remove(u)
+            # filter out violating elements
+            to_remove = set()
+            for v in remaining_elements:
+                if self.model.cost_of_singleton(v) + cur_cost > self.model.budget:
+                    to_remove.add(v)
+            remaining_elements -= to_remove
+
+        # find the maximum singleton
+        v_star, v_star_fv = None, float('-inf')
+        for e in set(self.model.ground_set) - set(base):
+            if self.model.cost_of_singleton(e) > self.model.budget - self.model.cost_of_set(list(base)):
+                # filter out singleton whose cost is larger than budget
+                continue
+            fv = self.model.objective(list(set(base) | {e}))
+            if fv > v_star_fv:
+                v_star, v_star_fv = e, fv
+
+        sol_fv = self.model.objective(list(sol))
+
+        if v_star_fv > sol_fv:
+            return list(set(base) | {v_star}), f_local
+        else:
+            return list(sol), f_local
+
+    def optimize(self):
+        start_time = time.time()
+        root = []
+        self.push_heap(root, self.f(root))
+
+        f_upper = self.f(root)
+        s_max, f_local = self.greedy_add(root)
+        f_upper = min(f_upper, f_local)
+
+        s_max_v = self.g(s_max)
+        sol = s_max
+
+        node_count = 0
+        open_list_count = 1
+
+        while self.max_heap.size() > 0:
+            node = self.max_heap.pop()
+            node_count += 1
+            s = node.s
+            v = node.v
+            max_idx = v.max_idx
+
+            s_final, f_local = self.greedy_add(s)
+            f_upper = min(f_upper, v.outlook_v, f_local)
+
+            if self.g(s_final) > self.g(s_max):
+                s_max = s_final
+                s_max_v = self.g(s_max)
+
+            if self.use_alpha:
+                if self.g(s_max) >= f_upper:
+                    sol = s_max
+                    break
+            else:
+                if self.g(s_max) >= self.alpha * f_upper:
+                    sol = s_max
+                    break
+
+            for i in set(self.model.ground_set) - set(s):
+                if i > max_idx and self.model.cost_of_set(s) + self.model.cost_of_singleton(i) <= self.model.budget:
+                    final_v = self.f_without_alpha(list(set(s) | {i}))
+                    if final_v >= s_max_v:
+                        inherited_value = min(self.f(list(set(s) | {i})), v.inherited_v)
+                        self.push_heap(list(set(s) | {i}), inherited_value)
+                        open_list_count += 1
+
+        stop_time = time.time()
+
+        assert sol is not None, "No solution found."
+
+        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+
+        return ret
