@@ -99,7 +99,6 @@ class BaseTask(ABC):
             pass
         else:
             if knapsack:
-                # self.objs.sort(key=lambda x: len(self.nodes[x]), reverse=True)
                 if cost_mode == "normal":
                     self.costs_obj = [
                         (0.25 + random.random()) * 4
@@ -107,12 +106,6 @@ class BaseTask(ABC):
                     ]
                     self.A = np.matrix([self.costs_obj])
                     self.cc = 1
-                    # self.costs_obj = [
-                    #     random.random()
-                    #     for obj in self.ground_set
-                    # ]
-                    # self.A = np.matrix([self.costs_obj])
-                    # self.cc = 1
                 elif cost_mode == "integer":
                     self.costs_obj = [
                         random.randint(1, 5)
@@ -130,6 +123,36 @@ class BaseTask(ABC):
                     self.costs_obj = data
                     # print(f"ccc:{self.costs_obj[:10]}")
                     self.A = np.matrix(data)
+                    self.cc = 1
+                elif cost_mode == "www1":
+                    n = len(self.ground_set)
+                    small_part_n = 0.8 * n
+                    large_part_n = 0.2 * n
+                    total_idx_pool = list(range(0, n))
+                    small_idx_pool = random.sample(total_idx_pool, small_part_n)
+                    large_idx_pool = list(set(total_idx_pool) - set(small_idx_pool))
+
+                    self.costs_obj = [0] * n
+
+                    for i in small_idx_pool:
+                        self.costs_obj[i] = 1 + 4 * random.random()
+
+                    for i in large_idx_pool:
+                        self.costs_obj[i] = 5 + 15 * random.random()
+
+                    self.A = np.matrix([self.costs_obj])
+                    self.cc = 1
+
+                    print(f"i am here")
+                    print(f"{self.costs_obj}")
+
+
+                elif cost_mode == "www2":
+                    self.costs_obj = [
+                        (0.25 + random.random()) * 4
+                        for obj in self.ground_set
+                    ]
+                    self.A = np.matrix([self.costs_obj])
                     self.cc = 1
             else:
                 # cardinality

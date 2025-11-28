@@ -28,7 +28,8 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
     modified_greedy_ub1ma, modified_greedy_ub7ma, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
     modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
-    modified_greedy_ub1si, modified_greedy_ub1msi, modified_greedy_ub7si, modified_greedy_ub7msi, \
+    modified_greedy_ub1si, modified_greedy_ub1masi, modified_greedy_ub7si, modified_greedy_ub7masi, \
+    modified_greedy_ub1ei, modified_greedy_ub1maei, modified_greedy_ub7ei, modified_greedy_ub7maei, \
     modified_greedy_ub16
 
 from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_max_nis_ept_ub7, greedy_max_nis_ept_ub7ma, \
@@ -36,10 +37,10 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
                       greedy_max_ub1, greedy_max_ub1ma, greedy_max_ub7, greedy_max_ub7ma, \
                       greedy_max_ub11, greedy_max_ub11m, greedy_max_ub7u, greedy_max_ub7mu
 
-cost_mode = ""
+cost_mode = "normal"
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub16']
+upper_bounds = ['ub1ei', 'ub1maei', 'ub7ei','ub7maei', 'ub1si', 'ub1masi', 'ub7si','ub7masi', 'ub1', 'ub1ma', 'ub7', 'ub7ma']
 
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
@@ -224,21 +225,22 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 100
+    n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 1
+    start_seed = 10
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 6
-        start_point = 35
+        num_points = 15
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
 
+        print(f"cost mode:{cost_mode}")
         model = FacebookGraphCoverage(
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
@@ -407,17 +409,17 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 39841
+    n = 1000
     seed_interval = 1
-    start_seed = 0
-    end_seed = 1
+    start_seed = 1
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 1
-        start_point = 30
+        num_points = 10
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -504,10 +506,10 @@ def compute_caltech(root_dir, skip_mode=False):
 
 
 def compute_caltech_series(root_dir, skip_mode=False):
-    n = 769
+    n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 1
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -577,17 +579,17 @@ def compute_adult(root_dir, skip_mode=False):
 
 
 def compute_adult_series(root_dir, skip_mode=False):
-    n = 111
+    n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 1
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
-        start_point = 6
+        num_points = 31
+        start_point = 20
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -996,6 +998,8 @@ if __name__ == "__main__":
     cost_mode = args.cost
     archive = f"archive-{args.archive}"
 
+    print(f"cost_mode:{cost_mode}")
+
     if args.m == '0':
         if args.task_num == 0:
             compute_max_cov(root_dir)
@@ -1067,3 +1071,4 @@ if __name__ == "__main__":
             compute_matroid("facebook", n=n)
         if args.task_num == 4:
             compute_matroid("youtube", n=n)
+

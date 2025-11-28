@@ -362,7 +362,7 @@ def modified_greedy_ub1si(model: BaseTask):
     return res
 
 
-def modified_greedy_ub1msi(model: BaseTask):
+def modified_greedy_ub1masi(model: BaseTask):
     start_time = time.time()
 
     sol = set()
@@ -524,7 +524,7 @@ def modified_greedy_ub7si(model: BaseTask):
     return res
 
 
-def modified_greedy_ub7msi(model: BaseTask):
+def modified_greedy_ub7masi(model: BaseTask):
     start_time = time.time()
 
     sol = set()
@@ -1129,7 +1129,15 @@ def modified_greedy_nis_ub1(model: BaseTask):
     return modified_greedy_nis(model, "ub1")
 
 
+def modified_greedy_ub1ei(model: BaseTask):
+    return modified_greedy_nis(model, "ub1")
+
+
 def modified_greedy_nis_ub1ma(model: BaseTask):
+    return modified_greedy_nis(model, "ub1ma")
+
+
+def modified_greedy_ub1maei(model: BaseTask):
     return modified_greedy_nis(model, "ub1ma")
 
 
@@ -1141,7 +1149,15 @@ def modified_greedy_nis_ub7(model: BaseTask):
     return modified_greedy_nis(model, "ub7")
 
 
+def modified_greedy_ub7ei(model: BaseTask):
+    return modified_greedy_nis(model, "ub7")
+
+
 def modified_greedy_nis_ub7ma(model: BaseTask):
+    return modified_greedy_nis(model, "ub7ma")
+
+
+def modified_greedy_ub7maei(model: BaseTask):
     return modified_greedy_nis(model, "ub7ma")
 
 
@@ -1873,6 +1889,7 @@ def modified_greedy_ub1ru(model: BaseTask):
     res['Time'] = stop_time - start_time
 
     return res
+
 
 def modified_greedy_ub1rs(model: BaseTask):
     start_time = time.time()

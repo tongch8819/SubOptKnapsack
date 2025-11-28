@@ -49,6 +49,7 @@ class FacebookGraphCoverage(BaseTask):
             self.nodes.sort()
             self.objs = list(range(0, len(self.nodes)))
 
+            # print(f"mode:{cost_mode}")
             if cost_mode == 'normal':
                 self.assign_costs(knapsack, cost_mode)
             else:

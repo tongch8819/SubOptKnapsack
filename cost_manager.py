@@ -1,3 +1,7 @@
+import random
+
+import numpy as np
+
 
 class CostManager:
     def __init__(self):
@@ -25,6 +29,10 @@ class CostManager:
             self.assign = self.assign_positive
         elif self.mode == 'negative':
             self.assign = self.assign_negative
+        elif self.mode == 'www1':
+            self.assign = self.assign_www1
+        elif self.mode == 'www2':
+            self.assign = self.assign_www2
         else:
             raise Exception(f"Mode {self.mode} does not exist.")
 
@@ -75,3 +83,42 @@ class CostManager:
 
         return costs
 
+    def assign_www1(self):
+        n = len(self.model.ground_set)
+        small_part_n = int(0.8 * n)
+        total_idx_pool = list(range(0, n))
+        small_idx_pool = random.sample(total_idx_pool, small_part_n)
+        large_idx_pool = list(set(total_idx_pool) - set(small_idx_pool))
+
+        costs = [0] * n
+
+        for i in small_idx_pool:
+            costs[i] = 1 + 4 * random.random()
+
+        for i in large_idx_pool:
+            costs[i] = 5 + 15 * random.random()
+
+        self.model.A = np.matrix([costs])
+        self.model.cc = 1
+
+        return costs
+
+    def assign_www2(self):
+        n = len(self.model.ground_set)
+        small_part_n = int(0.8 * n)
+        total_idx_pool = list(range(0, n))
+        small_idx_pool = random.sample(total_idx_pool, small_part_n)
+        mini_idx_pool = list(set(total_idx_pool) - set(small_idx_pool))
+
+        costs = [0] * n
+
+        for i in small_idx_pool:
+            costs[i] = 1 + 4 * random.random()
+
+        for i in mini_idx_pool:
+            costs[i] = random.random()
+
+        self.model.A = np.matrix([costs])
+        self.model.cc = 1
+
+        return costs
