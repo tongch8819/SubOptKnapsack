@@ -227,8 +227,8 @@ def compute_facebook(root_dir, skip_mode=False):
 def compute_facebook_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 10
-    end_seed = 20
+    start_seed = 18
+    end_seed = 19
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
