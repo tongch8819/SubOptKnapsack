@@ -28,20 +28,20 @@ class AugmentedValue:
 
 @total_ordering
 class AugmentedFSValue:
-    def __init__(self, inner_v, inherited_v, sort_v, outlook_v, max_idx):
+    def __init__(self, inner_v, lbd_v, sort_v, max_idx, visited=False):
         self.inner_v = inner_v
-        self.inherited_v = inherited_v
-        self.outlook_v = outlook_v
+        self.lbd_v = lbd_v
         self.sort_v = sort_v
+        self.visited = visited
         self.max_idx = max_idx
 
     def __eq__(self, other):
-        return self.outlook_v == other.outlook_v and self.outlook_v == other.outlook_v
+        return self.lbd_v == other.lbd_v and self.sort_v == other.sort_v
 
     def __lt__(self, other):
-        if self.outlook_v < other.outlook_v:
+        if self.lbd_v < other.lbd_v:
             return True
-        if self.outlook_v == other.outlook_v and self.sort_v < other.sort_v:
+        if self.lbd_v == other.lbd_v and self.sort_v < other.sort_v:
             return True
         return False
 
@@ -876,7 +876,9 @@ class BestAugmentedMoreFS(OptimalAlg):
         self.inner_h = None
         self.f = None
         self.d = None
+        self.lbd = None
         self.use_alpha = False
+        self.pushing_back = True
 
     def build(self):
         self.max_heap.clear()
@@ -888,8 +890,10 @@ class BestAugmentedMoreFS(OptimalAlg):
     def set_h(self, heuristic):
         if heuristic == 'ub0':
             self.inner_h = self.h_ub0
+            self.lbd = self.lbd0
         elif heuristic == 'ub2':
             self.inner_h = self.h_ub2
+            self.lbd = self.lbd2
         elif heuristic == 'ub4':
             self.inner_h = self.h_ub4
 
@@ -937,6 +941,16 @@ class BestAugmentedMoreFS(OptimalAlg):
                                                          budget=self.model.budget - self.model.cost_of_set(n))
         return delta
 
+    def lbd0(self, base, budget):
+        delta, _ = marginal_delta_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
+                                                budget=budget)
+        return delta
+
+    def lbd2(self, base, budget):
+        delta, _ = marginal_delta_version7_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
+                                                         budget=budget)
+        return delta
+
     def h_ub4(self, n):
         opt = DominantOptimizer()
         opt.setModel(self.model)
@@ -946,17 +960,18 @@ class BestAugmentedMoreFS(OptimalAlg):
 
         return delta
 
-    def push_heap(self, n, inherited_value):
+    def push_heap(self, n, lbd_v, visited=False):
         max_value = 0
         if len(n) > 0:
             max_value = max(n)
 
-        v = AugmentedFSValue(self.f(n), inherited_value, self.d(n), min(self.f(n), inherited_value), max_value)
+        v = AugmentedFSValue(self.f(n), lbd_v, self.d(n), max_value, visited)
         node = HeapObj(n, v)
         self.max_heap.push(node)
 
     def greedy_add(self, base):
         sol = set(base)
+        base_cost = self.model.cost_of_set(list(sol))
         remaining_elements = set(self.model.ground_set) - set(base)
         cur_cost = self.model.cost_of_set(list(sol))
 
@@ -974,7 +989,7 @@ class BestAugmentedMoreFS(OptimalAlg):
                 sol.add(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            f_temp = self.f(sol)
+            f_temp = self.g(sol) + self.lbd(base=sol, budget=self.model.budget - base_cost)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
@@ -1010,8 +1025,10 @@ class BestAugmentedMoreFS(OptimalAlg):
 
         f_upper = self.f(root)
         s_max, f_local = self.greedy_add(root)
+        # print(f"at first:{f_upper}, up:{f_local}")
         f_upper = min(f_upper, f_local)
 
+        push_back_count = 0
         s_max_v = self.g(s_max)
         sol = s_max
 
@@ -1024,13 +1041,13 @@ class BestAugmentedMoreFS(OptimalAlg):
             s = node.s
             v = node.v
             max_idx = v.max_idx
+            f_upper = min(f_upper, v.lbd_v)
 
-            s_final, f_local = self.greedy_add(s)
-            f_upper = min(f_upper, v.outlook_v, f_local)
-
-            if self.g(s_final) > self.g(s_max):
-                s_max = s_final
-                s_max_v = self.g(s_max)
+            if not v.visited:
+                s_final, f_local = self.greedy_add(s)
+                if self.g(s_final) > self.g(s_max):
+                    s_max = s_final
+                    s_max_v = self.g(s_max)
 
             if self.use_alpha:
                 if self.g(s_max) >= f_upper:
@@ -1038,15 +1055,22 @@ class BestAugmentedMoreFS(OptimalAlg):
                     break
             else:
                 if self.g(s_max) >= self.alpha * f_upper:
+                    # print(f"here, g:{self.g(s_max)}, f:{f_upper}")
                     sol = s_max
                     break
+
+            if not v.visited and self.pushing_back:
+                if f_local < v.lbd_v:
+                    push_back_count += 1
+                    self.push_heap(s, f_local, True)
+                    continue
 
             for i in set(self.model.ground_set) - set(s):
                 if i > max_idx and self.model.cost_of_set(s) + self.model.cost_of_singleton(i) <= self.model.budget:
                     final_v = self.f_without_alpha(list(set(s) | {i}))
                     if final_v >= s_max_v:
-                        inherited_value = min(self.f(list(set(s) | {i})), v.inherited_v)
-                        self.push_heap(list(set(s) | {i}), inherited_value)
+                        lbd_v = min(self.f(list(set(s) | {i})), v.lbd_v)
+                        self.push_heap(list(set(s) | {i}), lbd_v)
                         open_list_count += 1
 
         stop_time = time.time()
@@ -1054,6 +1078,6 @@ class BestAugmentedMoreFS(OptimalAlg):
         assert sol is not None, "No solution found."
 
         ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count, "push_back_count":push_back_count}
 
         return ret

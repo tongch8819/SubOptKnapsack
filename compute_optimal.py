@@ -72,6 +72,12 @@ if __name__ == "__main__":
                         alg.use_alpha = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BAFSmorenpb':
+                        alg = filter_search.BestAugmentedMoreFS(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
                     elif args.algorithm == 'IDA':
                         alg = id_aster.IDAstar(model)
                     elif args.algorithm == 'Astar':
