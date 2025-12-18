@@ -2416,6 +2416,26 @@ def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set
     return max(M_plus_gain), parameters
 
 
+def marginal_delta_dom_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget=0):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta, parameters = 0, {}
+
+    opt = optimizer.DominantOptimizer()
+    opt.setModel(model)
+    opt.setBase(base_set)
+    opt.setBudget(budget)
+
+
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
+
 def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)

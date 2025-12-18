@@ -23,11 +23,11 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--sorting", default='g', help="the sorting function for breaking ties")
     args = parser.parse_args()
 
-    assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+', 'ub4']
+    assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+', 'ub4', 'dom']
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub2']
+    ub_list = ['dom']
     d_list = ['d']
 
     alpha = float(args.alpha)

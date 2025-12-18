@@ -6918,6 +6918,7 @@ class DominantOptimizer:
         self.model: BaseTask = None
         self.base = None
         self.base_value = 0
+        self.budget = 0
 
     def setModel(self, model):
         self.model = model
@@ -6925,6 +6926,9 @@ class DominantOptimizer:
     def setBase(self, base):
         self.base = base
         self.base_value = self.model.objective(list(self.base))
+
+    def setBudget(self, budget):
+        self.budget = budget
 
     def build(self):
         pass
@@ -6947,15 +6951,13 @@ class DominantOptimizer:
     def u_mod(self, y):
         delta, _ = marginal_delta_random_budget(set(self.base) | set(y),
                                                 set(self.model.ground_set) - set(self.base) - set(y), self.model,
-                                                budget=self.model.budget - self.model.cost_of_set(self.base))
-
+                                                budget=self.budget)
 
         return delta
 
     def optimize(self):
         remaining = set(self.model.ground_set) - set(self.base)
-        base_cost = self.model.cost_of_set(self.base)
-        remaining_budget = self.model.budget - base_cost
+        remaining_budget = self.budget
 
         x_array = []
 
