@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['dom']
+    ub_list = ['ub0']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 10
+    num_points = 5
     start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -72,6 +72,11 @@ if __name__ == "__main__":
                         alg.use_alpha = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BAFSmorealpha':
+                        alg = filter_search.BestAugmentedMoreFS(model)
+                        alg.use_alpha = True
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
                     elif args.algorithm == 'BAFSmorenpb':
                         alg = filter_search.BestAugmentedMoreFS(model)
                         alg.use_alpha = False
@@ -82,6 +87,13 @@ if __name__ == "__main__":
                         alg = id_aster.IDAstar(model)
                     elif args.algorithm == 'Astar':
                         alg = a_star.Astar(model)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'Efficient':
+                        alg = filter_search.EfficientBranchAndBound(model)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BasicEfficient':
+                        alg = filter_search.EfficientBranchAndBound(model)
+                        alg.basic_mode = True
                         alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha

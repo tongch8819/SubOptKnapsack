@@ -49,10 +49,11 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
-    if len(remaining_set) == 0:
-        return 0
 
     parameters = {}
+
+    if len(remaining_set) == 0:
+        return 0, parameters
 
     t0 = time.time()
 
