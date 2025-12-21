@@ -23,11 +23,11 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--sorting", default='g', help="the sorting function for breaking ties")
     args = parser.parse_args()
 
-    assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+', 'ub4']
+    assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+', 'ub4', 'dom']
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub2']
+    ub_list = ['ub0']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -72,6 +72,11 @@ if __name__ == "__main__":
                         alg.use_alpha = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BAFSmorealpha':
+                        alg = filter_search.BestAugmentedMoreFS(model)
+                        alg.use_alpha = True
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
                     elif args.algorithm == 'BAFSmorenpb':
                         alg = filter_search.BestAugmentedMoreFS(model)
                         alg.use_alpha = False
@@ -82,6 +87,13 @@ if __name__ == "__main__":
                         alg = id_aster.IDAstar(model)
                     elif args.algorithm == 'Astar':
                         alg = a_star.Astar(model)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'Efficient':
+                        alg = filter_search.EfficientBranchAndBound(model)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BasicEfficient':
+                        alg = filter_search.EfficientBranchAndBound(model)
+                        alg.basic_mode = True
                         alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha

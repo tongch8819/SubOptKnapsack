@@ -49,10 +49,11 @@ def marginal_delta(base_set: Set[int], remaining_set: Set[int], model: BaseTask)
 def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
-    if len(remaining_set) == 0:
-        return 0
 
     parameters = {}
+
+    if len(remaining_set) == 0:
+        return 0, parameters
 
     t0 = time.time()
 
@@ -2414,6 +2415,26 @@ def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set
     # print(f"start, base:{base_set}")
 
     return max(M_plus_gain), parameters
+
+
+def marginal_delta_dom_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget=0):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta, parameters = 0, {}
+
+    opt = optimizer.DominantOptimizer()
+    opt.setModel(model)
+    opt.setBase(base_set)
+    opt.setBudget(budget)
+
+
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
 
 
 def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):

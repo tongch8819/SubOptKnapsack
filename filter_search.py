@@ -5,7 +5,8 @@ from OptimalAlg import OptimalAlg
 from base_task import BaseTask
 from MaxHeap import MaxHeap, HeapObj
 from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m, marginal_delta_m_acc, \
-    marginal_delta_random_budget, marginal_delta_version7_random_budget, marginal_delta_m_acc_random_budget
+    marginal_delta_random_budget, marginal_delta_version7_random_budget, marginal_delta_m_acc_random_budget, \
+    marginal_delta_dom_random_budget
 from optimizer import DominantOptimizer
 
 
@@ -894,8 +895,9 @@ class BestAugmentedMoreFS(OptimalAlg):
         elif heuristic == 'ub2':
             self.inner_h = self.h_ub2
             self.lbd = self.lbd2
-        elif heuristic == 'ub4':
-            self.inner_h = self.h_ub4
+        elif heuristic == 'dom':
+            self.inner_h = self.h_dom
+            self.lbd = self.lbd_dom
 
     def density_for_set(self, n):
         if self.model.cost_of_set(list(n)) == 0:
@@ -941,6 +943,11 @@ class BestAugmentedMoreFS(OptimalAlg):
                                                          budget=self.model.budget - self.model.cost_of_set(n))
         return delta
 
+    def h_dom(self, n):
+        delta, _ = marginal_delta_dom_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+                                                    budget=self.model.budget - self.model.cost_of_set(n))
+        return delta
+
     def lbd0(self, base, budget):
         delta, _ = marginal_delta_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
                                                 budget=budget)
@@ -949,6 +956,11 @@ class BestAugmentedMoreFS(OptimalAlg):
     def lbd2(self, base, budget):
         delta, _ = marginal_delta_version7_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
                                                          budget=budget)
+        return delta
+
+    def lbd_dom(self, base, budget):
+        delta, _ = marginal_delta_dom_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
+                                                    budget=budget)
         return delta
 
     def h_ub4(self, n):
@@ -1078,6 +1090,175 @@ class BestAugmentedMoreFS(OptimalAlg):
         assert sol is not None, "No solution found."
 
         ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count, "push_back_count":push_back_count}
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count,
+               "push_back_count": push_back_count}
+
+        return ret
+
+
+class BranchAndBoundNode:
+    # s: current set
+    # c: candidate set
+    # w: remaining budget
+    def __init__(self, s, c, w):
+        self.s = s
+        self.c = c
+        self.w = w
+
+
+class EfficientBranchAndBound(OptimalAlg):
+    def __init__(self, model: BaseTask):
+        super().__init__(model)
+        self.lb_star = None
+        self.s_star = None
+        self.lbd = None
+        self.node_count = 0
+        self.basic_mode = False
+        self.get_children = None
+
+    def g(self, n):
+        return self.model.objective(list(n))
+
+    def lbd0(self, base, candidate, budget):
+        delta, _ = marginal_delta_random_budget(set(base), set(candidate), self.model,
+                                                budget=budget)
+        return delta
+
+    def lbd2(self, base, candidate, budget):
+        delta, _ = marginal_delta_version7_random_budget(set(base), set(candidate), self.model,
+                                                         budget=budget)
+        return delta
+
+    def lbd_dom(self, base, candidate, budget):
+        delta, _ = marginal_delta_dom_random_budget(set(base), set(candidate), self.model,
+                                                    budget=budget)
+        return delta
+
+    def set_h(self, heuristic):
+        if heuristic == 'ub0':
+            self.lbd = self.lbd0
+        elif heuristic == 'ub2':
+            self.lbd = self.lbd2
+        elif heuristic == 'dom':
+            self.lbd = self.lbd_dom
+
+    def build(self):
+        self.lb_star = 0
+        self.s_star = []
+        self.node_count = 0
+        if self.basic_mode:
+            self.get_children = self.get_children_basic
+        else:
+            self.get_children = self.get_children_advance
+
+    def greedy_add(self, t):
+        base = t.s
+        sol = set(base)
+        base_cost = self.model.cost_of_set(list(sol))
+        remaining_elements = set(t.c)
+        cur_cost = self.model.cost_of_set(list(sol))
+
+        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.c) - set(sol), budget=self.model.budget - base_cost)
+        c = []
+        while len(remaining_elements):
+            u, max_density = None, -1.
+            for e in remaining_elements:
+                # e is an object
+                ds = self.model.density(e, list(sol))
+                if u is None or ds > max_density:
+                    u, max_density = e, ds
+            assert u is not None
+            if cur_cost + self.model.cost_of_singleton(u) <= self.model.budget:
+                # satisfy the knapsack constraint
+                sol.add(u)
+                c.append(u)
+                cur_cost += self.model.cost_of_singleton(u)
+
+            remaining_elements.remove(u)
+            # filter out violating elements
+            to_remove = set()
+            for v in remaining_elements:
+                if self.model.cost_of_singleton(v) + cur_cost > self.model.budget:
+                    to_remove.add(v)
+            remaining_elements -= to_remove
+
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.c) - set(sol), budget=self.model.budget - base_cost)
+            if f_local is None or f_temp < f_local:
+                f_local = f_temp
+
+        return list(sol), f_local, c
+
+    def get_children_basic(self, t, c):
+        children = []
+        s = t.s
+        tc = list(t.c)
+
+        tc.sort(key=lambda x: self.g([x])/self.model.cost_of_singleton(x), reverse=True)
+
+        for i in range(0, len(tc)):
+            temp = BranchAndBoundNode(list(set(s) | {tc[i]}), list(set(t.c) - set(tc[:i + 1])),
+                                      t.w - self.model.cost_of_singleton(tc[i]))
+            children.append(temp)
+
+        return children
+
+    def get_children_advance(self, t, c):
+        children = []
+        s = t.s
+        for i in range(0, len(c)):
+            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.c) - set(c[:i+1])), t.w - self.model.cost_of_set(c[:i]))
+            children.append(temp)
+
+        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.c) - set(c)),
+                                  t.w - self.model.cost_of_set(c))
+        children.append(temp)
+
+        return children
+
+    def is_on_the_edge(self, t):
+        current_b = self.model.cost_of_set(t.s)
+        for i in t.c:
+            if current_b + self.model.cost_of_singleton(i) <= t.w:
+                return False
+
+        return True
+
+    def bab(self, t: BranchAndBoundNode):
+        self.node_count = self.node_count + 1
+
+        # print(f"len:{len(t.c)}")
+
+        if len(t.c) == 0:
+            return
+
+        if self.is_on_the_edge(t):
+            return
+
+        s_primal, f_local, c = self.greedy_add(t)
+        if self.g(s_primal) > self.lb_star:
+            self.lb_star = self.g(s_primal)
+            self.s_star = s_primal
+
+        ub = f_local
+        if self.alpha * ub <= self.lb_star:
+            return
+
+        children = self.get_children(t, c)
+
+        for t_i in children:
+            self.bab(t_i)
+
+    def optimize(self):
+        start_time = time.time()
+        self.bab(BranchAndBoundNode(self.s_star, self.model.ground_set, self.model.budget))
+        stop_time = time.time()
+
+        ret = {
+            'S': self.s_star,
+            'c(S)': self.model.cost_of_set(self.s_star),
+            'f(S)': self.model.objective(self.s_star),
+            'time': stop_time - start_time,
+            'node_count': self.node_count
+        }
 
         return ret
