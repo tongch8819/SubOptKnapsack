@@ -1040,6 +1040,9 @@ class BestAugmentedMoreFS(OptimalAlg):
         # print(f"at first:{f_upper}, up:{f_local}")
         f_upper = min(f_upper, f_local)
 
+        # check if s_max now is an optimal solution
+        # set root node as visited
+
         push_back_count = 0
         s_max_v = self.g(s_max)
         sol = s_max
@@ -1077,6 +1080,8 @@ class BestAugmentedMoreFS(OptimalAlg):
                     self.push_heap(s, f_local, True)
                     continue
 
+            # change this to [max_idx + 1, n]
+            # save the cost of s, the g value of s, and the h value of s as properties of its node
             for i in set(self.model.ground_set) - set(s):
                 if i > max_idx and self.model.cost_of_set(s) + self.model.cost_of_singleton(i) <= self.model.budget:
                     final_v = self.f_without_alpha(list(set(s) | {i}))
@@ -1118,6 +1123,9 @@ class EfficientBranchAndBound(OptimalAlg):
 
     def g(self, n):
         return self.model.objective(list(n))
+
+    def g_over(self, n, base):
+        return self.g(set(n) | set(base)) - self.g(base)
 
     def lbd0(self, base, candidate, budget):
         delta, _ = marginal_delta_random_budget(set(base), set(candidate), self.model,
@@ -1193,7 +1201,7 @@ class EfficientBranchAndBound(OptimalAlg):
         s = t.s
         tc = list(t.c)
 
-        tc.sort(key=lambda x: self.g([x])/self.model.cost_of_singleton(x), reverse=True)
+        tc.sort(key=lambda x: self.g_over([x], s)/self.model.cost_of_singleton(x), reverse=True)
 
         for i in range(0, len(tc)):
             temp = BranchAndBoundNode(list(set(s) | {tc[i]}), list(set(t.c) - set(tc[:i + 1])),
