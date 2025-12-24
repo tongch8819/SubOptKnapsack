@@ -2,8 +2,11 @@ import heapq
 
 
 class HeapObj(object):
-    def __init__(self, s, v):
+    def __init__(self, s, v, c = None, w = None):
         self.s = s
+        self.c = c
+        self.w = w
+
         self.v = v
 
     def __lt__(self, other):
