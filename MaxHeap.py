@@ -2,10 +2,13 @@ import heapq
 
 
 class HeapObj(object):
-    def __init__(self, s, v, c = None, w = None):
+    def __init__(self, s, v=None, cost=None, candidate=None, w=None, max_idx=0, visited=False):
         self.s = s
-        self.c = c
-        self.w = w
+        self.cost = cost
+        self.candidate = candidate
+        self.budget = w
+        self.max_idx = max_idx
+        self.visited = visited
 
         self.v = v
 
@@ -18,6 +21,13 @@ class HeapObj(object):
     def __str__(self):
         return f"{self.s}, {self.v}"
 
+
+class EfficientBFSHeapObj(HeapObj):
+    def __init__(self, s, v=None, cost=None, candidate=None, w=0, first_child=False, heuristic_sequence=None, max_idx=0, visited=False):
+        super().__init__(s, v, cost, candidate=candidate, w=w, max_idx=max_idx, visited=visited)
+
+        self.first_child = first_child
+        self.heuristic_sequence = heuristic_sequence
 
 
 class MaxHeap(object):

@@ -2317,6 +2317,7 @@ def marginal_delta_version7(base_set: Set[int], remaining_set: Set[int], model: 
 def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget=0):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+
     if len(remaining_set) == 0:
         return 0
 

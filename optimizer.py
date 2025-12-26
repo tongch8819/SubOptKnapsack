@@ -298,7 +298,7 @@ class PackingOptimizer:
             self.upb_function.setGround(self.remaining)
             self.upb_function.build()
 
-            self.w = -np.array(self.upb_function.w)
+            self.w = -np.array(self.upb_function.budget)
 
     def optimize(self):
         valid = True
@@ -444,7 +444,7 @@ class PackingModified1Optimizer:
             self.upb_function.setGround(self.remaining)
             self.upb_function.build()
 
-            self.w = -np.array(self.upb_function.w)
+            self.w = -np.array(self.upb_function.budget)
 
     def optimize(self):
         valid = True

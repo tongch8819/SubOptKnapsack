@@ -36,8 +36,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 1
-    start_point = 10
+    num_points = 10
+    start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -94,6 +94,12 @@ if __name__ == "__main__":
                     elif args.algorithm == 'BasicEfficient':
                         alg = filter_search.EfficientBranchAndBound(model)
                         alg.basic_mode = True
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'EfficientBFS':
+                        alg = filter_search.EfficientBFS(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
                         alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha

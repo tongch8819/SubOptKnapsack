@@ -1,9 +1,10 @@
+import copy
 import time
 from functools import total_ordering
 
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
-from MaxHeap import MaxHeap, HeapObj
+from MaxHeap import MaxHeap, HeapObj, EfficientBFSHeapObj
 from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m, marginal_delta_m_acc, \
     marginal_delta_random_budget, marginal_delta_version7_random_budget, marginal_delta_m_acc_random_budget, \
     marginal_delta_dom_random_budget
@@ -29,16 +30,10 @@ class AugmentedValue:
 
 @total_ordering
 class AugmentedFSValue:
-    def __init__(self, inner_v, lbd_v, sort_v, max_idx, visited=False, g=0, h=0, c=0):
+    def __init__(self, inner_v, lbd_v, sort_v):
         self.inner_v = inner_v
         self.lbd_v = lbd_v
         self.sort_v = sort_v
-        self.visited = visited
-        self.max_idx = max_idx
-
-        self.g = g
-        self.h = h
-        self.c = c
 
     def __eq__(self, other):
         return self.lbd_v == other.lbd_v and self.sort_v == other.sort_v
@@ -53,13 +48,10 @@ class AugmentedFSValue:
 
 @total_ordering
 class RefinedBFSValue:
-    def __init__(self, inner_v, lbd_v, sort_v, max_idx, visited=False, first_child = False):
+    def __init__(self, inner_v, lbd_v, sort_v):
         self.inner_v = inner_v
         self.lbd_v = lbd_v
         self.sort_v = sort_v
-        self.visited = visited
-        self.max_idx = max_idx
-        self.first_child = first_child
 
     def __eq__(self, other):
         return self.lbd_v == other.lbd_v and self.sort_v == other.sort_v
@@ -71,126 +63,6 @@ class RefinedBFSValue:
             return True
         return False
 
-
-# class FS(OptimalAlg):
-#     def __init__(self, model: BaseTask):
-#         super().__init__(model)
-#
-#         self.closed_list = []
-#         self.heap = MaxHeap()
-#         self.f = None
-#         self.h = None
-#
-#         self.lbd = -1
-#         self.augmentation = False
-#
-#         self.E = set()
-#
-#     def build(self):
-#         self.closed_list.clear()
-#         self.heap.clear()
-#         self.lbd = -1
-#         self.augmentation = False
-#
-#         self.f = self.model.objective
-#         if self.opt == 'ub0':
-#             self.h = self.h_ub0
-#         elif self.opt == 'ub1':
-#             self.h = self.h_ub1
-#         elif self.opt == 'ub2':
-#             self.h = self.h_ub2
-#         elif self.opt == 'ub0+':
-#             self.h = self.h_ub0
-#             self.augmentation = True
-#         elif self.opt == 'ub1+':
-#             self.h = self.h_ub1
-#             self.augmentation = True
-#         elif self.opt == 'ub2+':
-#             self.h = self.h_ub2
-#             self.augmentation = True
-#
-#     # the heuristic function
-#     def h_ub0(self, S):
-#         delta, _ = marginal_delta_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
-#         return delta
-#
-#     # the heuristic function
-#     def h_ub2(self, S):
-#         delta, _ = marginal_delta_version7_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
-#         return delta
-#
-#     # the heuristic function
-#     def h_ub1(self, S):
-#         delta, _ = marginal_delta_m_acc(set(S), set(self.model.ground_set) - set(S), self.model)
-#         # delta, _ = marginal_delta_m_acc_random_budget(set(S), set(self.model.ground_set) - set(S), self.model, budget=self.model.budget - self.model.cost_of_set(S))
-#         return delta
-#
-#     def is_on_the_edge(self, S):
-#         base_cost = self.model.cost_of_set(S)
-#         for ele in set(self.model.ground_set) - S:
-#             if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
-#                 return False
-#         return True
-#
-#     def g(self, S):
-#         if self.is_on_the_edge(S):
-#             return self.f(list(S))
-#
-#         current_h = self.f(list(S)) + self.alpha * self.h(S)
-#
-#         if self.augmentation:
-#             if self.lbd < 0 or current_h < self.lbd:
-#                 self.lbd = current_h
-#             else:
-#                 current_h = self.lbd
-#
-#         return current_h
-#
-#     def optimize(self):
-#         start_time = time.time()
-#
-#         ret = {
-#         }
-#
-#         s = None
-#
-#         node_count = 0
-#
-#         self.heap.push(HeapObj(set(), self.g(set())))
-#         while self.heap.size() > 0:
-#             obj = self.heap.pop()
-#             s, v = obj.s, obj.v
-#
-#             # print(f"s:{s}, v:{v}, lbd:{self.lbd}")
-#
-#             node_count += 1
-#
-#             if self.is_on_the_edge(s):
-#                 stop_time = time.time()
-#                 ret['S'] = s
-#                 ret['c(S)'] = self.model.cost_of_set(s)
-#                 ret['f(S)'] = self.model.objective(s)
-#                 ret['time'] = stop_time - start_time
-#                 ret['node_count'] = node_count
-#                 return ret
-#
-#             if s not in self.closed_list:
-#                 self.closed_list.append(s)
-#
-#             for ele in set(self.model.ground_set) - s:
-#                 s_plus = s | {ele}
-#                 if self.model.cost_of_set(s_plus) <= self.model.budget:
-#                     self.heap.push(HeapObj(s_plus, self.g(s_plus)))
-#
-#         stop_time = time.time()
-#         ret['S'] = s
-#         ret['c(S)'] = self.model.cost_of_set(s)
-#         ret['f(S)'] = self.model.objective(s)
-#         ret['time'] = stop_time - start_time
-#         ret['node_count'] = node_count
-#         print(f"return from fallback")
-#
-#         return ret
 
 class FS(OptimalAlg):
     def __init__(self, model: BaseTask):
@@ -1005,7 +877,8 @@ class BestAugmentedMoreFS(OptimalAlg):
         if len(n) > 0:
             max_value = max(n)
 
-        v = AugmentedFSValue(self.f(n), lbd_v, self.d(n), max_value, visited, g=self.g(n), h=self.h(n), c=self.model.cost_of_set(n))
+        v = AugmentedFSValue(self.f(n), lbd_v, self.d(n), max_value, visited, g=self.g(n), h=self.h(n),
+                             c=self.model.cost_of_set(n))
         node = HeapObj(n, v)
         self.max_heap.push(node)
 
@@ -1106,7 +979,7 @@ class BestAugmentedMoreFS(OptimalAlg):
 
             t1 = time.time()
 
-            time_for_stage_0 += t1-t0
+            time_for_stage_0 += t1 - t0
 
             if not v.visited:
                 s_final, f_local = self.greedy_add(s)
@@ -1116,7 +989,7 @@ class BestAugmentedMoreFS(OptimalAlg):
 
             t2 = time.time()
 
-            time_for_stage_1 += t2-t1
+            time_for_stage_1 += t2 - t1
 
             if self.use_alpha:
                 if self.g(s_max) >= f_upper:
@@ -1136,13 +1009,13 @@ class BestAugmentedMoreFS(OptimalAlg):
 
             t3 = time.time()
 
-            time_for_stage_2 += t3-t2
+            time_for_stage_2 += t3 - t2
 
             # change this to [max_idx + 1, n]
             # save the cost of s, the g value of s, and the h value of s as properties of its node
             for i in range(max_idx + 1, self.ground_size):
                 children_count += 1
-                if v.c + self.model.cost_of_singleton(i) <= self.model.budget:
+                if v.cost + self.model.cost_of_singleton(i) <= self.model.budget:
                     new_g = self.g(list(set(s) | {i}))
                     new_h = self.h(list(set(s) | {i}))
 
@@ -1159,7 +1032,7 @@ class BestAugmentedMoreFS(OptimalAlg):
 
             t4 = time.time()
 
-            time_for_stage_3 += t4-t3
+            time_for_stage_3 += t4 - t3
 
         stop_time = time.time()
 
@@ -1167,7 +1040,8 @@ class BestAugmentedMoreFS(OptimalAlg):
 
         ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
                'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count,
-               "push_back_count": push_back_count, "stg0": time_for_stage_0, "stg1": time_for_stage_1, "stg2":time_for_stage_2, "stg3":time_for_stage_3,
+               "push_back_count": push_back_count, "stg0": time_for_stage_0, "stg1": time_for_stage_1,
+               "stg2": time_for_stage_2, "stg3": time_for_stage_3,
                'children_count': children_count}
 
         return ret
@@ -1239,10 +1113,11 @@ class EfficientBranchAndBound(OptimalAlg):
         base = t.s
         sol = set(base)
         base_cost = self.model.cost_of_set(list(sol))
-        remaining_elements = set(t.c)
+        remaining_elements = set(t.cost)
         cur_cost = self.model.cost_of_set(list(sol))
 
-        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.c) - set(sol), budget=self.model.budget - base_cost)
+        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.cost) - set(sol),
+                                         budget=self.model.budget - base_cost)
         c = []
         while len(remaining_elements):
             u, max_density = None, -1.
@@ -1266,7 +1141,8 @@ class EfficientBranchAndBound(OptimalAlg):
                     to_remove.add(v)
             remaining_elements -= to_remove
 
-            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.c) - set(sol), budget=self.model.budget - base_cost)
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.cost) - set(sol),
+                                            budget=self.model.budget - base_cost)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
@@ -1275,13 +1151,13 @@ class EfficientBranchAndBound(OptimalAlg):
     def get_children_basic(self, t, c):
         children = []
         s = t.s
-        tc = list(t.c)
+        tc = list(t.cost)
 
-        tc.sort(key=lambda x: self.g_over([x], s)/self.model.cost_of_singleton(x), reverse=True)
+        tc.sort(key=lambda x: self.g_over([x], s) / self.model.cost_of_singleton(x), reverse=True)
 
         for i in range(0, len(tc)):
-            temp = BranchAndBoundNode(list(set(s) | {tc[i]}), list(set(t.c) - set(tc[:i + 1])),
-                                      t.w - self.model.cost_of_singleton(tc[i]))
+            temp = BranchAndBoundNode(list(set(s) | {tc[i]}), list(set(t.cost) - set(tc[:i + 1])),
+                                      t.budget - self.model.cost_of_singleton(tc[i]))
             children.append(temp)
 
         return children
@@ -1290,19 +1166,20 @@ class EfficientBranchAndBound(OptimalAlg):
         children = []
         s = t.s
         for i in range(0, len(c)):
-            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.c) - set(c[:i+1])), t.w - self.model.cost_of_set(c[:i]))
+            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.cost) - set(c[:i + 1])),
+                                      t.budget - self.model.cost_of_set(c[:i]))
             children.append(temp)
 
-        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.c) - set(c)),
-                                  t.w - self.model.cost_of_set(c))
+        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.cost) - set(c)),
+                                  t.budget - self.model.cost_of_set(c))
         children.append(temp)
 
         return children
 
     def is_on_the_edge(self, t):
         current_b = self.model.cost_of_set(t.s)
-        for i in t.c:
-            if current_b + self.model.cost_of_singleton(i) <= t.w:
+        for i in t.cost:
+            if current_b + self.model.cost_of_singleton(i) <= t.budget:
                 return False
 
         return True
@@ -1342,7 +1219,6 @@ class EfficientBranchAndBound(OptimalAlg):
         self.time_for_stage_1 += t2 - t1
         self.children_count += len(children)
 
-
     def optimize(self):
         start_time = time.time()
         self.bab(BranchAndBoundNode(self.s_star, self.model.ground_set, self.model.budget))
@@ -1362,7 +1238,7 @@ class EfficientBranchAndBound(OptimalAlg):
         return ret
 
 
-class RefinedBFS(OptimalAlg):
+class EfficientBFS(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
         self.max_heap = MaxHeap()
@@ -1408,6 +1284,9 @@ class RefinedBFS(OptimalAlg):
             self.d = self.density_for_set
 
     def g(self, n):
+        if isinstance(n, EfficientBFSHeapObj):
+            return self.model.objective(list(n.s))
+
         return self.model.objective(list(n))
 
     def is_on_the_edge(self, n):
@@ -1417,39 +1296,39 @@ class RefinedBFS(OptimalAlg):
                 return False
         return True
 
-    def h(self, n, c):
-        if self.is_on_the_edge(n):
+    def h(self, n):
+        if self.is_on_the_edge(n.s):
             return 0
-        return self.inner_h(n, c)
+        return self.inner_h(n)
 
-    def f_with_alpha(self, n, c):
-        return self.g(n) + self.alpha * self.h(n, c)
+    def f_with_alpha(self, n):
+        return self.g(n) + self.alpha * self.h(n)
 
-    def f_without_alpha(self, n, c):
-        return self.g(n) + self.h(n, c)
+    def f_without_alpha(self, n):
+        return self.g(n) + self.h(n)
 
-    def h_ub0(self, n, c, w):
-        delta, _ = marginal_delta_random_budget(set(n), c, self.model,
-                                                budget=w)
+    def h_ub0(self, n: EfficientBFSHeapObj):
+        delta, _ = marginal_delta_random_budget(set(n.s), set(n.candidate), self.model,
+                                                budget=n.budget)
         return delta
 
-    def h_ub2(self, n, c, w):
-        delta, _ = marginal_delta_version7_random_budget(set(n), c, self.model,
-                                                         budget=w)
+    def h_ub2(self, n: EfficientBFSHeapObj):
+        delta, _ = marginal_delta_version7_random_budget(set(n.s), set(n.candidate), self.model,
+                                                         budget=n.budget)
         return delta
 
-    def h_dom(self, n, c, w):
-        delta, _ = marginal_delta_dom_random_budget(set(n), c, self.model,
-                                                    budget=w)
+    def h_dom(self, n: EfficientBFSHeapObj):
+        delta, _ = marginal_delta_dom_random_budget(set(n.s), set(n.candidate), self.model,
+                                                    budget=n.budget)
         return delta
 
     def lbd0(self, base, candidate, budget):
-        delta, _ = marginal_delta_random_budget(set(base), candidate, self.model,
+        delta, _ = marginal_delta_random_budget(set(base), set(candidate), self.model,
                                                 budget=budget)
         return delta
 
-    def lbd2(self, base, candidate,  budget):
-        delta, _ = marginal_delta_version7_random_budget(set(base), candidate, self.model,
+    def lbd2(self, base, candidate, budget):
+        delta, _ = marginal_delta_version7_random_budget(set(base), set(candidate), self.model,
                                                          budget=budget)
         return delta
 
@@ -1467,23 +1346,44 @@ class RefinedBFS(OptimalAlg):
 
         return delta
 
-    def push_heap(self, n, lbd_v, visited=False, first_child=False, c=None, w=None):
-        max_value = 0
-        if len(n) > 0:
-            max_value = max(n)
+    def push_heap(self, s, lbd_v, visited=False, first_child=False, heuristic_sequence=None, candidate=None, w=None, s_max_v=0):
+        max_idx = 0
+        if len(s) > 0:
+            max_idx = max(s)
 
-        v = RefinedBFSValue(self.f(n), lbd_v, self.d(n), max_value, visited, first_child=first_child)
-        node = HeapObj(n, v, c=c, w=w)
+        node = EfficientBFSHeapObj(s, candidate=candidate, w=w, visited=visited, first_child=first_child, heuristic_sequence=heuristic_sequence, max_idx=max_idx)
+
+        new_g = self.g(node)
+        new_h = self.h(node)
+        final_v = new_g + new_h
+
+        v = None
+        if final_v >= s_max_v:
+            if self.use_alpha:
+                lbd_v = min(new_g + self.alpha * new_h, lbd_v)
+                v = RefinedBFSValue(new_g + self.alpha * new_h, lbd_v, self.d(s))
+            else:
+                lbd_v = min(new_g + new_h, lbd_v)
+                v = RefinedBFSValue(new_g + new_h, lbd_v, self.d(s))
+
+        node.v = v
+
         self.max_heap.push(node)
 
-    def greedy_add(self, base, candidate, budget):
+        return node
+
+    def greedy_add(self, node: EfficientBFSHeapObj):
+        base = node.s
+        candidate = node.candidate
+        budget = node.budget
+
         sol = set(base)
-        base_cost = self.model.cost_of_set(list(sol))
-        remaining_elements = candidate
+        remaining_elements = set(candidate)
+        print(f"a:{sol & set(candidate)}")
         cur_cost = self.model.cost_of_set(list(sol))
 
         f_local = None
-        first_ele = None
+        heuristic_sequence = []
         while len(remaining_elements):
             u, max_density = None, -1.
             for e in remaining_elements:
@@ -1491,15 +1391,16 @@ class RefinedBFS(OptimalAlg):
                 ds = self.model.density(e, list(sol))
                 if u is None or ds > max_density:
                     u, max_density = e, ds
+
             assert u is not None
+
             if cur_cost + self.model.cost_of_singleton(u) <= self.model.budget:
                 # satisfy the knapsack constraint
                 sol.add(u)
-                if first_ele is None:
-                    first_ele = u
+                heuristic_sequence.append(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            f_temp = self.g(sol) + self.lbd(base=sol, candidate = remaining_elements, budget=budget)
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(candidate)-set(sol), budget=budget)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
@@ -1511,32 +1412,26 @@ class RefinedBFS(OptimalAlg):
                     to_remove.add(v)
             remaining_elements -= to_remove
 
-        # find the maximum singleton
-        v_star, v_star_fv = None, float('-inf')
-        for e in set(self.model.ground_set) - set(base):
-            if self.model.cost_of_singleton(e) > budget - self.model.cost_of_set(list(base)):
-                # filter out singleton whose cost is larger than budget
-                continue
-            fv = self.model.objective(list(set(base) | {e}))
-            if fv > v_star_fv:
-                v_star, v_star_fv = e, fv
+        return list(sol), f_local, heuristic_sequence
 
-        sol_fv = self.model.objective(list(sol))
+    def push_root(self):
+        root = EfficientBFSHeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
+        v = RefinedBFSValue(self.f(root), self.f(root), self.d(root.s))
+        root.v = v
 
-        if v_star_fv > sol_fv:
-            return list(set(base) | {v_star}), f_local, first_ele
-        else:
-            return list(sol), f_local, first_ele
+        f_upper = self.f(root)
+        s_max, f_local, heuristic_sequence = self.greedy_add(root)
+        f_upper = min(f_upper, f_local)
+        root.heuristic_sequence = heuristic_sequence
+
+        self.max_heap.push(root)
+
+        return root, f_upper, heuristic_sequence, s_max
 
     def optimize(self):
         start_time = time.time()
-        root = []
-        # set root node as visited
-        self.push_heap(root, self.f(root), visited=True, c=self.model.ground_set, w=self.model.budget)
 
-        f_upper = self.f(root, c=self.model.ground_set, w=self.model.budget)
-        s_max, f_local, first_ele = self.greedy_add(root, candidate=self.model.ground_set, budget=self.model.budget)
-        f_upper = min(f_upper, f_local)
+        root, f_upper, heuristic_sequence, s_max = self.push_root()
 
         # check if s_max now is an optimal solution
         if self.g(s_max) >= self.alpha * f_upper:
@@ -1565,19 +1460,19 @@ class RefinedBFS(OptimalAlg):
         while self.max_heap.size() > 0:
             t0 = time.time()
 
-            node = self.max_heap.pop()
+            node: EfficientBFSHeapObj = self.max_heap.pop()
             node_count += 1
             s = node.s
             v = node.v
-            max_idx = v.max_idx
             f_upper = min(f_upper, v.lbd_v)
 
             t1 = time.time()
 
-            time_for_stage_0 += t1-t0
+            time_for_stage_0 += t1 - t0
 
+            f_local, heuristic_sequence = 0., None
             if not v.visited and not node.first_child:
-                s_final, f_local, first_ele = self.greedy_add(s, candidate=node.c, budget=node.w)
+                s_final, f_local, heuristic_sequence = self.greedy_add(node)
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
 
@@ -1591,9 +1486,12 @@ class RefinedBFS(OptimalAlg):
                         sol = s_max
                         break
 
+            if node.first_child:
+                heuristic_sequence = node.heuristic_sequence
+
             t2 = time.time()
 
-            time_for_stage_1 += t2-t1
+            time_for_stage_1 += t2 - t1
 
             if not v.visited and self.pushing_back:
                 if f_local < v.lbd_v:
@@ -1603,31 +1501,31 @@ class RefinedBFS(OptimalAlg):
 
             t3 = time.time()
 
-            time_for_stage_2 += t3-t2
+            time_for_stage_2 += t3 - t2
 
-            # change this to [max_idx + 1, n]
-            # save the cost of s, the g value of s, and the h value of s as properties of its node
-            # for i in range(max_idx + 1, self.ground_size):
-            #     children_count += 1
-            #     if v.c + self.model.cost_of_singleton(i) <= self.model.budget:
-            #         new_g = self.g(list(set(s) | {i}))
-            #         new_h = self.h(list(set(s) | {i}))
-            #
-            #         final_v = new_g + new_h
-            #
-            #         if final_v >= s_max_v:
-            #             if self.use_alpha:
-            #                 lbd_v = min(new_g + self.alpha * new_h, v.lbd_v)
-            #             else:
-            #                 lbd_v = min(new_g + new_h, v.lbd_v)
-            #             self.push_heap(list(set(s) | {i}), lbd_v)
-            #             open_list_count += 1
-            first_child
+            if self.is_on_the_edge(node.s):
+                continue
 
+            # push first child
+            first_ele = heuristic_sequence[0]
+            new_candidate = list(set(node.candidate) - {first_ele})
+            if v.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
+                open_list_count += 1
+
+                new_heuristic_sequence = copy.deepcopy(heuristic_sequence)
+                new_heuristic_sequence.pop(0)
+
+                self.push_heap(s=list(set(s) | {first_ele}), lbd_v=node.v.lbd_v, first_child=True, heuristic_sequence=new_heuristic_sequence,
+                               candidate=new_candidate,
+                               w=node.budget - self.model.cost_of_singleton(first_ele))
+
+            # push second child
+            self.push_heap(s=s, lbd_v=node.v.lbd_v, first_child=False,
+                           candidate=new_candidate, w=node.budget)
 
             t4 = time.time()
 
-            time_for_stage_3 += t4-t3
+            time_for_stage_3 += t4 - t3
 
         stop_time = time.time()
 
@@ -1635,7 +1533,8 @@ class RefinedBFS(OptimalAlg):
 
         ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
                'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count,
-               "push_back_count": push_back_count, "stg0": time_for_stage_0, "stg1": time_for_stage_1, "stg2":time_for_stage_2, "stg3":time_for_stage_3,
+               "push_back_count": push_back_count, "stg0": time_for_stage_0, "stg1": time_for_stage_1,
+               "stg2": time_for_stage_2, "stg3": time_for_stage_3,
                'children_count': children_count}
 
         return ret
