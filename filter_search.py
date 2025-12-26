@@ -1289,15 +1289,15 @@ class EfficientBFS(OptimalAlg):
 
         return self.model.objective(list(n))
 
-    def is_on_the_edge(self, n):
-        base_cost = self.model.cost_of_set(n)
-        for ele in set(self.model.ground_set) - set(n):
-            if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
+    def is_on_the_edge(self, node: EfficientBFSHeapObj):
+        candidate = node.candidate
+        for ele in candidate:
+            if self.model.cost_of_singleton(ele) <= node.budget:
                 return False
         return True
 
     def h(self, n):
-        if self.is_on_the_edge(n.s):
+        if self.is_on_the_edge(n):
             return 0
         return self.inner_h(n)
 
@@ -1352,6 +1352,7 @@ class EfficientBFS(OptimalAlg):
             max_idx = max(s)
 
         node = EfficientBFSHeapObj(s, candidate=candidate, w=w, visited=visited, first_child=first_child, heuristic_sequence=heuristic_sequence, max_idx=max_idx)
+        node.cost = self.model.cost_of_set(s)
 
         new_g = self.g(node)
         new_h = self.h(node)
@@ -1379,7 +1380,6 @@ class EfficientBFS(OptimalAlg):
 
         sol = set(base)
         remaining_elements = set(candidate)
-        print(f"a:{sol & set(candidate)}")
         cur_cost = self.model.cost_of_set(list(sol))
 
         f_local = None
@@ -1418,6 +1418,7 @@ class EfficientBFS(OptimalAlg):
         root = EfficientBFSHeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
         v = RefinedBFSValue(self.f(root), self.f(root), self.d(root.s))
         root.v = v
+        root.cost = 0
 
         f_upper = self.f(root)
         s_max, f_local, heuristic_sequence = self.greedy_add(root)
@@ -1471,7 +1472,7 @@ class EfficientBFS(OptimalAlg):
             time_for_stage_0 += t1 - t0
 
             f_local, heuristic_sequence = 0., None
-            if not v.visited and not node.first_child:
+            if not node.visited and not node.first_child:
                 s_final, f_local, heuristic_sequence = self.greedy_add(node)
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
@@ -1482,34 +1483,38 @@ class EfficientBFS(OptimalAlg):
                         break
                 else:
                     if self.g(s_max) >= self.alpha * f_upper:
-                        # print(f"here, g:{self.g(s_max)}, f:{f_upper}")
+                        print(f"here, s:{s_max}, g:{self.g(s_max)}, f:{f_upper}")
                         sol = s_max
                         break
 
-            if node.first_child:
+            if node.visited or node.first_child:
                 heuristic_sequence = node.heuristic_sequence
 
             t2 = time.time()
 
             time_for_stage_1 += t2 - t1
 
-            if not v.visited and self.pushing_back:
+            if not node.visited and self.pushing_back:
                 if f_local < v.lbd_v:
                     push_back_count += 1
-                    self.push_heap(s, f_local, True)
+                    node.v.lbd_v = f_local
+                    self.max_heap.push(node)
                     continue
 
             t3 = time.time()
 
             time_for_stage_2 += t3 - t2
 
-            if self.is_on_the_edge(node.s):
+            print(f"vis:{node.visited}, f:{node.first_child}, s:{node.s}, is_on_the_edge:{self.is_on_the_edge(node)}, hs:{heuristic_sequence}")
+
+            if self.is_on_the_edge(node):
                 continue
 
             # push first child
+
             first_ele = heuristic_sequence[0]
             new_candidate = list(set(node.candidate) - {first_ele})
-            if v.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
+            if node.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
                 open_list_count += 1
 
                 new_heuristic_sequence = copy.deepcopy(heuristic_sequence)
