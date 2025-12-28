@@ -788,99 +788,129 @@ class BestAugmentedMoreFS(OptimalAlg):
         else:
             self.f = self.f_without_alpha
 
-    def set_h(self, heuristic):
-        if heuristic == 'ub0':
-            self.inner_h = self.h_ub0
-            self.lbd = self.lbd0
-        elif heuristic == 'ub2':
-            self.inner_h = self.h_ub2
-            self.lbd = self.lbd2
-        elif heuristic == 'dom':
-            self.inner_h = self.h_dom
-            self.lbd = self.lbd_dom
+    # def set_h(self, heuristic):
+    #     if heuristic == 'ub0':
+    #         self.inner_h = self.h_ub0
+    #         self.lbd = self.lbd0
+    #     elif heuristic == 'ub2':
+    #         self.inner_h = self.h_ub2
+    #         self.lbd = self.lbd2
+    #     elif heuristic == 'dom':
+    #         self.inner_h = self.h_dom
+    #         self.lbd = self.lbd_dom
+    #
+    # def density_for_set(self, n):
+    #     if self.model.cost_of_set(list(n)) == 0:
+    #         return 0
+    #     return self.g(n) / self.model.cost_of_set(list(n))
+    #
+    # def set_d(self, sorting):
+    #     if sorting == 'g':
+    #         self.d = self.g
+    #     elif sorting == 'b':
+    #         self.d = lambda x: self.model.cost_of_set(list(x))
+    #     elif sorting == 'd':
+    #         self.d = self.density_for_set
+    #
+    # def g(self, n):
+    #     return self.model.objective(list(n))
+    #
+    # def is_on_the_edge(self, n):
+    #     base_cost = self.model.cost_of_set(n)
+    #     for ele in set(self.model.ground_set) - set(n):
+    #         if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
+    #             return False
+    #     return True
+    #
+    # def h(self, n):
+    #     if self.is_on_the_edge(n):
+    #         return 0
+    #     return self.inner_h(n)
+    #
+    # def f_with_alpha(self, n):
+    #     return self.g(n) + self.alpha * self.h(n)
+    #
+    # def f_without_alpha(self, n):
+    #     return self.g(n) + self.h(n)
+    #
+    # def h_ub0(self, n):
+    #     delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+    #                                             budget=self.model.budget - self.model.cost_of_set(n))
+    #     return delta
+    #
+    # def h_ub2(self, n):
+    #     delta, _ = marginal_delta_version7_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+    #                                                      budget=self.model.budget - self.model.cost_of_set(n))
+    #     return delta
+    #
+    # def h_dom(self, n):
+    #     delta, _ = marginal_delta_dom_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
+    #                                                 budget=self.model.budget - self.model.cost_of_set(n))
+    #     return delta
+    #
+    # def lbd0(self, base, budget):
+    #     delta, _ = marginal_delta_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
+    #                                             budget=budget)
+    #     return delta
+    #
+    # def lbd2(self, base, budget):
+    #     delta, _ = marginal_delta_version7_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
+    #                                                      budget=budget)
+    #     return delta
+    #
+    # def lbd_dom(self, base, budget):
+    #     delta, _ = marginal_delta_dom_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
+    #                                                 budget=budget)
+    #     return delta
+    #
+    # def h_ub4(self, n):
+    #     opt = DominantOptimizer()
+    #     opt.setModel(self.model)
+    #     opt.setBase(n)
+    #     opt.build()
+    #     delta = opt.optimize()['delta']
+    #
+    #     return delta
 
-    def density_for_set(self, n):
-        if self.model.cost_of_set(list(n)) == 0:
-            return 0
-        return self.g(n) / self.model.cost_of_set(list(n))
+    def push_heap(self, s, lbd_v, visited=False, candidate = None, w= None, s_max_v=0):
+        max_idx = 0
+        if len(s) > 0:
+            max_idx = max(s)
 
-    def set_d(self, sorting):
-        if sorting == 'g':
-            self.d = self.g
-        elif sorting == 'b':
-            self.d = lambda x: self.model.cost_of_set(list(x))
-        elif sorting == 'd':
-            self.d = self.density_for_set
+        node = HeapObj(s, candidate=candidate, w=w, max_idx=max_idx, visited=visited)
+        new_g = self.g(node)
+        new_h = self.h(node)
+        final_v = new_g + new_h
 
-    def g(self, n):
-        return self.model.objective(list(n))
+        v = None
+        if final_v >= s_max_v:
+            if self.use_alpha:
+                lbd_v = min(new_g + self.alpha * new_h, lbd_v)
+                v = AugmentedFSValue(new_g + self.alpha * new_h, lbd_v, self.d(s))
+            else:
+                lbd_v = min(new_g + new_h, lbd_v)
+                v = AugmentedFSValue(new_g + new_h, lbd_v, self.d(s))
 
-    def is_on_the_edge(self, n):
-        base_cost = self.model.cost_of_set(n)
-        for ele in set(self.model.ground_set) - set(n):
-            if base_cost + self.model.cost_of_singleton(ele) <= self.model.budget:
-                return False
-        return True
+            node.v = v
+            self.max_heap.push(node)
 
-    def h(self, n):
-        if self.is_on_the_edge(n):
-            return 0
-        return self.inner_h(n)
+            return node
 
-    def f_with_alpha(self, n):
-        return self.g(n) + self.alpha * self.h(n)
+        return None
 
-    def f_without_alpha(self, n):
-        return self.g(n) + self.h(n)
+    def push_root(self):
+        root = HeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
+        v = AugmentedFSValue(self.f(root), self.f(root), self.d(root.s))
+        root.v = v
+        root.cost = 0
 
-    def h_ub0(self, n):
-        delta, _ = marginal_delta_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
-                                                budget=self.model.budget - self.model.cost_of_set(n))
-        return delta
+        f_upper = self.f(root)
+        s_max, f_local = self.greedy_add(root.s)
+        f_upper = min(f_upper, f_local)
 
-    def h_ub2(self, n):
-        delta, _ = marginal_delta_version7_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
-                                                         budget=self.model.budget - self.model.cost_of_set(n))
-        return delta
+        self.max_heap.push(root)
 
-    def h_dom(self, n):
-        delta, _ = marginal_delta_dom_random_budget(set(n), set(self.model.ground_set) - set(n), self.model,
-                                                    budget=self.model.budget - self.model.cost_of_set(n))
-        return delta
-
-    def lbd0(self, base, budget):
-        delta, _ = marginal_delta_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
-                                                budget=budget)
-        return delta
-
-    def lbd2(self, base, budget):
-        delta, _ = marginal_delta_version7_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
-                                                         budget=budget)
-        return delta
-
-    def lbd_dom(self, base, budget):
-        delta, _ = marginal_delta_dom_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
-                                                    budget=budget)
-        return delta
-
-    def h_ub4(self, n):
-        opt = DominantOptimizer()
-        opt.setModel(self.model)
-        opt.setBase(n)
-        opt.build()
-        delta = opt.optimize()['delta']
-
-        return delta
-
-    def push_heap(self, n, lbd_v, visited=False):
-        max_value = 0
-        if len(n) > 0:
-            max_value = max(n)
-
-        v = AugmentedFSValue(self.f(n), lbd_v, self.d(n), max_value, visited, g=self.g(n), h=self.h(n),
-                             c=self.model.cost_of_set(n))
-        node = HeapObj(n, v)
-        self.max_heap.push(node)
+        return root, f_upper, s_max
 
     def greedy_add(self, base):
         sol = set(base)
@@ -902,7 +932,7 @@ class BestAugmentedMoreFS(OptimalAlg):
                 sol.add(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            f_temp = self.g(sol) + self.lbd(base=sol, budget=self.model.budget - base_cost)
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(self.model.ground_set) - set(sol), budget=self.model.budget - base_cost)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
@@ -933,14 +963,8 @@ class BestAugmentedMoreFS(OptimalAlg):
 
     def optimize(self):
         start_time = time.time()
-        root = []
         # set root node as visited
-        self.push_heap(root, self.f(root), visited=True)
-
-        f_upper = self.f(root)
-        s_max, f_local = self.greedy_add(root)
-        # print(f"at first:{f_upper}, up:{f_local}")
-        f_upper = min(f_upper, f_local)
+        root, f_upper, s_max = self.push_root()
 
         # check if s_max now is an optimal solution
         if self.g(s_max) >= self.alpha * f_upper:
@@ -974,14 +998,14 @@ class BestAugmentedMoreFS(OptimalAlg):
             node_count += 1
             s = node.s
             v = node.v
-            max_idx = v.max_idx
+            max_idx = node.max_idx
             f_upper = min(f_upper, v.lbd_v)
 
             t1 = time.time()
 
             time_for_stage_0 += t1 - t0
 
-            if not v.visited:
+            if not node.visited:
                 s_final, f_local = self.greedy_add(s)
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
@@ -1001,7 +1025,7 @@ class BestAugmentedMoreFS(OptimalAlg):
                     sol = s_max
                     break
 
-            if not v.visited and self.pushing_back:
+            if not node.visited and self.pushing_back:
                 if f_local < v.lbd_v:
                     push_back_count += 1
                     self.push_heap(s, f_local, True)
@@ -1015,20 +1039,8 @@ class BestAugmentedMoreFS(OptimalAlg):
             # save the cost of s, the g value of s, and the h value of s as properties of its node
             for i in range(max_idx + 1, self.ground_size):
                 children_count += 1
-                if v.cost + self.model.cost_of_singleton(i) <= self.model.budget:
-                    new_g = self.g(list(set(s) | {i}))
-                    new_h = self.h(list(set(s) | {i}))
-
-                    # final_v = self.f_without_alpha(list(set(s) | {i}))
-                    final_v = new_g + new_h
-
-                    if final_v >= s_max_v:
-                        if self.use_alpha:
-                            lbd_v = min(new_g + self.alpha * new_h, v.lbd_v)
-                        else:
-                            lbd_v = min(new_g + new_h, v.lbd_v)
-                        self.push_heap(list(set(s) | {i}), lbd_v)
-                        open_list_count += 1
+                if self.model.cost_of_set(node.s) + self.model.cost_of_singleton(i) <= self.model.budget:
+                    self.push_heap(list(set(s) | {i}), node.v.lbd_v, candidate=set(node.candidate) - {i}, w=node.budget - self.model.cost_of_singleton(i))
 
             t4 = time.time()
 
@@ -1070,27 +1082,6 @@ class EfficientBranchAndBound(OptimalAlg):
         self.children_count = 0
         self.time_for_stage_0 = 0
         self.time_for_stage_1 = 0
-
-    def g(self, n):
-        return self.model.objective(list(n))
-
-    def g_over(self, n, base):
-        return self.g(set(n) | set(base)) - self.g(base)
-
-    def lbd0(self, base, candidate, budget):
-        delta, _ = marginal_delta_random_budget(set(base), set(candidate), self.model,
-                                                budget=budget)
-        return delta
-
-    def lbd2(self, base, candidate, budget):
-        delta, _ = marginal_delta_version7_random_budget(set(base), set(candidate), self.model,
-                                                         budget=budget)
-        return delta
-
-    def lbd_dom(self, base, candidate, budget):
-        delta, _ = marginal_delta_dom_random_budget(set(base), set(candidate), self.model,
-                                                    budget=budget)
-        return delta
 
     def set_h(self, heuristic):
         if heuristic == 'ub0':
@@ -1259,93 +1250,6 @@ class EfficientBFS(OptimalAlg):
         else:
             self.f = self.f_without_alpha
 
-    def set_h(self, heuristic):
-        if heuristic == 'ub0':
-            self.inner_h = self.h_ub0
-            self.lbd = self.lbd0
-        elif heuristic == 'ub2':
-            self.inner_h = self.h_ub2
-            self.lbd = self.lbd2
-        elif heuristic == 'dom':
-            self.inner_h = self.h_dom
-            self.lbd = self.lbd_dom
-
-    def density_for_set(self, n):
-        if self.model.cost_of_set(list(n)) == 0:
-            return 0
-        return self.g(n) / self.model.cost_of_set(list(n))
-
-    def set_d(self, sorting):
-        if sorting == 'g':
-            self.d = self.g
-        elif sorting == 'b':
-            self.d = lambda x: self.model.cost_of_set(list(x))
-        elif sorting == 'd':
-            self.d = self.density_for_set
-
-    def g(self, n):
-        if isinstance(n, EfficientBFSHeapObj):
-            return self.model.objective(list(n.s))
-
-        return self.model.objective(list(n))
-
-    def is_on_the_edge(self, node: EfficientBFSHeapObj):
-        candidate = node.candidate
-        for ele in candidate:
-            if self.model.cost_of_singleton(ele) <= node.budget:
-                return False
-        return True
-
-    def h(self, n):
-        if self.is_on_the_edge(n):
-            return 0
-        return self.inner_h(n)
-
-    def f_with_alpha(self, n):
-        return self.g(n) + self.alpha * self.h(n)
-
-    def f_without_alpha(self, n):
-        return self.g(n) + self.h(n)
-
-    def h_ub0(self, n: EfficientBFSHeapObj):
-        delta, _ = marginal_delta_random_budget(set(n.s), set(n.candidate), self.model,
-                                                budget=n.budget)
-        return delta
-
-    def h_ub2(self, n: EfficientBFSHeapObj):
-        delta, _ = marginal_delta_version7_random_budget(set(n.s), set(n.candidate), self.model,
-                                                         budget=n.budget)
-        return delta
-
-    def h_dom(self, n: EfficientBFSHeapObj):
-        delta, _ = marginal_delta_dom_random_budget(set(n.s), set(n.candidate), self.model,
-                                                    budget=n.budget)
-        return delta
-
-    def lbd0(self, base, candidate, budget):
-        delta, _ = marginal_delta_random_budget(set(base), set(candidate), self.model,
-                                                budget=budget)
-        return delta
-
-    def lbd2(self, base, candidate, budget):
-        delta, _ = marginal_delta_version7_random_budget(set(base), set(candidate), self.model,
-                                                         budget=budget)
-        return delta
-
-    def lbd_dom(self, base, budget):
-        delta, _ = marginal_delta_dom_random_budget(set(base), set(self.model.ground_set) - set(base), self.model,
-                                                    budget=budget)
-        return delta
-
-    def h_ub4(self, n):
-        opt = DominantOptimizer()
-        opt.setModel(self.model)
-        opt.setBase(n)
-        opt.build()
-        delta = opt.optimize()['delta']
-
-        return delta
-
     def push_heap(self, s, lbd_v, visited=False, first_child=False, heuristic_sequence=None, candidate=None, w=None, s_max_v=0):
         max_idx = 0
         if len(s) > 0:
@@ -1367,11 +1271,13 @@ class EfficientBFS(OptimalAlg):
                 lbd_v = min(new_g + new_h, lbd_v)
                 v = RefinedBFSValue(new_g + new_h, lbd_v, self.d(s))
 
-        node.v = v
+            node.v = v
 
-        self.max_heap.push(node)
+            self.max_heap.push(node)
 
-        return node
+            return node
+
+        return None
 
     def greedy_add(self, node: EfficientBFSHeapObj):
         base = node.s
@@ -1380,7 +1286,7 @@ class EfficientBFS(OptimalAlg):
 
         sol = set(base)
         remaining_elements = set(candidate)
-        cur_cost = self.model.cost_of_set(list(sol))
+        cur_cost = 0
 
         f_local = None
         heuristic_sequence = []
@@ -1394,7 +1300,7 @@ class EfficientBFS(OptimalAlg):
 
             assert u is not None
 
-            if cur_cost + self.model.cost_of_singleton(u) <= self.model.budget:
+            if cur_cost + self.model.cost_of_singleton(u) <= budget:
                 # satisfy the knapsack constraint
                 sol.add(u)
                 heuristic_sequence.append(u)
@@ -1483,7 +1389,7 @@ class EfficientBFS(OptimalAlg):
                         break
                 else:
                     if self.g(s_max) >= self.alpha * f_upper:
-                        print(f"here, s:{s_max}, g:{self.g(s_max)}, f:{f_upper}")
+                        # print(f"here, s:{s_max}, g:{self.g(s_max)}, f:{f_upper}")
                         sol = s_max
                         break
 
@@ -1505,13 +1411,16 @@ class EfficientBFS(OptimalAlg):
 
             time_for_stage_2 += t3 - t2
 
-            print(f"vis:{node.visited}, f:{node.first_child}, s:{node.s}, is_on_the_edge:{self.is_on_the_edge(node)}, hs:{heuristic_sequence}")
+            # print(f"vis:{node.visited}, f:{node.first_child}, s:{node.s}, is_on_the_edge:{self.is_on_the_edge(node)}, hs:{heuristic_sequence}, c:{len(node.candidate)}, c:{self.model.cost_of_set(node.s)}, w:{node.budget}")
 
             if self.is_on_the_edge(node):
                 continue
 
-            # push first child
+            # for i in node.candidate:
+            #     if self.model.cost_of_singleton(i) + self.model.cost_of_set(node.s) <= node.budget:
+            #         print(f"i:{i}")
 
+            # push first child
             first_ele = heuristic_sequence[0]
             new_candidate = list(set(node.candidate) - {first_ele})
             if node.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
