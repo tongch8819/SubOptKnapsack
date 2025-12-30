@@ -4,7 +4,7 @@ from functools import total_ordering
 
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
-from MaxHeap import MaxHeap, HeapObj, EfficientBFSHeapObj
+from MaxHeap import MaxHeap, HeapObj, EfficientBFSHeapObj, BranchAndBoundNode
 from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m, marginal_delta_m_acc, \
     marginal_delta_random_budget, marginal_delta_version7_random_budget, marginal_delta_m_acc_random_budget, \
     marginal_delta_dom_random_budget
@@ -872,7 +872,7 @@ class BestAugmentedMoreFS(OptimalAlg):
     #
     #     return delta
 
-    def push_heap(self, s, lbd_v, visited=False, candidate = None, w= None, s_max_v=0):
+    def push_heap(self, s, lbd_v, visited=False, candidate=None, w=None, s_max_v=0):
         max_idx = 0
         if len(s) > 0:
             max_idx = max(s)
@@ -932,7 +932,8 @@ class BestAugmentedMoreFS(OptimalAlg):
                 sol.add(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(self.model.ground_set) - set(sol), budget=self.model.budget - base_cost)
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(self.model.ground_set) - set(sol),
+                                            budget=self.model.budget - base_cost)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
@@ -1040,7 +1041,8 @@ class BestAugmentedMoreFS(OptimalAlg):
             for i in range(max_idx + 1, self.ground_size):
                 children_count += 1
                 if self.model.cost_of_set(node.s) + self.model.cost_of_singleton(i) <= self.model.budget:
-                    self.push_heap(list(set(s) | {i}), node.v.lbd_v, candidate=set(node.candidate) - {i}, w=node.budget - self.model.cost_of_singleton(i))
+                    self.push_heap(list(set(s) | {i}), node.v.lbd_v, candidate=set(node.candidate) - {i},
+                                   w=node.budget - self.model.cost_of_singleton(i))
 
             t4 = time.time()
 
@@ -1057,16 +1059,6 @@ class BestAugmentedMoreFS(OptimalAlg):
                'children_count': children_count}
 
         return ret
-
-
-class BranchAndBoundNode:
-    # s: current set
-    # c: candidate set
-    # w: remaining budget
-    def __init__(self, s, c, w):
-        self.s = s
-        self.c = c
-        self.w = w
 
 
 class EfficientBranchAndBound(OptimalAlg):
@@ -1104,10 +1096,10 @@ class EfficientBranchAndBound(OptimalAlg):
         base = t.s
         sol = set(base)
         base_cost = self.model.cost_of_set(list(sol))
-        remaining_elements = set(t.cost)
+        remaining_elements = set(t.candidate)
         cur_cost = self.model.cost_of_set(list(sol))
 
-        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.cost) - set(sol),
+        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.candidate) - set(sol),
                                          budget=self.model.budget - base_cost)
         c = []
         while len(remaining_elements):
@@ -1132,14 +1124,14 @@ class EfficientBranchAndBound(OptimalAlg):
                     to_remove.add(v)
             remaining_elements -= to_remove
 
-            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.cost) - set(sol),
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.candidate) - set(sol),
                                             budget=self.model.budget - base_cost)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
         return list(sol), f_local, c
 
-    def get_children_basic(self, t, c):
+    def get_children_basic(self, t: BranchAndBoundNode, c):
         children = []
         s = t.s
         tc = list(t.cost)
@@ -1153,35 +1145,31 @@ class EfficientBranchAndBound(OptimalAlg):
 
         return children
 
-    def get_children_advance(self, t, c):
+    def get_children_advance(self, t: BranchAndBoundNode, c):
         children = []
         s = t.s
         for i in range(0, len(c)):
-            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.cost) - set(c[:i + 1])),
+            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
                                       t.budget - self.model.cost_of_set(c[:i]))
+
+            if self.lbd0(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
+                         t.budget - self.model.cost_of_set(c[:i])) > self.lb_star:
+                children.append(temp)
+
+        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
+                                  t.budget - self.model.cost_of_set(c))
+
+        if self.lbd0(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
+                     t.budget - self.model.cost_of_set(c)) > self.lb_star:
             children.append(temp)
 
-        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.cost) - set(c)),
-                                  t.budget - self.model.cost_of_set(c))
-        children.append(temp)
-
         return children
-
-    def is_on_the_edge(self, t):
-        current_b = self.model.cost_of_set(t.s)
-        for i in t.cost:
-            if current_b + self.model.cost_of_singleton(i) <= t.budget:
-                return False
-
-        return True
 
     def bab(self, t: BranchAndBoundNode):
         t0 = time.time()
         self.node_count = self.node_count + 1
 
-        # print(f"len:{len(t.c)}")
-
-        if len(t.c) == 0:
+        if len(t.candidate) == 0:
             return
 
         if self.is_on_the_edge(t):
@@ -1250,12 +1238,14 @@ class EfficientBFS(OptimalAlg):
         else:
             self.f = self.f_without_alpha
 
-    def push_heap(self, s, lbd_v, visited=False, first_child=False, heuristic_sequence=None, candidate=None, w=None, s_max_v=0):
+    def push_heap(self, s, lbd_v, visited=False, first_child=False, heuristic_sequence=None, candidate=None, w=None,
+                  s_max_v=0):
         max_idx = 0
         if len(s) > 0:
             max_idx = max(s)
 
-        node = EfficientBFSHeapObj(s, candidate=candidate, w=w, visited=visited, first_child=first_child, heuristic_sequence=heuristic_sequence, max_idx=max_idx)
+        node = EfficientBFSHeapObj(s, candidate=candidate, w=w, visited=visited, first_child=first_child,
+                                   heuristic_sequence=heuristic_sequence, max_idx=max_idx)
         node.cost = self.model.cost_of_set(s)
 
         new_g = self.g(node)
@@ -1306,7 +1296,7 @@ class EfficientBFS(OptimalAlg):
                 heuristic_sequence.append(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(candidate)-set(sol), budget=budget)
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(candidate) - set(sol), budget=budget)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
 
@@ -1322,13 +1312,14 @@ class EfficientBFS(OptimalAlg):
 
     def push_root(self):
         root = EfficientBFSHeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
-        v = RefinedBFSValue(self.f(root), self.f(root), self.d(root.s))
-        root.v = v
         root.cost = 0
 
         f_upper = self.f(root)
         s_max, f_local, heuristic_sequence = self.greedy_add(root)
         f_upper = min(f_upper, f_local)
+
+        v = RefinedBFSValue(self.f(root), f_upper, self.d(root.s))
+        root.v = v
         root.heuristic_sequence = heuristic_sequence
 
         self.max_heap.push(root)
@@ -1371,7 +1362,6 @@ class EfficientBFS(OptimalAlg):
             node_count += 1
             s = node.s
             v = node.v
-            f_upper = min(f_upper, v.lbd_v)
 
             t1 = time.time()
 
@@ -1380,6 +1370,9 @@ class EfficientBFS(OptimalAlg):
             f_local, heuristic_sequence = 0., None
             if not node.visited and not node.first_child:
                 s_final, f_local, heuristic_sequence = self.greedy_add(node)
+                node.v.lbd_v = min(node.v.lbd_v, f_local)
+                f_upper = min(f_upper, node.v.lbd_v)
+
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
 
@@ -1429,13 +1422,15 @@ class EfficientBFS(OptimalAlg):
                 new_heuristic_sequence = copy.deepcopy(heuristic_sequence)
                 new_heuristic_sequence.pop(0)
 
-                self.push_heap(s=list(set(s) | {first_ele}), lbd_v=node.v.lbd_v, first_child=True, heuristic_sequence=new_heuristic_sequence,
+                self.push_heap(s=list(set(s) | {first_ele}), lbd_v=node.v.lbd_v, first_child=True,
+                               heuristic_sequence=new_heuristic_sequence,
                                candidate=new_candidate,
                                w=node.budget - self.model.cost_of_singleton(first_ele))
 
             # push second child
             self.push_heap(s=s, lbd_v=node.v.lbd_v, first_child=False,
                            candidate=new_candidate, w=node.budget)
+            open_list_count += 1
 
             t4 = time.time()
 
