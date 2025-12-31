@@ -4,7 +4,7 @@ from functools import total_ordering
 
 from OptimalAlg import OptimalAlg
 from base_task import BaseTask
-from MaxHeap import MaxHeap, HeapObj, EfficientBFSHeapObj, BranchAndBoundNode
+from MaxHeap import MaxHeap, HeapObj, EfficientBFSHeapObj, BranchAndBoundNode, SimpleMaxHeap
 from data_dependent_upperbound import marginal_delta_version7, marginal_delta, marginal_delta_m, marginal_delta_m_acc, \
     marginal_delta_random_budget, marginal_delta_version7_random_budget, marginal_delta_m_acc_random_budget, \
     marginal_delta_dom_random_budget
@@ -1220,7 +1220,7 @@ class EfficientBranchAndBound(OptimalAlg):
 class EfficientBFS(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
-        self.max_heap = MaxHeap()
+        self.max_heap = None
         self.inner_h = None
         self.f = None
         self.d = None
@@ -1228,8 +1228,14 @@ class EfficientBFS(OptimalAlg):
         self.use_alpha = False
         self.pushing_back = True
         self.ground_size = 0
+        self.heap_class = 'tradition'
 
     def build(self):
+        if self.heap_class == 'tradition':
+            self.max_heap = MaxHeap()
+        elif self.heap_class == 'simple':
+            self.max_heap = SimpleMaxHeap()
+
         self.max_heap.clear()
         self.ground_size = len(self.model.ground_set)
 

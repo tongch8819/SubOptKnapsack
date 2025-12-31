@@ -70,30 +70,27 @@ class MaxHeap(object):
         return len(self.h)
 
 
-def find_parent(idx):
-    return int(idx / 2)
-
-
-class SimpleMaxHeap(object):
+class ComplexMaxHeap(object):
     def __init__(self):
         self.elements = []
         self.h = []
 
         self.current_size = 0
 
+    @staticmethod
+    def find_parent(idx):
+        return (idx-1)//2
+
     def push(self, node):
         ele_idx = len(self.elements)
         self.elements.append(node)
-
         self.h.append(ele_idx)
 
         idx_idx = self.current_size
         while idx_idx > 0:
-            parent_idx_idx = find_parent(idx_idx)
+            parent_idx_idx = self.find_parent(idx_idx)
             if self.elements[self.h[parent_idx_idx]].v < self.elements[self.h[idx_idx]].v:
-                t = self.h[parent_idx_idx]
-                self.h[parent_idx_idx] = self.h[idx_idx]
-                self.h[idx_idx] = t
+                self.h[parent_idx_idx], self.h[idx_idx] = self.h[idx_idx], self.h[parent_idx_idx]
                 idx_idx = parent_idx_idx
             else:
                 break
@@ -103,27 +100,28 @@ class SimpleMaxHeap(object):
     def pop(self):
         assert len(self.h) > 0, "Heap is empty."
         idx_idx = self.current_size - 1
+        ele = self.elements[self.h[0]]
         self.h[0] = self.h[idx_idx]
 
-        idx_idx = 0
-        while 2 * idx_idx <= self.current_size:
-            large_child = idx_idx * 2
-            small_child = idx_idx * 2 + 1
+        self.h.pop(idx_idx)
+        self.current_size = self.current_size - 1
 
-            if large_child < self.current_size and self.elements[self.h[large_child]].v < self.elements[
-                self.h[small_child]].v:
+        idx_idx = 0
+        while 2 * idx_idx + 1 < self.current_size:
+            large_child = idx_idx * 2 + 1
+            small_child = idx_idx * 2 + 2
+
+            if large_child < self.current_size and small_child < self.current_size and self.elements[self.h[large_child]].v < self.elements[self.h[small_child]].v:
                 large_child += 1
 
             if self.elements[self.h[large_child]].v <= self.elements[self.h[idx_idx]].v:
                 break
 
-            t = self.h[large_child]
-            self.h[large_child] = self.h[idx_idx]
-            self.h[idx_idx] = t
+            self.h[large_child], self.h[idx_idx] = self.h[idx_idx], self.h[large_child]
 
             idx_idx = large_child
 
-        self.current_size = self.current_size - 1
+        return ele
 
     def remove(self, ele):
         pass
@@ -138,7 +136,73 @@ class SimpleMaxHeap(object):
         return self.h[item]
 
     def clear(self):
-        pass
+        self.h.clear()
+        self.elements.clear()
+        self.current_size = 0
 
     def size(self):
+        return self.current_size
+
+class SimpleMaxHeap(object):
+    def __init__(self):
+        self.h = []
+
+    @staticmethod
+    def find_parent(idx):
+        return (idx-1)//2
+
+    def push(self, node):
+        self.h.append(node)
+        idx = len(self.h) - 1
+
+        while idx > 0:
+            parent_idx = self.find_parent(idx)
+            if self.h[parent_idx].v < self.h[idx].v:
+                self.h[parent_idx], self.h[idx] = self.h[idx], self.h[parent_idx]
+                idx = parent_idx
+            else:
+                break
+
+    def pop(self):
+        assert len(self.h) > 0, "Heap is empty."
+        idx = len(self.h) - 1
+
+        ele = self.h[0]
+        self.h[0] = self.h[idx]
+        self.h.pop(idx)
+
+        current_size = len(self.h)
+
+        idx = 0
+        while 2 * idx + 1 < current_size:
+            large_child = idx * 2 + 1
+            small_child = idx * 2 + 2
+
+            if small_child < current_size and self.h[large_child].v < self.h[small_child].v:
+                large_child += 1
+
+            if self.h[large_child].v <= self.h[idx].v:
+                break
+
+            self.h[large_child], self.h[idx] = self.h[idx], self.h[large_child]
+
+            idx = large_child
+
+        return ele
+
+    def remove(self, ele):
         pass
+
+    def top(self):
+        assert len(self.h) > 0, "Heap is empty."
+        return self.h[0]
+
+    def __getitem__(self, item):
+        assert item < len(self.h)
+        return self.h[item]
+
+    def clear(self):
+        self.h.clear()
+
+    def size(self):
+        return len(self.h)
