@@ -1152,7 +1152,7 @@ class EfficientBranchAndBound(OptimalAlg):
             temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
                                       t.budget - self.model.cost_of_set(c[:i]))
 
-            if self.lbd0(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
+            if self.model.objective(list(set(s) | set(c[:i]))) + self.lbd0(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
                          t.budget - self.model.cost_of_set(c[:i])) > self.lb_star:
                 children.append(temp)
 
