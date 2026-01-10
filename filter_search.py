@@ -1285,7 +1285,7 @@ class EfficientBFS(OptimalAlg):
         remaining_elements = set(candidate)
         cur_cost = 0
 
-        # f_local = None
+        f_local = None
         heuristic_sequence = []
         # print(f"//")
         while len(remaining_elements):
@@ -1304,10 +1304,10 @@ class EfficientBFS(OptimalAlg):
                 heuristic_sequence.append(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
-            # if f_local is None or f_temp < f_local:
-            #     f_local = f_temp
-            #     print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
+            if f_local is None or f_temp < f_local:
+                f_local = f_temp
+                # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
 
             remaining_elements.remove(u)
             # filter out violating elements
@@ -1317,17 +1317,17 @@ class EfficientBFS(OptimalAlg):
                     to_remove.add(v)
             remaining_elements -= to_remove
 
-        return list(sol), heuristic_sequence
+        return list(sol), f_local, heuristic_sequence
 
     def push_root(self):
         root = EfficientBFSHeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
         root.cost = 0
 
         f_upper = self.f(root)
-        s_max, heuristic_sequence = self.greedy_add(root)
+        s_max, f_local, heuristic_sequence = self.greedy_add(root)
         # f_upper = min(f_upper, f_local)
 
-        v = RefinedBFSValue(self.f(root), f_upper, self.d(root.s))
+        v = RefinedBFSValue(self.f(root), min(f_local, f_upper), self.d(root.s))
         root.v = v
         root.heuristic_sequence = heuristic_sequence
 
@@ -1375,9 +1375,9 @@ class EfficientBFS(OptimalAlg):
 
             time_for_stage_0 += t1 - t0
 
-            f_local, heuristic_sequence = 0., None
+            f_local, heuristic_sequence = node.v.lbd_v, None
             if not node.visited and not node.first_child:
-                s_final, heuristic_sequence = self.greedy_add(node)
+                s_final, f_local, heuristic_sequence = self.greedy_add(node)
                 # node.v.lbd_v = min(node.v.lbd_v, f_local)
                 f_upper = min(f_upper, node.v.lbd_v)
 
@@ -1424,19 +1424,20 @@ class EfficientBFS(OptimalAlg):
             # push first child
             first_ele = heuristic_sequence[0]
             new_candidate = list(set(node.candidate) - {first_ele})
+            new_lbd = min(node.v.lbd_v, f_local)
             if node.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
                 open_list_count += 1
 
                 new_heuristic_sequence = copy.deepcopy(heuristic_sequence)
                 new_heuristic_sequence.pop(0)
 
-                self.push_heap(s=list(set(s) | {first_ele}), lbd_v=node.v.lbd_v, first_child=True,
+                self.push_heap(s=list(set(s) | {first_ele}), lbd_v=new_lbd, first_child=True,
                                heuristic_sequence=new_heuristic_sequence,
                                candidate=new_candidate,
                                w=node.budget - self.model.cost_of_singleton(first_ele))
 
             # push second child
-            self.push_heap(s=s, lbd_v=node.v.lbd_v, first_child=False,
+            self.push_heap(s=s, lbd_v=new_lbd, first_child=False,
                            candidate=new_candidate, w=node.budget)
             open_list_count += 1
 
@@ -1857,7 +1858,7 @@ class InheritBFS(OptimalAlg):
         remaining_elements = set(candidate)
         cur_cost = 0
 
-        # f_local = None
+        f_local = None
         # print(f"//")
         while len(remaining_elements):
             u, max_density = None, -1.
@@ -1874,10 +1875,10 @@ class InheritBFS(OptimalAlg):
                 sol.add(u)
                 cur_cost += self.model.cost_of_singleton(u)
 
-            # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
-            # if f_local is None or f_temp < f_local:
-            #     f_local = f_temp
-            #     print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
+            if f_local is None or f_temp < f_local:
+                f_local = f_temp
+                # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
 
             remaining_elements.remove(u)
             # filter out violating elements
@@ -1887,17 +1888,17 @@ class InheritBFS(OptimalAlg):
                     to_remove.add(v)
             remaining_elements -= to_remove
 
-        return list(sol)
+        return list(sol), f_local
 
     def push_root(self):
         root = EfficientBFSHeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
         root.cost = 0
 
         f_upper = self.f(root)
-        s_max= self.greedy_add(root)
+        s_max, f_local = self.greedy_add(root)
         # f_upper = min(f_upper, f_local)
 
-        v = RefinedBFSValue(self.f(root), f_upper, self.d(root.s))
+        v = RefinedBFSValue(self.f(root), min(f_upper, f_local), self.d(root.s))
         root.v = v
 
         self.max_heap.push(root)
@@ -1944,8 +1945,9 @@ class InheritBFS(OptimalAlg):
 
             time_for_stage_0 += t1 - t0
 
+            f_local = node.v.lbd_v
             if not node.visited:
-                s_final = self.greedy_add(node)
+                s_final, f_local = self.greedy_add(node)
                 # node.v.lbd_v = min(node.v.lbd_v, f_local)
                 f_upper = min(f_upper, node.v.lbd_v)
 
@@ -1998,10 +2000,11 @@ class InheritBFS(OptimalAlg):
             #                candidate=new_candidate, w=node.budget)
             # open_list_count += 1
 
+            new_lbd = min(f_local, node.v.lbd_v)
             for i in node.candidate:
                 if i > node.max_idx and node.cost + self.model.cost_of_singleton(i) <= self.model.budget:
                     open_list_count += 1
-                    self.push_heap(s=list(set(s) | {i}), lbd_v=node.v.lbd_v, candidate=set(node.candidate) - {i}, w = node.budget- self.model.cost_of_singleton(i))
+                    self.push_heap(s=list(set(s) | {i}), lbd_v=new_lbd, candidate=set(node.candidate) - {i}, w = node.budget- self.model.cost_of_singleton(i))
 
             t4 = time.time()
 
