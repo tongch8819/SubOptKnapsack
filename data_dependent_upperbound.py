@@ -2324,13 +2324,6 @@ def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set
     parameters = {}
 
     base_set_value = model.objective(base_set)
-    def inside_cumsum_costs():
-        s = list(base_set)
-        # sort density in ascending order, default sort has ascending order
-        s.sort(key=lambda x: model.cutout_density(x, base_set), reverse=False)
-        costs = [model.cost_of_singleton(x) for x in s]
-        cumsum_costs = list(accumulate(costs, initial=None))
-        return cumsum_costs, s
 
     def local_f(S):
         S = list(S)
@@ -2364,7 +2357,6 @@ def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set
 
         budget_consumed = 0
 
-        scan_count = 0
         while budget_consumed < b and ele_idx < len(ele_outside):
             marginal_gain = f(set(ele_outside[:ele_idx+1])) - f(set(ele_outside[:ele_idx]))
             singleton_gain = f({ele_outside[ele_idx]})

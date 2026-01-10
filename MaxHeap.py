@@ -1,16 +1,28 @@
 import heapq
 
-
-class HeapObj(object):
-    def __init__(self, s, v=None, cost=None, candidate=None, w=None, max_idx=0, visited=False):
+class BaseHeapObj(object):
+    def __init__(self, s, v=None, candidate=None, budget=None):
         self.s = s
-        self.cost = cost
         self.candidate = candidate
-        self.budget = w
+        self.v = v
+        self.budget = budget
+
+    def __lt__(self, other):
+        return self.v > other.v
+
+    def __eq__(self, other):
+        return self.v == other.v
+
+    def __str__(self):
+        return f"{self.s}, {self.v}"
+
+
+class HeapObj(BaseHeapObj):
+    def __init__(self, s, v=None, cost=None, candidate=None, w=None, max_idx=0, visited=False):
+        super().__init__(s, v, candidate, w)
+        self.cost = cost
         self.max_idx = max_idx
         self.visited = visited
-
-        self.v = v
 
     def __lt__(self, other):
         return self.v > other.v
@@ -142,6 +154,7 @@ class ComplexMaxHeap(object):
 
     def size(self):
         return self.current_size
+
 
 class SimpleMaxHeap(object):
     def __init__(self):
