@@ -27,13 +27,13 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub0']
+    ub_list = ['ub2']
     d_list = ['d']
 
     alpha = float(args.alpha)
 
     start_seed = 0
-    stop_seed = 10
+    stop_seed = 1
 
     interval = 1
     num_points = 10
@@ -107,6 +107,34 @@ if __name__ == "__main__":
                         alg.use_alpha = False
                         alg.pushing_back = False
                         alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'EfficientBFSNheapNi':
+                        # no inherit
+                        alg = filter_search.EfficientBFSNoInherit(model)
+                        alg.heap_class = 'simple'
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'EfficientBFSNheapN2':
+                        # no ub2
+                        alg = filter_search.EfficientBFS(model)
+                        alg.heap_class = 'simple'
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic='ub0')
+                    elif args.algorithm == 'BFSNheap':
+                        # no efficient
+                        alg = filter_search.InheritBFS(model)
+                        alg.heap_class = 'simple'
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+                    elif args.algorithm == 'BFSTC':
+                        alg = filter_search.BFSTC(model)
+                        alg.heap_class = 'simple'
                         alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha

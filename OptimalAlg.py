@@ -1,4 +1,4 @@
-from MaxHeap import HeapObj
+from MaxHeap import HeapObj, BaseHeapObj
 from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta_dom_random_budget, marginal_delta_version7_random_budget, \
     marginal_delta_random_budget
@@ -49,7 +49,7 @@ class OptimalAlg:
             self.d = self.density_for_set
 
     def g(self, n):
-        if isinstance(n, HeapObj):
+        if isinstance(n, BaseHeapObj):
             return self.model.objective(list(n.s))
 
         return self.model.objective(list(n))
