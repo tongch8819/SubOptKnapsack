@@ -5,6 +5,7 @@ import dp
 import mgreedy
 from base_task import BaseTask
 from budget_max_coverage import IdealMaxCovModel
+from compute_streaming_exp import upper_bounds
 from dblp_graph_coverage import DblpGraphCoverage
 from facebook_graph_coverage import FacebookGraphCoverage
 from image_sum import ImageSummarization
@@ -29,8 +30,7 @@ from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_u
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
     modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
     modified_greedy_ub1si, modified_greedy_ub1masi, modified_greedy_ub7si, modified_greedy_ub7masi, \
-    modified_greedy_ub1ei, modified_greedy_ub1maei, modified_greedy_ub7ei, modified_greedy_ub7maei, \
-    modified_greedy_ub16
+    modified_greedy_ub1ei, modified_greedy_ub1maei, modified_greedy_ub7ei, modified_greedy_ub7maei, modified_greedy_ub7new, modified_greedy_ub16
 
 from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_max_nis_ept_ub7, greedy_max_nis_ept_ub7ma, \
                       greedy_max_nis_sol_ub1, greedy_max_nis_sol_ub1ma, greedy_max_nis_sol_ub7, greedy_max_nis_sol_ub7ma, \
@@ -40,8 +40,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 cost_mode = "normal"
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub1ei', 'ub1maei', 'ub7ei','ub7maei', 'ub1si', 'ub1masi', 'ub7si','ub7masi', 'ub1', 'ub1ma', 'ub7', 'ub7ma']
-
+upper_bounds = ['ub7new', 'ub7']
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
 
@@ -409,10 +408,10 @@ def compute_youtube(root_dir, skip_mode=False):
 
 
 def compute_youtube_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 100
     seed_interval = 1
-    start_seed = 1
-    end_seed = 20
+    start_seed = 0
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
@@ -509,13 +508,13 @@ def compute_caltech_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 20
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 35
+        num_points = 10
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -582,14 +581,14 @@ def compute_adult_series(root_dir, skip_mode=False):
     n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 20
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 31
-        start_point = 20
+        num_points = 10
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 

@@ -1108,6 +1108,9 @@ def modified_greedy_ub7ma(model: BaseTask):
 def modified_greedy_ub1m(model: BaseTask):
     return modified_greedy(model, "ub1m")
 
+def modified_greedy_ub7new(model: BaseTask):
+    return modified_greedy(model, "ub7new")
+
 
 def modified_greedy_ub1ma(model: BaseTask):
     return modified_greedy(model, "ub1ma")

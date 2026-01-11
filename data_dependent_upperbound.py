@@ -2506,7 +2506,6 @@ def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], mo
 
     return delta, parameters
 
-
 def marginal_delta_for_streaming_version1(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -3065,6 +3064,19 @@ def marginal_delta_version8(base_set: Set[int], remaining_set: Set[int], model: 
 
     return delta, parameters
 
+def marginal_delta_version7new(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
+    parameters = {}
+
+    opt = optimizer.NewSlicingOptimizer()
+    model.bv = [model.budget]
+
+    opt.setModel(model=model)
+    opt.setBase(base_set)
+    opt.build()
+    delta = opt.optimize()['delta']
+
+    return delta, parameters
+
 def marginal_delta_version7o(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus = False):
     parameters = {}
 
@@ -3149,6 +3161,8 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version7_c(base_set, remaining_set, model)
         elif upb == 'ub7':
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model)
+        elif upb == 'ub7new':
+            delta, parameters = marginal_delta_version7new(base_set, remaining_set, model)
         elif upb == 'ub7o':
             delta, parameters = marginal_delta_version7o(base_set, remaining_set, model)
         elif upb == 'ub7m':

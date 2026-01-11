@@ -3,7 +3,7 @@ from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta, marginal_delta_version4
 from data_dependent_upperbound import marginal_delta_version2
 from data_dependent_upperbound import marginal_delta_version3
-from data_dependent_upperbound import marginal_delta_for_streaming_version1, marginal_delta_for_streaming_version3
+from data_dependent_upperbound import marginal_delta_for_streaming_version1
 from data_dependent_upperbound import marginal_delta_for_knapsack_streaming_version1
 
 import numpy as np

@@ -11,6 +11,7 @@ import numpy as np
 from networkx.algorithms.bipartite.basic import density
 
 from base_task import BaseTask
+from data_dependent_upperbound import marginal_delta_version7_random_budget
 from matroid import Matroid
 
 import scipy
@@ -6858,7 +6859,7 @@ def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], mo
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
     if len(remaining_set) == 0:
-        return 0
+        return 0, {}
 
     parameters = {}
 
@@ -7013,3 +7014,90 @@ class DominantOptimizer:
         }
 
         return ret
+
+
+class NewSlicingOptimizer:
+    def __init__(self):
+        self.model: BaseTask = None
+        self.base = None
+        self.n = 0
+        self.w = None
+        self.L_c = []
+        self.additive_value = 0
+
+    def setModel(self, model):
+        self.model = model
+
+    def setBase(self, base):
+        self.base = base
+
+    def lbd0(self, base, candidate, budget):
+        delta, _ = marginal_delta_random_budget(set(base), set(candidate), self.model,
+                                                         budget=budget)
+        return delta
+
+    def slicing_constraint(self):
+        A = np.zeros(shape=(self.n, self.n))
+        ub = np.zeros(self.n)
+        mag = np.zeros(self.n)
+
+        for i in range(0, self.n):
+            mag[i] = self.model.marginal_gain(i, self.base)
+
+        for i in range(0, self.n):
+            for j in range(0, i + 1):
+                A[i, j] = mag[j]
+            ub[i] = min(self.model.objective(list(set(range(0, i + 1)) | set(self.base))) - self.model.objective(self.base), self.lbd0(self.base, list(set(range(0, i+1)) - set(self.base)), budget=self.model.budget))
+
+        return scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=ub)
+
+    def build(self):
+        self.L_c.clear()
+        self.n = len(self.model.ground_set)
+
+        self.w = np.zeros(self.n)
+        for i in range(0, self.n):
+            if not i in self.base:
+                self.w[i] = -self.model.marginal_gain(i, self.base)
+            else:
+                self.w[i] = -self.model.cutout_marginal_gain(i)
+                self.additive_value += self.model.cutout_marginal_gain(i)
+
+        A = np.zeros(shape=(1, self.n))
+        b = np.zeros(1)
+
+        for i in range(0, self.n):
+            A[0, i] = self.model.cost_of_singleton(i)
+
+        b[0] = self.model.budget
+
+        self.L_c.append(
+            scipy.optimize.LinearConstraint(A=A, lb=-np.inf, ub=b)
+        )
+
+        self.L_c.append(
+            self.slicing_constraint()
+        )
+
+    def removing_item(self, x):
+        ret = 0
+
+        for i in range(0, self.n):
+            if i in self.base:
+                ret += self.model.cutout_marginal_gain(i) * (1 - x[i])
+
+        return ret
+
+    def optimize(self):
+        bounds = [(0, 1) for _ in range(0, len(self.model.ground_set))]
+
+        x = scipy.optimize.minimize(
+            lambda y: self.w @ y,
+            x0=np.zeros(self.n),
+            constraints=self.L_c,
+            bounds=bounds).x
+
+        return {
+            "delta": - self.w @ x,
+            "upb": - self.w @ x + self.model.objective(self.base),
+        }
