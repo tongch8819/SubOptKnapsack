@@ -1484,7 +1484,7 @@ class BFSTC(OptimalAlg):
 
         sol = set(base)
         remaining_elements = set(candidate)
-        cur_cost = 0
+        cur_cost = self.model.cost_of_set(list(sol))
 
         while len(remaining_elements):
             u, max_density = None, -1.
@@ -1542,6 +1542,7 @@ class BFSTC(OptimalAlg):
 
                     if self.g(s_max) / g_upper >= self.alpha:
                         sol = s_max
+                        # print(f"sol:{s_max}, upper:{g_upper}")
                         break
 
                     new_node = BaseHeapObj(set(node.s) | {i}, candidate=set(node.candidate) - {i}, budget=node.budget - self.model.cost_of_singleton(i))

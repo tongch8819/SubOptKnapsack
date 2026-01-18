@@ -39,6 +39,8 @@ class YoutubeCoverage(BaseTask):
         graph_name = f"graph-{n}.txt"
         cost_name = f"costs-{n}.txt"
 
+        print(f"cost mode:{cost_mode}")
+
         if construct_graph:
             self.graph: nx.Graph = self.load_original_graph(graph_path + "/com-youtube.top5000.cmty.txt")
 
