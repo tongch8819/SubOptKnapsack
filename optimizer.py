@@ -11,7 +11,6 @@ import numpy as np
 from networkx.algorithms.bipartite.basic import density
 
 from base_task import BaseTask
-from data_dependent_upperbound import marginal_delta_version7_random_budget
 from matroid import Matroid
 
 import scipy

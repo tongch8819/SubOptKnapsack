@@ -1518,7 +1518,7 @@ class BFSTC(OptimalAlg):
         root.v = self.f(root)
 
         s_max = self.greedy_add([])
-        g_upper = self.h(root)
+        g_upper = self.alpha * self.h(root)
         self.max_heap.push(root)
 
         sol = s_max
