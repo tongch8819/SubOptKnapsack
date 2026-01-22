@@ -132,8 +132,8 @@ if __name__ == "__main__":
                         alg.pushing_back = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
-                    elif args.algorithm == 'BFSTC':
-                        alg = filter_search.BFSTC(model)
+                    elif args.algorithm == 'AnytimeEfficientBFSNi':
+                        alg = filter_search.AnytimeEfficientBFSNoInherit(model)
                         alg.heap_class = 'simple'
                         alg.set_h(heuristic=ub)
 
