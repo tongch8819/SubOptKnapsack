@@ -2051,6 +2051,7 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
         self.ground_size = len(self.model.ground_set)
 
         self.f = self.f_without_alpha
+        self.alpha = 0
 
     def push_heap(self, s, lbd_v, visited=False, first_child=False, heuristic_sequence=None, candidate=None, w=None,
                   s_max_v=0):
@@ -2065,6 +2066,10 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
         new_g = self.g(node)
         new_h = self.h(node)
         final_v = new_g + new_h
+        node.v = final_v
+
+        # self.max_heap.push(node)
+        # return node
 
         if final_v >= s_max_v:
             node.v = new_g + new_h
@@ -2135,27 +2140,29 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
     def optimize(self):
         start_time = time.time()
         root, f_upper, heuristic_sequence, s_max = self.push_root()
-
-        # check if s_max now is an optimal solution
-        if self.g(s_max) >= self.alpha * f_upper:
-            # print(f"here, g:{self.g(s_max)}, f:{f_upper}")
-            sol = s_max
-            stop_time = time.time()
-            ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-                   'time': stop_time - start_time, 'node_count': 1, "open_list_count": 1}
-
-            return ret
-
         sol = s_max
 
-        node_count = 0
+        node_count = 1
         open_list_count = 1
+
+        if self.g(s_max) >= f_upper:
+            self.alpha = 1.0
+            stop_time = time.time()
+
+            ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
+                   'alpha': self.alpha,
+                   'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+            return ret
 
         while self.max_heap.size() > 0:
             node: EfficientBFSHeapObj = self.max_heap.pop()
             node_count += 1
             s = node.s
             v = node.v
+
+            if self.g(s_max) >= f_upper:
+                self.alpha = 1.0
+                break
 
             f_local, heuristic_sequence = 0., None
             if not node.visited and not node.first_child:
@@ -2166,12 +2173,13 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
 
+                if self.g(s_max) >= f_upper:
+                    self.alpha = 1.0
+                    break
+
                 if self.g(s_max) / f_upper > self.alpha:
-                    # print(f"here, s:{s_max}, g:{self.g(s_max)}, f:{f_upper}")
                     sol = s_max
                     self.alpha = self.g(s_max) / f_upper
-                    if self.alpha == 1:
-                        break
 
             if node.visited or node.first_child:
                 heuristic_sequence = node.heuristic_sequence
@@ -2206,10 +2214,14 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
 
             stop_time = time.time()
             if stop_time - start_time > self.running_time:
-                ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-                       'time': stop_time - start_time, 'node_count': 1, "open_list_count": 1}
+                ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol), 'alpha': self.alpha,
+                       'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
                 return ret
 
         assert sol is not None, "No solution found."
 
+        stop_time = time.time()
+        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol), 'alpha': self.alpha,
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+        return ret
 

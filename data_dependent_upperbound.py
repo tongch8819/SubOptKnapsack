@@ -78,6 +78,7 @@ def marginal_delta_random_budget(base_set: Set[int], remaining_set: Set[int], mo
     # print(f"delta:{delta}, base:{base_set}, bv:{model.objective(base_set)} total:{model.objective(base_set) + delta}")
     return delta, parameters
 
+
 def marginal_delta_min(base_set: Set[int], remaining_set: Set[int], model: BaseTask):
     """Delta( b | S )"""
     assert len(base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)

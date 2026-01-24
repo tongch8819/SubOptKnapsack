@@ -40,7 +40,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 cost_mode = "small"
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub1ei', 'ub1maei', 'ub7ei','ub7maei', 'ub1si', 'ub1masi', 'ub7si','ub7masi', 'ub1', 'ub1ma', 'ub7', 'ub7ma']
+upper_bounds = ['ub11', 'ub11m']
 
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
@@ -225,16 +225,16 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 100
+    n = 1000
     seed_interval = 1
     start_seed = 0
-    end_seed = 1
+    end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 10
+        num_points = 35
         start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -411,15 +411,15 @@ def compute_youtube(root_dir, skip_mode=False):
 def compute_youtube_series(root_dir, skip_mode=False):
     n = 1000
     seed_interval = 1
-    start_seed = 10
+    start_seed = 0
     end_seed = 20
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
         interval = 1
-        num_points = 5
-        start_point = 16
+        num_points = 35
+        start_point = 6
         end_point = start_point + (num_points - 1) * interval
         bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
