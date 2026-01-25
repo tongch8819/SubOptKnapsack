@@ -1307,7 +1307,6 @@ class EfficientBFS(OptimalAlg):
             f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
             if f_local is None or f_temp < f_local:
                 f_local = f_temp
-                # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
 
             remaining_elements.remove(u)
             # filter out violating elements
@@ -1645,7 +1644,6 @@ class EfficientBFSNoInherit(OptimalAlg):
             # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
             # if f_local is None or f_temp < f_local:
             #     f_local = f_temp
-            #     print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
 
             remaining_elements.remove(u)
             # filter out violating elements
