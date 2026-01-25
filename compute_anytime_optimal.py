@@ -21,22 +21,24 @@ if __name__ == "__main__":
     parser.add_argument("-aa", "--alpha", default=0.8, help="the approximation factor")
     parser.add_argument("-g", "--algorithm", default='FS', help="the searching algorithm")
     parser.add_argument("-d", "--sorting", default='g', help="the sorting function for breaking ties")
+    parser.add_argument("-rt", "--runningtime", default=1000, help="the running time limitation")
     args = parser.parse_args()
 
     assert args.heuristic in ['ub0', 'ub1', 'ub2', 'ub0+', 'ub1+', 'ub2+', 'ub4', 'dom']
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub2']
+    ub_list = ['ub0']
     d_list = ['d']
 
     alpha = float(args.alpha)
+    running_time = float(args.runningtime)
 
     start_seed = 0
     stop_seed = 1
 
     interval = 1
-    num_points = 15
+    num_points = 35
     start_point = 6
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
@@ -132,10 +134,11 @@ if __name__ == "__main__":
                         alg.pushing_back = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
-                    elif args.algorithm == 'BFSTC':
-                        alg = filter_search.BFSTC(model)
+                    elif args.algorithm == 'AnytimeEfficientBFSNi':
+                        alg = filter_search.AnytimeEfficientBFSNoInherit(model)
                         alg.heap_class = 'simple'
                         alg.set_h(heuristic=ub)
+                        alg.running_time = running_time
 
                     alg.alpha = alpha
                     alg.setOpt(ub)
@@ -148,7 +151,7 @@ if __name__ == "__main__":
                         os.mkdir(save_dir)
 
                     save_path = os.path.join(save_dir, "{}-{}-{}-{}-{}-{}.pckl".format(
-                        args.algorithm, ub, d, budget, alpha, model.__class__.__name__))
+                        args.algorithm, ub, d, budget, running_time, model.__class__.__name__))
 
                     with open(save_path, "wb") as wrt:
                         pickle.dump(res, wrt)
