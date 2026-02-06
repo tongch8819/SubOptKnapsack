@@ -602,7 +602,6 @@ def compute_adult_series(root_dir, skip_mode=False):
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
-
         for budget in bds:
             model.budget = budget
             for up in upper_bounds:
@@ -622,6 +621,7 @@ def compute_adult_series(root_dir, skip_mode=False):
                     print(res)
 
         stop_time = time.time()
+
         print(f"progress:{seed}/{end_seed} completed, total time:{stop_time - start_time}")
 
 

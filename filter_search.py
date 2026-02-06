@@ -2225,3 +2225,243 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
                'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
         return ret
 
+
+class AnytimeEfficientBFS(OptimalAlg):
+    def __init__(self, model: BaseTask):
+        super().__init__(model)
+        self.max_heap = None
+        self.inner_h = None
+        self.f = None
+        self.d = None
+        self.lbd = None
+        self.use_alpha = False
+        self.pushing_back = True
+        self.ground_size = 0
+        self.heap_class = 'tradition'
+
+        self.running_time = 0
+        self.report_interval = 0
+        self.af_plot = []
+
+    def build(self):
+        if self.heap_class == 'tradition':
+            self.max_heap = MaxHeap()
+        elif self.heap_class == 'simple':
+            self.max_heap = SimpleMaxHeap()
+
+        self.max_heap.clear()
+        self.af_plot.clear()
+        self.ground_size = len(self.model.ground_set)
+
+        if self.use_alpha:
+            self.f = self.f_with_alpha
+        else:
+            self.f = self.f_without_alpha
+
+    def push_heap(self, s, lbd_v, visited=False, first_child=False, heuristic_sequence=None, candidate=None, w=None,
+                  s_max_v=0):
+        max_idx = 0
+        if len(s) > 0:
+            max_idx = max(s)
+
+        node = EfficientBFSHeapObj(s, candidate=candidate, w=w, visited=visited, first_child=first_child,
+                                   heuristic_sequence=heuristic_sequence, max_idx=max_idx)
+        node.cost = self.model.cost_of_set(s)
+
+        new_g = self.g(node)
+        new_h = self.h(node)
+        final_v = new_g + new_h
+
+        v = None
+        if final_v >= s_max_v:
+            if self.use_alpha:
+                lbd_v = min(new_g + self.alpha * new_h, lbd_v)
+                v = RefinedBFSValue(new_g + self.alpha * new_h, lbd_v, self.d(s))
+            else:
+                lbd_v = min(new_g + new_h, lbd_v)
+                v = RefinedBFSValue(new_g + new_h, lbd_v, self.d(s))
+
+            node.v = v
+
+            self.max_heap.push(node)
+
+            return node
+
+        return None
+
+    def greedy_add(self, node: EfficientBFSHeapObj):
+        base = node.s
+        candidate = node.candidate
+        budget = node.budget
+
+        sol = set(base)
+        remaining_elements = set(candidate)
+        cur_cost = 0
+
+        f_local = None
+        heuristic_sequence = []
+        # print(f"//")
+        while len(remaining_elements):
+            u, max_density = None, -1.
+            for e in remaining_elements:
+                # e is an object
+                ds = self.model.density(e, list(sol))
+                if u is None or ds > max_density:
+                    u, max_density = e, ds
+
+            assert u is not None
+
+            if cur_cost + self.model.cost_of_singleton(u) <= budget:
+                # satisfy the knapsack constraint
+                sol.add(u)
+                heuristic_sequence.append(u)
+                cur_cost += self.model.cost_of_singleton(u)
+
+            # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
+            # if f_local is None or f_temp < f_local:
+            #     f_local = f_temp
+            #     # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
+
+            remaining_elements.remove(u)
+            # filter out violating elements
+            to_remove = set()
+            for v in remaining_elements:
+                if self.model.cost_of_singleton(v) + cur_cost > budget:
+                    to_remove.add(v)
+            remaining_elements -= to_remove
+
+        return list(sol), f_local, heuristic_sequence
+
+    def push_root(self):
+        root = EfficientBFSHeapObj([], candidate=self.model.ground_set, w=self.model.budget, visited=True, max_idx=0)
+        root.cost = 0
+
+        f_upper = self.f(root)
+        s_max, f_local, heuristic_sequence = self.greedy_add(root)
+        # f_upper = min(f_upper, f_local)
+
+        # v = RefinedBFSValue(self.f(root), min(f_local, f_upper), self.d(root.s))
+        v = RefinedBFSValue(self.f(root), f_upper, self.d(root.s))
+        root.v = v
+        root.heuristic_sequence = heuristic_sequence
+
+        self.max_heap.push(root)
+
+        return root, f_upper, heuristic_sequence, s_max
+
+    def optimize(self):
+        start_time = time.time()
+
+        root, f_upper, heuristic_sequence, s_max = self.push_root()
+
+        # check if s_max now is an optimal solution
+        if self.g(s_max) >= f_upper:
+            # print(f"here, g:{self.g(s_max)}, f:{f_upper}")
+            sol = s_max
+            self.alpha = 1.0
+
+            stop_time = time.time()
+
+            ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),'alpha': self.alpha, 'report': self.af_plot,
+                   'time': stop_time - start_time,  'node_count': 1, "open_list_count": 1,
+                   "push_back_count": 0}
+
+            return ret
+
+        push_back_count = 0
+        sol = s_max
+
+        node_count = 0
+        open_list_count = 1
+
+        loop_timer = time.time()
+        report_interval_timer = 0
+        while self.max_heap.size() > 0:
+            node: EfficientBFSHeapObj = self.max_heap.pop()
+            node_count += 1
+            s = node.s
+            v = node.v
+
+            if self.g(s_max) >= f_upper:
+                self.alpha = 1.0
+                self.af_plot.append(1.0)
+                break
+
+            f_local, heuristic_sequence = node.v.lbd_v, None
+            if not node.visited and not node.first_child:
+                s_final, f_local, heuristic_sequence = self.greedy_add(node)
+                # node.v.lbd_v = min(node.v.lbd_v, f_local)
+                f_upper = min(f_upper, node.v.lbd_v)
+
+                if self.g(s_final) > self.g(s_max):
+                    s_max = s_final
+
+                if self.g(s_max) >= f_upper:
+                    self.alpha = 1.0
+                    self.af_plot.append(1.0)
+                    break
+
+                if self.g(s_max) / f_upper > self.alpha:
+                    sol = s_max
+                    self.alpha = self.g(s_max) / f_upper
+
+            report_interval_timer += time.time() - loop_timer
+            if report_interval_timer >= self.report_interval:
+                report_interval_timer = 0
+                self.af_plot.append(float(self.alpha))
+            loop_timer = time.time()
+
+            if loop_timer - start_time > self.running_time:
+                self.af_plot.append(float(self.alpha))
+                ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol), 'alpha': self.alpha,'report': self.af_plot,
+                       'time': loop_timer - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+                return ret
+
+            if node.visited or node.first_child:
+                heuristic_sequence = node.heuristic_sequence
+
+            if not node.visited and self.pushing_back:
+                if f_local < v.lbd_v:
+                    push_back_count += 1
+                    node.v.lbd_v = f_local
+                    self.max_heap.push(node)
+                    continue
+
+            # print(f"vis:{node.visited}, f:{node.first_child}, s:{node.s}, is_on_the_edge:{self.is_on_the_edge(node)}, hs:{heuristic_sequence}, c:{len(node.candidate)}, c:{self.model.cost_of_set(node.s)}, w:{node.budget}")
+
+            if self.is_on_the_edge(node):
+                continue
+
+            # for i in node.candidate:
+            #     if self.model.cost_of_singleton(i) + self.model.cost_of_set(node.s) <= node.budget:
+            #         print(f"i:{i}")
+
+            # push first child
+            first_ele = heuristic_sequence[0]
+            new_candidate = list(set(node.candidate) - {first_ele})
+            # new_lbd = min(node.v.lbd_v, f_local)
+            new_lbd = node.v.lbd_v
+            if node.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
+                open_list_count += 1
+
+                new_heuristic_sequence = copy.deepcopy(heuristic_sequence)
+                new_heuristic_sequence.pop(0)
+
+                self.push_heap(s=list(set(s) | {first_ele}), lbd_v=new_lbd, first_child=True,
+                               heuristic_sequence=new_heuristic_sequence,
+                               candidate=new_candidate,
+                               w=node.budget - self.model.cost_of_singleton(first_ele))
+
+            # push second child
+            self.push_heap(s=s, lbd_v=new_lbd, first_child=False,
+                           candidate=new_candidate, w=node.budget)
+            open_list_count += 1
+
+        assert sol is not None, "No solution found."
+
+        stop_time = time.time()
+        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol), 'alpha': self.alpha,'report':self.af_plot,
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+
+        return ret
+

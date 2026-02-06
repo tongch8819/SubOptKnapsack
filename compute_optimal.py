@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub2']
+    ub_list = ['ub0']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     interval = 1
     num_points = 15
-    start_point = 6
+    start_point = 10
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                     elif args.algorithm == 'BFSTC':
                         alg = filter_search.BFSTC(model)
                         alg.heap_class = 'simple'
-                        alg.set_h(heuristic=ub)
+                        alg.set_h(heuristic='ub0')
 
                     alg.alpha = alpha
                     alg.setOpt(ub)
