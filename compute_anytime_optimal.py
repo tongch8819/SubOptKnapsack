@@ -148,6 +148,15 @@ if __name__ == "__main__":
 
                         alg.running_time = running_time
                         alg.report_interval = 10
+                    elif args.algorithm == 'AnytimeEfficient':
+                        alg = filter_search.AnytimeEfficientBranchAndBound(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic='ub0')
+
+                        alg.running_time = running_time
+                        alg.report_interval = 10
 
                     alg.alpha = alpha
                     alg.setOpt(ub)

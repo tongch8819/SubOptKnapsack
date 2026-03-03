@@ -2465,3 +2465,185 @@ class AnytimeEfficientBFS(OptimalAlg):
 
         return ret
 
+
+class AnytimeEfficientBranchAndBound(OptimalAlg):
+    def __init__(self, model: BaseTask):
+        super().__init__(model)
+        self.lb_star = None
+        self.s_star = None
+        self.lbd = None
+        self.node_count = 0
+        self.basic_mode = False
+        self.get_children = None
+
+        self.af_plot = []
+
+        self.running_time = 0.0
+        self.prev_time = 0.0
+        self.report_interval = 0.0
+        self.report_timer = 0.0
+        self.start_time = 0.0
+
+        self.ret = None
+        self.terminated = False
+
+        self.children_count = 0
+
+    def set_h(self, heuristic):
+        if heuristic == 'ub0':
+            self.lbd = self.lbd0
+        elif heuristic == 'ub2':
+            self.lbd = self.lbd2
+        elif heuristic == 'dom':
+            self.lbd = self.lbd_dom
+
+    def build(self):
+        self.lb_star = 0
+        self.s_star = []
+        self.node_count = 0
+        self.af_plot = []
+        self.alpha = 0.0
+
+        if self.basic_mode:
+            self.get_children = self.get_children_basic
+        else:
+            self.get_children = self.get_children_advance
+
+    def greedy_add(self, t):
+        base = t.s
+        sol = set(base)
+        base_cost = self.model.cost_of_set(list(sol))
+        remaining_elements = set(t.candidate)
+        cur_cost = self.model.cost_of_set(list(sol))
+
+        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.candidate) - set(sol),
+                                         budget=self.model.budget - base_cost)
+        c = []
+        while len(remaining_elements):
+            u, max_density = None, -1.
+            for e in remaining_elements:
+                # e is an object
+                ds = self.model.density(e, list(sol))
+                if u is None or ds > max_density:
+                    u, max_density = e, ds
+            assert u is not None
+            if cur_cost + self.model.cost_of_singleton(u) <= self.model.budget:
+                # satisfy the knapsack constraint
+                sol.add(u)
+                c.append(u)
+                cur_cost += self.model.cost_of_singleton(u)
+
+            remaining_elements.remove(u)
+            # filter out violating elements
+            to_remove = set()
+            for v in remaining_elements:
+                if self.model.cost_of_singleton(v) + cur_cost > self.model.budget:
+                    to_remove.add(v)
+            remaining_elements -= to_remove
+
+            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.candidate) - set(sol),
+                                            budget=self.model.budget - base_cost)
+            if f_local is None or f_temp < f_local:
+                f_local = f_temp
+
+        return list(sol), f_local, c
+
+    def get_children_basic(self, t: BranchAndBoundNode, c):
+        children = []
+        s = t.s
+        tc = list(t.cost)
+
+        tc.sort(key=lambda x: self.g_over([x], s) / self.model.cost_of_singleton(x), reverse=True)
+
+        for i in range(0, len(tc)):
+            temp = BranchAndBoundNode(list(set(s) | {tc[i]}), list(set(t.cost) - set(tc[:i + 1])),
+                                      t.budget - self.model.cost_of_singleton(tc[i]))
+            children.append(temp)
+
+        return children
+
+    def get_children_advance(self, t: BranchAndBoundNode, c):
+        children = []
+        s = t.s
+        for i in range(0, len(c)):
+            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
+                                      t.budget - self.model.cost_of_set(c[:i]))
+
+            if self.model.objective(list(set(s) | set(c[:i]))) + self.lbd0(list(set(s) | set(c[:i])),
+                                                                           list(set(t.candidate) - set(c[:i + 1])),
+                                                                           t.budget - self.model.cost_of_set(
+                                                                               c[:i])) > self.lb_star:
+                children.append(temp)
+
+        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
+                                  t.budget - self.model.cost_of_set(c))
+
+        if self.lbd0(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
+                     t.budget - self.model.cost_of_set(c)) > self.lb_star:
+            children.append(temp)
+
+        return children
+
+    def bab(self, t: BranchAndBoundNode):
+        self.node_count = self.node_count + 1
+
+        if len(t.candidate) == 0:
+            return
+
+        if self.is_on_the_edge(t):
+            return
+
+        s_primal, f_local, c = self.greedy_add(t)
+
+        if self.g(s_primal) > self.lb_star:
+            self.lb_star = self.g(s_primal)
+            self.s_star = s_primal
+
+        ub = f_local
+        if self.lb_star >= ub:
+            self.af_plot.append(1.0)
+            self.terminated = True
+            return
+
+        if self.alpha * ub <= self.lb_star:
+            self.alpha = self.lb_star/ub
+
+
+        children = self.get_children(t, c)
+
+        for t_i in children:
+            if not self.terminated:
+                self.report_timer += time.time() - self.prev_time
+                self.prev_time = time.time()
+
+                if self.report_timer >= self.report_interval:
+                    self.report_timer = 0.0
+                    self.af_plot.append(float(self.alpha))
+                if time.time() - self.start_time > self.running_time:
+                    self.af_plot.append(float(self.alpha))
+                    self.terminated = True
+                    return
+
+                self.bab(t_i)
+
+        self.children_count += len(children)
+
+    def optimize(self):
+        self.start_time = time.time()
+
+        self.bab(BranchAndBoundNode(self.s_star, self.model.ground_set, self.model.budget))
+
+        stop_time = time.time()
+
+        ret = {
+            'S': self.s_star,
+            'c(S)': self.model.cost_of_set(self.s_star),
+            'f(S)': self.model.objective(self.s_star),
+            'alpha': self.alpha,
+            'report': self.af_plot,
+            'time': stop_time - self.start_time,
+            'node_count': self.node_count,
+            'children_count': self.children_count
+        }
+
+        return ret
