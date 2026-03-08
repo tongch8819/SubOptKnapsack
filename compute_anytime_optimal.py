@@ -18,7 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", '--num', default=100, help='size of the ground set')
     parser.add_argument("-a", "--archive", default=27, help="archive index")
     parser.add_argument("-hf", "--heuristic", default='ub0', help="the heuristic function")
-    parser.add_argument("-aa", "--alpha", default=0.8, help="the approximation factor")
+    parser.add_argument("-aa", "--alpha", default=1.0, help="the approximation factor")
     parser.add_argument("-g", "--algorithm", default='FS', help="the searching algorithm")
     parser.add_argument("-d", "--sorting", default='g', help="the sorting function for breaking ties")
     parser.add_argument("-rt", "--runningtime", default=1000, help="the running time limitation")
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub0']
+    ub_list = ['ub2']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -38,8 +38,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 35
-    start_point = 6
+    num_points = 10
+    start_point = 26
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -134,11 +134,41 @@ if __name__ == "__main__":
                         alg.pushing_back = False
                         alg.set_d(d)
                         alg.set_h(heuristic=ub)
-                    elif args.algorithm == 'AnytimeEfficientBFSNi':
+                    elif args.algorithm == 'AnytimeEfficientBFSNoInherit':
                         alg = filter_search.AnytimeEfficientBFSNoInherit(model)
                         alg.heap_class = 'simple'
                         alg.set_h(heuristic=ub)
                         alg.running_time = running_time
+                        alg.report_interval = 10
+
+                    elif args.algorithm == 'AnytimeEfficientBFS':
+                        alg = filter_search.AnytimeEfficientBFS(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+
+                        alg.running_time = running_time
+                        alg.report_interval = 10
+
+                    elif args.algorithm == 'AnytimeEfficient':
+                        alg = filter_search.AnytimeEfficientBranchAndBound(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic='ub0')
+
+                        alg.running_time = running_time
+                        alg.report_interval = 10
+                    elif args.algorithm == 'AnytimeBFSTC':
+                        alg = filter_search.AnytimeBFSTC(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic='ub0')
+
+                        alg.running_time = running_time
+                        alg.report_interval = 10
 
                     alg.alpha = alpha
                     alg.setOpt(ub)
