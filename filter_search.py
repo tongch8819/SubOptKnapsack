@@ -2997,16 +2997,346 @@ class AnytimeEfficientBranchAndBound(OptimalAlg):
         return ret
 
 
-class AnytimeBFSTC(OptimalAlg):
+import random
+
+import time
+import math
+import random
+
+
+# (Assuming BaseTask, OptimalAlg are defined as in your context)
+
+class MCTSNode:
+    """
+    A node in the Monte Carlo Search Tree, adapted for the Knapsack Constraint.
+    """
+
+    def __init__(self, state, parent=None):
+        # The state is now a tuple: (current_solution_set, remaining_candidates_list, budget_remaining)
+        self.state = state
+        self.parent = parent
+        self.children = []
+
+        self.visits = 0
+        self.value = 0.0
+
+    def is_fully_expanded(self):
+        """ A node is fully expanded if all possible legal moves have been explored. """
+        # In our binary model, this means 2 children if "take" is possible, or 1 if only "discard" is.
+        _, remaining_r, budget_rem = self.state
+        if not remaining_r:
+            return True  # No more candidates
+
+        element_to_decide = remaining_r[0]
+        cost_of_element = MCTSNode.model.cost_of_singleton(element_to_decide)
+
+        if cost_of_element > budget_rem:
+            # "Take" is impossible, so it's fully expanded if the "discard" child exists.
+            return len(self.children) == 1
+        else:
+            # "Take" is possible, so it's fully expanded if both children exist.
+            return len(self.children) == 2
+
+    def is_on_the_edge(self):
+        _, remaining_r, budget_rem = self.state
+        if not remaining_r:
+            return True  # No candidates left
+
+        for item in remaining_r:
+            if MCTSNode.model.cost_of_singleton(item) <= budget_rem:
+                return False  # Found an item that can fit, so not on the edge
+
+        return True
+
+
+class AnytimeAugmentedMCTS(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
-        self.max_heap = None
+        self.start_time = 0.0
+        self.running_time = 0.0
+        self.report_interval = 0.0
+        self.next_report_time = 0.0
+        self.terminated = False
+        self.epsilon = 0.1
 
-        self.f = self.f_with_alpha
-        self.h = None
+        self.af_plot = []
+        self.alpha = 0.0
 
-        self.heap_class = 'simple'
+        self.exploration_constant = 1.414
+        self.root = None
+        self.s_max = []
+        self.g_s_max = 0.0
 
+    def build(self):
+        self.af_plot.clear()
+        self.alpha = 0.0
+        self.terminated = False
+        MCTSNode.model = self.model
+
+        # Sort candidates by a heuristic, e.g., density (value/cost)
+        initial_candidates = sorted(
+            list(self.model.ground_set),
+            key=lambda e: (self.model.objective([e]) + self.lbd2({e}, list(set(self.model.ground_set) - {e}), self.model.budget - self.model.cost_of_singleton(e))) / self.model.cost_of_singleton(e) if self.model.cost_of_singleton(
+                e) > 0 else float('inf'),
+            reverse=True
+        )
+
+        root_state = (set(), initial_candidates, self.model.budget)
+        self.root = MCTSNode(root_state)
+
+        # Initialize s_max with a simple greedy solution respecting knapsack constraint.
+        self.s_max = self._initial_greedy_solution()
+        self.g_s_max = self.g(self.s_max)
+
+    def _initial_greedy_solution(self):
+        """ A simple greedy packing based on the sorted candidates. """
+        sol = []
+        current_cost = 0
+        _, initial_candidates, _ = self.root.state
+        for item in initial_candidates:
+            cost = self.model.cost_of_singleton(item)
+            if current_cost + cost <= self.model.budget:
+                sol.append(item)
+                current_cost += cost
+        return sol
+
+    def _select(self, node):
+        current_node = node
+        while not current_node.is_on_the_edge():
+            if not current_node.is_fully_expanded():
+                return current_node
+            current_node = self._best_child_ucb(current_node)
+        return current_node
+
+    def _expand(self, node):
+        """
+        Expands a node by creating EXACTLY ONE new child node.
+        It follows a fixed order: first try to create "take", then "discard".
+        """
+        if node.is_on_the_edge():  # Safety check
+            return node
+
+        current_s, remaining_r, budget_rem = node.state
+        element_to_decide = remaining_r[0]
+        next_r = remaining_r[1:]
+        cost_of_element = self.model.cost_of_singleton(element_to_decide)
+
+        # --- Logic to create just one child ---
+        # 1. Check if the "take" action is possible and if its child has been created.
+        take_possible = cost_of_element <= budget_rem
+        take_child_exists = False
+        if take_possible:
+            for child in node.children:
+                # A "take" child is identified by having one more element in its solution set
+                if len(child.state[0]) > len(current_s):
+                    take_child_exists = True
+                    break
+
+        if take_possible and not take_child_exists:
+            # If "take" is possible and not yet created, create it.
+            take_s = current_s.union({element_to_decide})
+            take_state = (take_s, next_r, budget_rem - cost_of_element)
+            new_child = MCTSNode(take_state, parent=node)
+            node.children.append(new_child)
+            return new_child  # Return the newly created "take" node
+        else:
+            discard_s = current_s
+            discard_state = (discard_s, next_r, budget_rem)
+
+            # We must explicitly check if the discard child already exists.
+            discard_child_exists = False
+            for child in node.children:
+                # A "discard" child is identified by having the same number of elements
+                if len(child.state[0]) == len(node.state[0]):
+                    discard_child_exists = True
+                    break
+
+            if not discard_child_exists:
+                discard_s = node.state[0]
+                new_child = MCTSNode(discard_state, parent=node)
+                node.children.append(new_child)
+                return new_child
+            else:
+                return self._best_child_ucb(node)
+
+
+    def _simulate(self, node):
+        current_s, remaining_r, budget_rem = node.state
+        sim_s = set(current_s)
+
+        # Randomly try to pack remaining items
+        candidates_to_try = list(remaining_r)
+        random.shuffle(candidates_to_try)
+
+        for item in candidates_to_try:
+            cost = self.model.cost_of_singleton(item)
+            if cost <= budget_rem:
+                sim_s.add(item)
+                budget_rem -= cost
+
+        reward = self.g(list(sim_s))
+        if reward > self.g_s_max:
+            self.s_max = list(sim_s)
+            self.g_s_max = reward
+        return reward
+
+    def _greedy_simulate(self, node):
+        # --- 1. Initialization ---
+        current_s, remaining_r, budget_rem = node.state
+        sim_s = set(current_s)
+
+        # We need a mutable list of candidates for this strategy
+        candidates = list(remaining_r)
+
+        # --- 2. Iteratively build the solution ---
+        while candidates:
+            min_cost_remaining = float('inf')
+            possible_to_add = False
+            for item in candidates:
+                cost = self.model.cost_of_singleton(item)
+                if cost <= budget_rem:
+                    possible_to_add = True
+                    min_cost_remaining = min(min_cost_remaining, cost)
+
+            if not possible_to_add:
+                # If no single remaining item can fit, the simulation for this path is done.
+                break
+
+            # --- 2a. ε-Greedy Decision ---
+            if random.random() < self.epsilon:
+                # --- Exploration ---
+                # Select a random valid item (one that fits the budget)
+                fittable_candidates = [c for c in candidates if self.model.cost_of_singleton(c) <= budget_rem]
+                if not fittable_candidates: break  # Should not happen if possible_to_add is true
+                element_to_add = random.choice(fittable_candidates)
+            else:
+                # --- Exploitation ---
+                # Find the best valid item according to marginal gain (or density for knapsack)
+                best_element = None
+                max_density = -float('inf')  # Or max_density for knapsack
+
+                for e in candidates:
+                    cost = self.model.cost_of_singleton(e)
+                    if cost <= budget_rem:
+                        marginal_density = (self.g(list(sim_s.union({e}))) - self.g(list(sim_s)))/self.model.cost_of_singleton(e)
+
+                        if marginal_density > max_density:
+                            max_density = marginal_density
+                            best_element = e
+
+                if best_element is None:
+                    break
+
+                element_to_add = best_element
+
+            # --- 2b. Update State for this Simulation ---
+            cost_to_add = self.model.cost_of_singleton(element_to_add)
+            sim_s.add(element_to_add)
+            budget_rem -= cost_to_add
+            candidates.remove(element_to_add)
+
+        # --- 3. Evaluate and update global best ---
+        reward = self.g(list(sim_s))
+
+        if reward > self.g_s_max:
+            self.s_max = list(sim_s)
+            self.g_s_max = reward
+
+        return reward
+
+    def _backpropagate(self, node, reward):
+        current_node = node
+        while current_node is not None:
+            current_node.visits += 1
+            current_node.value += reward
+            current_node = current_node.parent
+
+    def _best_child_ucb(self, node):
+        best_score = -float('inf')
+        best_child = None
+        for child in node.children:
+            if child.visits == 0:
+                return child
+            exploit_term = child.value / child.visits
+            explore_term = self.exploration_constant * math.sqrt(math.log(node.visits) / child.visits)
+            score = exploit_term + explore_term
+            if score > best_score:
+                best_score = score
+                best_child = child
+        return best_child
+
+    def _get_best_solution_path(self):
+        current_node = self.root
+        while not current_node.is_on_the_edge():
+            if not current_node.children:
+                break
+            current_node = max(current_node.children,
+                               key=lambda c: (c.visits, c.value / c.visits if c.visits > 0 else 0))
+        solution_set, _, _ = current_node.state
+        return list(solution_set)
+
+    def optimize(self):
+        self.start_time = time.time()
+        self.next_report_time = self.report_interval
+        self.terminated = False
+        iteration_count = 0
+
+        # --- Reporting Logic Change ---
+        while True:
+            elapsed = time.time() - self.start_time
+            if elapsed > self.running_time:
+                self.terminated = True
+                break
+
+            # --- Reporting Logic Change ---
+            # At each report interval, record the best function value found so far.
+            while elapsed >= self.next_report_time:
+                # self.g_s_max is continuously updated by the _simulate method
+                self.af_plot.append(float(self.g_s_max))
+                self.next_report_time += self.report_interval
+
+            # --- MCTS Core Loop ---
+            leaf_node = self._select(self.root)
+
+            child_to_simulate = leaf_node
+            if not leaf_node.is_fully_expanded() and not leaf_node.is_on_the_edge():
+                child_to_simulate = self._expand(leaf_node)
+
+            reward = self._greedy_simulate(child_to_simulate)  # _simulate updates self.g_s_max
+            self._backpropagate(child_to_simulate, reward)
+            iteration_count += 1
+
+        stop_time = time.time()
+
+        # --- Final Solution Extraction ---
+        sol = self.s_max
+        final_solution_value = self.g(sol)
+
+        # --- Reporting Logic Change ---
+        if not self.af_plot or self.af_plot[-1] != final_solution_value:
+            self.af_plot.append(float(final_solution_value))
+
+        # The return dictionary now reflects the changes.
+        ret = {'S': sol,
+               'c(S)': self.model.cost_of_set(sol),
+               'f(S)': self.model.objective(sol),
+               'alpha': "N/A - Reporting Function Value",  # Clearly state we're not using alpha
+               'report': self.af_plot,
+               'time': stop_time - self.start_time,
+               'node_count': iteration_count,
+               "open_list_count": "N/A for MCTS"}
+
+        return ret
+
+
+class AnytimeMCTS(OptimalAlg):
+    """
+    A baseline, un-augmented Anytime MCTS algorithm for submodular maximization
+    with a knapsack constraint.
+    """
+
+    def __init__(self, model: BaseTask):
+        super().__init__(model)
         self.start_time = 0.0
         self.running_time = 0.0
         self.report_interval = 0.0
@@ -3014,154 +3344,197 @@ class AnytimeBFSTC(OptimalAlg):
         self.terminated = False
 
         self.af_plot = []
-        self.alpha = 0.0
+
+        self.exploration_constant = 1.414  # C in the UCB1 formula
+        self.root = None
+        self.s_max = []  # Best solution found so far across all simulations
+        self.g_s_max = 0.0  # Value of the best solution
 
     def build(self):
-        if self.heap_class == 'tradition':
-            self.max_heap = MaxHeap()
-        elif self.heap_class == 'simple':
-            self.max_heap = SimpleMaxHeap()
-
-        self.max_heap.clear()
-        self.h = self.inner_h
+        """ Prepares the algorithm for a new run without any specialized heuristics. """
         self.af_plot.clear()
-        self.alpha = 0.0
         self.terminated = False
+        MCTSNode.model = self.model
 
-    def greedy_add(self, s):
-        base = s
-        candidate = set(self.model.ground_set) - set(base)
-        budget = self.model.budget
+        # --- NO HEURISTIC EXPANSION ---
+        # Candidates are taken in their original, arbitrary order.
+        # We convert to a list to ensure a consistent processing order.
+        initial_candidates = list(self.model.ground_set)
 
-        sol = set(base)
-        remaining_elements = set(candidate)
-        cur_cost = self.model.cost_of_set(list(sol))
+        root_state = (set(), initial_candidates, self.model.budget)
+        self.root = MCTSNode(root_state)
 
-        while len(remaining_elements):
-            elapsed = time.time() - self.start_time
+        # Initialize s_max with an empty set.
+        self.s_max = []
+        self.g_s_max = self.g(self.s_max)
 
-            while elapsed >= self.next_report_time:
-                self.af_plot.append(float(self.alpha))
-                self.next_report_time += self.report_interval
+    def _select(self, node):
+        """ Phase 1: Selection. Traverses the tree to find a node to expand. """
+        current_node = node
+        while not current_node.is_on_the_edge():
+            if not current_node.is_fully_expanded():
+                return current_node
+            current_node = self._best_child_ucb(current_node)
+        return current_node
 
-            if elapsed > self.running_time:
-                self.af_plot.append(float(self.alpha))
-                self.terminated = True
+    def _expand(self, node):
+        """
+        Phase 2: Expansion. Expands a node by creating EXACTLY ONE new child.
+        This corrected version avoids creating duplicate children.
+        """
+        current_s, remaining_r, budget_rem = node.state
+        element_to_decide = remaining_r[0]
+        next_r = remaining_r[1:]
+        cost_of_element = self.model.cost_of_singleton(element_to_decide)
+
+        # Check if the "take" branch is a possibility
+        take_possible = cost_of_element <= budget_rem
+
+        take_child_exists = False
+        if take_possible:
+            for child in node.children:
+                if len(child.state[0]) > len(current_s):
+                    take_child_exists = True
+                    break
+
+        if take_possible and not take_child_exists:
+            # Create the "take" child if possible and not already present
+            take_s = current_s.union({element_to_decide})
+            take_state = (take_s, next_r, budget_rem - cost_of_element)
+            new_child = MCTSNode(take_state, parent=node)
+            node.children.append(new_child)
+            return new_child
+        else:
+            discard_s = current_s
+            discard_state = (discard_s, next_r, budget_rem)
+            # We must explicitly check if the discard child already exists.
+            discard_child_exists = False
+            for child in node.children:
+                # A "discard" child is identified by having the same number of elements
+                if len(child.state[0]) == len(node.state[0]):
+                    discard_child_exists = True
+                    break
+
+            if not discard_child_exists:
+                discard_s = node.state[0]
+                new_child = MCTSNode(discard_state, parent=node)
+                node.children.append(new_child)
+                return new_child
+            else:
+                return self._best_child_ucb(node)
+
+    def _simulate(self, node):
+        """ Phase 3: Simulation. Performs a purely random rollout. """
+        current_s, remaining_r, budget_rem = node.state
+        sim_s = set(current_s)
+
+        # Randomly try to pack remaining items.
+        candidates_to_try = list(remaining_r)
+        random.shuffle(candidates_to_try)
+
+        for item in candidates_to_try:
+            cost = self.model.cost_of_singleton(item)
+            if cost <= budget_rem:
+                sim_s.add(item)
+                budget_rem -= cost
+
+        reward = self.g(list(sim_s))
+
+        # Update the best-known solution if this random one is better.
+        if reward > self.g_s_max:
+            self.s_max = list(sim_s)
+            self.g_s_max = reward
+
+        return reward
+
+    def _backpropagate(self, node, reward):
+        """ Phase 4: Backpropagation. Updates statistics up the tree. """
+        current_node = node
+        while current_node is not None:
+            current_node.visits += 1
+            current_node.value += reward
+            current_node = current_node.parent
+
+    def _best_child_ucb(self, node):
+        """ Selects the best child of a node using the UCB1 formula. """
+        best_score = -float('inf')
+        best_child = None
+        for child in node.children:
+            if child.visits == 0:
+                return child
+
+            exploit_term = child.value / child.visits
+            explore_term = self.exploration_constant * math.sqrt(math.log(node.visits) / child.visits)
+            score = exploit_term + explore_term
+
+            if score > best_score:
+                best_score = score
+                best_child = child
+
+        return best_child
+
+    def _get_best_solution_path(self):
+        """ Extracts the solution by following the most visited path from the root. """
+        current_node = self.root
+        while not current_node.is_on_the_edge():
+            if not current_node.children:
                 break
+            # Tie-breaking: choose based on visits, then by average value.
+            current_node = max(current_node.children,
+                               key=lambda c: (c.visits, c.value / c.visits if c.visits > 0 else 0))
 
-            u, max_density = None, -1.
-            for e in remaining_elements:
-                # e is an object
-                ds = self.model.density(e, list(sol))
-                if u is None or ds > max_density:
-                    u, max_density = e, ds
-
-            assert u is not None
-
-            if cur_cost + self.model.cost_of_singleton(u) <= budget:
-                # satisfy the knapsack constraint
-                sol.add(u)
-                cur_cost += self.model.cost_of_singleton(u)
-
-            remaining_elements.remove(u)
-            # filter out violating elements
-            to_remove = set()
-            for v in remaining_elements:
-                if self.model.cost_of_singleton(v) + cur_cost > budget:
-                    to_remove.add(v)
-            remaining_elements -= to_remove
-
-        return list(sol)
+        solution_set, _, _ = current_node.state
+        return list(solution_set)
 
     def optimize(self):
+        """ Main optimization loop. """
         self.start_time = time.time()
         self.next_report_time = self.report_interval
         self.terminated = False
-        self.alpha = 0.0
+        iteration_count = 0
 
-        root = BaseHeapObj([], candidate=self.model.ground_set, budget=self.model.budget)
-        root.v = self.f(root)
-
-        s_max = self.greedy_add([])
-        g_upper = self.h(root)
-
-        if g_upper > 0:
-            self.alpha = self.g(s_max) / g_upper
-        else:
-            self.alpha = 1.0
-
-        self.max_heap.push(root)
-
-        sol = s_max
-        node_count = 0
-        open_list_count = 0
-
-        while self.max_heap.size() > 0:
+        while True:
             elapsed = time.time() - self.start_time
+            if elapsed > self.running_time:
+                self.terminated = True
+                break
 
-            while elapsed >= self.next_report_time:
-                self.af_plot.append(float(self.alpha))
+            # At each report interval, record the best function value found so far.
+            while self.report_interval > 0 and elapsed >= self.next_report_time:
+                self.af_plot.append(float(self.g_s_max))
                 self.next_report_time += self.report_interval
 
-            if elapsed > self.running_time or self.terminated:
-                self.af_plot.append(float(self.alpha))
-                ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-                       'alpha': self.alpha, 'report': self.af_plot,
-                       'time': elapsed, 'node_count': node_count, "open_list_count": open_list_count}
-                return ret
+            # --- MCTS Core Loop ---
+            node_to_process = self._select(self.root)
 
-            node: BaseHeapObj = self.max_heap.pop()
-            node_count += 1
+            child_to_simulate = node_to_process
+            if not node_to_process.is_fully_expanded() and not node_to_process.is_on_the_edge():
+                child_to_simulate = self._expand(node_to_process)
 
-            if self.h(node) == 0:
-                sol = node.s
-                self.alpha = 1.0
-                self.af_plot.append(1.0)
-                break
-
-            g_upper = min(g_upper, self.f(node) / self.alpha)
-            if g_upper > 0:
-                self.alpha = self.g(s_max) / g_upper
-
-            for i in node.candidate:
-                if self.model.cost_of_singleton(i) <= node.budget:
-                    s_final = self.greedy_add(list(set(node.s) | {i}))
-
-                    if self.terminated:
-                        break
-
-                    if self.g(s_max) < self.g(s_final):
-                        s_max = s_final
-
-                    if g_upper > 0:
-                        self.alpha = self.g(s_max) / g_upper
-
-                    if self.alpha >= 1.0:
-                        sol = s_max
-                        self.terminated = True
-                        break
-
-                    new_node = BaseHeapObj(list(set(node.s) | {i}), candidate=list(set(node.candidate) - {i}),
-                                           budget=node.budget - self.model.cost_of_singleton(i))
-                    new_node.v = self.f(new_node)
-
-                    self.max_heap.push(new_node)
-                    open_list_count += 1
-
-            if self.terminated:
-                break
+            reward = self._simulate(child_to_simulate)
+            self._backpropagate(child_to_simulate, reward)
+            iteration_count += 1
 
         stop_time = time.time()
 
-        assert sol is not None, "No solution found."
+        # --- Final Solution Extraction ---
+        # Compare the most robust path with the best solution found in any rollout.
+        sol = self.s_max
 
-        if self.max_heap.size() == 0 and not self.terminated:
-            self.alpha = 1.0
-            if len(self.af_plot) == 0 or self.af_plot[-1] != 1.0:
-                self.af_plot.append(1.0)
+        final_solution_value = self.g(sol)
 
-        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-               'alpha': self.alpha, 'report': self.af_plot,
-               'time': stop_time - self.start_time, 'node_count': node_count, "open_list_count": open_list_count}
+        # Add the final, best solution value to the report.
+        if self.report_interval > 0:
+            if not self.af_plot or self.af_plot[-1] != final_solution_value:
+                self.af_plot.append(float(final_solution_value))
+
+        ret = {'S': sol,
+               'c(S)': self.model.cost_of_set(sol),
+               'f(S)': self.model.objective(sol),
+               'alpha': "N/A - Reporting Function Value",
+               'report': self.af_plot,
+               'time': stop_time - self.start_time,
+               'node_count': iteration_count,
+               "open_list_count": "N/A for MCTS"}
 
         return ret

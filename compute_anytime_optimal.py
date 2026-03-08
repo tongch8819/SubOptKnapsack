@@ -10,7 +10,6 @@ import data_correcting
 import filter_search
 import id_aster
 import model_factory
-from a_star import Astar
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -166,6 +165,24 @@ if __name__ == "__main__":
                         alg.pushing_back = False
                         alg.set_d(d)
                         alg.set_h(heuristic='ub0')
+
+                        alg.running_time = running_time
+                        alg.report_interval = 10
+                    elif args.algorithm == 'AnytimeMCTS':
+                        alg = filter_search.AnytimeMCTS(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
+
+                        alg.running_time = running_time
+                        alg.report_interval = 10
+                    elif args.algorithm == 'AnytimeAugmentedMCTS':
+                        alg = filter_search.AnytimeAugmentedMCTS(model)
+                        alg.use_alpha = False
+                        alg.pushing_back = False
+                        alg.set_d(d)
+                        alg.set_h(heuristic=ub)
 
                         alg.running_time = running_time
                         alg.report_interval = 10
