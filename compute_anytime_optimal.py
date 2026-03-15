@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub2']
+    ub_list = ['ub0']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -37,8 +37,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 10
-    start_point = 26
+    num_points = 1
+    start_point = 17
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
                         alg.heap_class = 'simple'
                         alg.set_h(heuristic=ub)
                         alg.running_time = running_time
-                        alg.report_interval = 10
+                        alg.report_interval = 3
 
                     elif args.algorithm == 'AnytimeEfficientBFS':
                         alg = filter_search.AnytimeEfficientBFS(model)

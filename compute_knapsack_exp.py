@@ -22,10 +22,10 @@ import os
 import multiprocessing as mp
 import argparse
 
-from mgreedy import modified_greedy_ub1, modified_greedy_ub1m, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
+from mgreedy import modified_greedy_ub1, modified_greedy_ub1a, modified_greedy_ub1m, modified_greedy_ub7, modified_greedy_ub7m, modified_greedy_ub8, \
     modified_greedy_ub9, modified_greedy_ub10, modified_greedy_ub11, modified_greedy_nis_ub1, modified_greedy_nis_ub1m, modified_greedy_nis_ub1ma, \
     modified_greedy_nis_ub7, modified_greedy_nis_ub7m, modified_greedy_nis_ub7ma, modified_greedy_ub12, modified_greedy_ub11m, modified_greedy_ub13, \
-    modified_greedy_ub1ma, modified_greedy_ub7ma, \
+    modified_greedy_ub1ma, modified_greedy_ub7ma, modified_greedy_ub7a, \
     modified_greedy_ub1r, modified_greedy_ub1ru, modified_greedy_ub1mr, modified_greedy_ub7r, modified_greedy_ub7mr, modified_greedy_ub7mra, \
     modified_greedy_ub15, modified_greedy_ub7u, modified_greedy_ub7mu, \
     modified_greedy_ub1si, modified_greedy_ub1masi, modified_greedy_ub7si, modified_greedy_ub7masi, \
@@ -40,7 +40,7 @@ from greedymax import greedy_max_nis_ept_ub1, greedy_max_nis_ept_ub1ma, greedy_m
 cost_mode = "small"
 
 # upper_bounds = ['ub1si','ub1msi','ub7si','ub7msi', 'ub1', 'ub1ma', 'ub7', 'ub7ma', 'ub11', 'ub11m', 'ub7u','ub7mu']
-upper_bounds = ['ub11', 'ub11m']
+upper_bounds = ['ub1', 'ub1a']
 
 # algos = ["modified_greedy"]
 algos = ["modified_greedy"]
@@ -225,10 +225,10 @@ def compute_facebook(root_dir, skip_mode=False):
 
 
 def compute_facebook_series(root_dir, skip_mode=False):
-    n = 1000
+    n = 100
     seed_interval = 1
     start_seed = 0
-    end_seed = 20
+    end_seed = 1
 
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()

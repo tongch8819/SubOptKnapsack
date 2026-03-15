@@ -1,6 +1,8 @@
 import copy
+import heapq
 import time
 
+import acclerated_upper_bounds
 import optimizer
 from base_task import BaseTask
 
@@ -1119,6 +1121,173 @@ def modified_greedy_ub1ma(model: BaseTask):
 def modified_greedy_ub8(model: BaseTask):
     return modified_greedy(model, "ub8")
 
+
+# def modified_greedy_ub7a(model: BaseTask):
+#     return modified_greedy(model, "ub7a")
+
+def modified_greedy_ub7a(model: BaseTask):
+    def density(ele, base):
+        return model.marginal_gain(ele, list(base)) / model.cost_of_singleton(ele)
+
+    start_time = time.time()
+
+    sol = set()
+    remaining_elements = set(model.ground_set)
+    all_candidates = set(remaining_elements)
+    cur_cost = 0.
+    parameters = {}
+
+    updated = False
+
+    opt = acclerated_upper_bounds.LazySlicingOptimizer(model=model)
+    opt.build(base=[], remaining=remaining_elements)
+    lbd = opt.solve(remaining_elements, model.budget)
+
+    # 1. Initialize the max heap for outer greedy loop
+    h = []
+    for e in remaining_elements:
+        heapq.heappush(h, (-density(e, []), e))
+
+    while h:
+        _, u = heapq.heappop(h)
+
+        if cur_cost + model.cost_of_singleton(u) > model.budget:
+            # u does not satisfy the knapsack constraint
+            remaining_elements.remove(u)
+            continue
+
+        # 2. Evaluate the actual density
+        actual_density = density(u, list(sol))
+
+        if not h or actual_density >= -h[0][0]:
+            sol.add(u)
+            remaining_elements.remove(u)
+            opt.update_base(sol)
+            delta = opt.solve(all_candidates - sol, model.budget)
+
+            if model.objective(list(sol)) + delta < lbd:
+                lbd = model.objective(list(sol)) + delta
+            cur_cost += model.cost_of_singleton(u)
+
+        else:
+            heapq.heappush(h, (-actual_density, u))
+
+    # find the maximum singleton
+    v_star, v_star_fv = None, float('-inf')
+    for e in model.ground_set:
+        if model.cost_of_singleton(e) > model.budget:
+            # filter out singleton whose cost is larger than budget
+            continue
+        fv = model.objective([e])
+        if fv > v_star_fv:
+            v_star, v_star_fv = e, fv
+
+    sol_fv = model.objective(list(sol))
+
+    if v_star_fv > sol_fv:
+        res = {
+            'S': [v_star],
+            'f(S)': v_star_fv,
+            'c(S)': model.cost_of_singleton(v_star),
+        }
+    else:
+        res = {
+            'S': sol,
+            'f(S)': sol_fv,
+            'c(S)': cur_cost,
+        }
+
+    res['Lambda'] = lbd
+    res['AF'] = res['f(S)'] / lbd
+    res['parameters'] = parameters
+    res['updated'] = updated
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+
+    return res
+
+def modified_greedy_ub1a(model: BaseTask):
+    def density(ele, base):
+        return model.marginal_gain(ele, list(base)) / model.cost_of_singleton(ele)
+
+    start_time = time.time()
+
+    sol = set()
+    remaining_elements = set(model.ground_set)
+    all_candidates = set(remaining_elements)
+    cur_cost = 0.
+    parameters = {}
+
+    updated = False
+
+    opt = acclerated_upper_bounds.LazyPlainOptimizer(model=model)
+    opt.build(base=[], remaining=remaining_elements)
+    lbd = opt.solve(remaining_elements, model.budget)
+
+    # 1. Initialize the max heap for outer greedy loop
+    h = []
+    for e in remaining_elements:
+        heapq.heappush(h, (-density(e, []), e))
+
+    while h:
+        _, u = heapq.heappop(h)
+
+        if cur_cost + model.cost_of_singleton(u) > model.budget:
+            # u does not satisfy the knapsack constraint
+            remaining_elements.remove(u)
+            continue
+
+        # 2. Evaluate the actual density
+        actual_density = density(u, list(sol))
+
+        if not h or actual_density >= -h[0][0]:
+            sol.add(u)
+            remaining_elements.remove(u)
+            opt.update_base(sol)
+            delta = opt.solve(all_candidates - sol, model.budget)
+
+            if model.objective(list(sol)) + delta < lbd:
+                lbd = model.objective(list(sol)) + delta
+            cur_cost += model.cost_of_singleton(u)
+
+        else:
+            heapq.heappush(h, (-actual_density, u))
+
+    # find the maximum singleton
+    v_star, v_star_fv = None, float('-inf')
+    for e in model.ground_set:
+        if model.cost_of_singleton(e) > model.budget:
+            # filter out singleton whose cost is larger than budget
+            continue
+        fv = model.objective([e])
+        if fv > v_star_fv:
+            v_star, v_star_fv = e, fv
+
+    sol_fv = model.objective(list(sol))
+
+    if v_star_fv > sol_fv:
+        res = {
+            'S': [v_star],
+            'f(S)': v_star_fv,
+            'c(S)': model.cost_of_singleton(v_star),
+        }
+    else:
+        res = {
+            'S': sol,
+            'f(S)': sol_fv,
+            'c(S)': cur_cost,
+        }
+
+    res['Lambda'] = lbd
+    res['AF'] = res['f(S)'] / lbd
+    res['parameters'] = parameters
+    res['updated'] = updated
+
+    stop_time = time.time()
+    res['Time'] = stop_time - start_time
+
+    return res
 
 def modified_greedy_ub16(model: BaseTask):
     return modified_greedy(model, "ub16")

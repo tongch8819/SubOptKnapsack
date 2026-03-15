@@ -1,7 +1,7 @@
 from MaxHeap import HeapObj, BaseHeapObj
 from base_task import BaseTask
 from data_dependent_upperbound import marginal_delta_dom_random_budget, marginal_delta_version7_random_budget, \
-    marginal_delta_random_budget
+    marginal_delta_random_budget, marginal_delta_version7_acc_random_budget
 from optimizer import DominantOptimizer
 
 
@@ -93,8 +93,8 @@ class OptimalAlg:
         return delta
 
     def lbd2(self, base, candidate, budget):
-        delta, _ = marginal_delta_version7_random_budget(set(base), set(candidate), self.model,
-                                                         budget=budget)
+        delta, _ = marginal_delta_version7_acc_random_budget(set(base), set(candidate), self.model,
+                                                             budget=budget)
         return delta
 
     def lbd_dom(self, base, budget):

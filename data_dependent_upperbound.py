@@ -1,3 +1,4 @@
+import heapq
 import time
 
 from base_task import BaseTask
@@ -2411,6 +2412,83 @@ def marginal_delta_version7_random_budget(base_set: Set[int], remaining_set: Set
     return max(M_plus_gain), parameters
 
 
+def marginal_delta_version7_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta = 0
+    parameters = {}
+    n = len(model.ground_set)
+    ground = list(range(0, n))
+    s = np.zeros(n)
+
+    ground.sort(key=lambda x: model.marginal_gain(x, list(base_set))/model.cost_of_singleton(x), reverse=True)
+
+    cur_cost = 0
+    for i in range(0, n):
+        a_i = list(set(ground[:i]) | base_set)
+        m_gain = model.marginal_gain(ground[i], a_i)
+        s_gain = model.marginal_gain(ground[i], list(base_set))
+
+        if model.marginal_gain(ground[i], list(base_set)) > 0:
+            s[ground[i]] = m_gain/s_gain
+            ele_cost = s[ground[i]] * model.cost_of_singleton(ground[i])
+
+            # update delta value
+            if cur_cost + ele_cost <= model.budget:
+                delta += m_gain
+                cur_cost += ele_cost
+            else:
+                remaining_budget = model.budget - cur_cost
+                delta += m_gain * remaining_budget/ele_cost
+                break
+        else:
+            break
+    return delta, parameters
+
+
+def marginal_delta_version7_acc_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget=0):
+    assert len(
+        base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
+    if len(remaining_set) == 0:
+        return 0
+
+    delta = 0
+    parameters = {}
+    n = len(model.ground_set)
+    ground = list(range(0, n))
+    s = np.zeros(n)
+
+    start_sort_time = time.time()
+    ground.sort(key=lambda x: model.marginal_gain(x, list(base_set))/model.cost_of_singleton(x), reverse=True)
+    # print(f"sort time:{time.time() - start_sort_time}")
+
+    cur_cost = 0
+    for i in range(0, n):
+        a_i = list(set(ground[:i]) | base_set)
+        m_gain = model.marginal_gain(ground[i], a_i)
+        s_gain = model.marginal_gain(ground[i], list(base_set))
+
+        if model.marginal_gain(ground[i], list(base_set)) > 0:
+            s[ground[i]] = m_gain/s_gain
+            ele_cost = s[ground[i]] * model.cost_of_singleton(ground[i])
+
+            # update delta value
+            if cur_cost + ele_cost <= budget:
+                delta += m_gain
+                cur_cost += ele_cost
+            else:
+                remaining_budget = budget - cur_cost
+                delta += m_gain * remaining_budget/ele_cost
+                break
+        else:
+            break
+
+    return delta, parameters
+
+
 def marginal_delta_dom_random_budget(base_set: Set[int], remaining_set: Set[int], model: BaseTask, budget=0):
     assert len(
         base_set & remaining_set) == 0, "{} ----- {}".format(base_set, remaining_set)
@@ -2429,7 +2507,6 @@ def marginal_delta_dom_random_budget(base_set: Set[int], remaining_set: Set[int]
     delta = opt.optimize()['delta']
 
     return delta, parameters
-
 
 def marginal_delta_version7m_acc(base_set: Set[int], remaining_set: Set[int], model: BaseTask, minus=False):
     assert len(
@@ -3154,6 +3231,8 @@ def marginal_delta_gate(upb: str, base_set, remaining_set, model:BaseTask):
             delta, parameters = marginal_delta_version7_c(base_set, remaining_set, model)
         elif upb == 'ub7':
             delta, parameters = marginal_delta_version7(base_set, remaining_set, model)
+        elif upb == 'ub7a':
+            delta, parameters = marginal_delta_version7_acc(base_set, remaining_set, model)
         elif upb == 'ub7new':
             delta, parameters = marginal_delta_version7new(base_set, remaining_set, model)
         elif upb == 'ub7o':
