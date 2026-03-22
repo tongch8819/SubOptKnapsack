@@ -3740,8 +3740,12 @@ class ILP(OptimalAlg):
         self.elements = list(self.model.ground_set)
         self.n = len(self.elements)
 
+        self.start_time = 0
+        self.time_limit = 10000
+        self.TLE = False
+
     def optimize(self):
-        start_time = time.time()
+        self.start_time = time.time()
 
         # Setup MILP variables: y_0, y_1, ..., y_{n-1}, eta
         # Objective: Maximize eta -> Minimize -eta
@@ -3774,7 +3778,12 @@ class ILP(OptimalAlg):
         Q = [set()]
         node_count = 0
 
+        sol = []
         while True:
+            if time.time() - self.start_time > self.time_limit:
+                self.TLE = True
+                break
+
             # Process the newest set added to Q and build its linear constraint
             S_latest = Q[-1]
             z_S = self.model.objective(list(S_latest))
@@ -3822,7 +3831,8 @@ class ILP(OptimalAlg):
             'S': sol,
             'c(S)': self.model.cost_of_set(sol),
             'f(S)': self.model.objective(sol),
-            'time': stop_time - start_time,
+            'time': stop_time - self.start_time,
+            'TLE': self.TLE,
             'node_count': node_count,
             'open_list_count': len(Q),
             'push_back_count': 0
