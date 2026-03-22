@@ -125,7 +125,6 @@ if __name__ == "__main__":
                         alg.pushing_back = False
                         alg.set_d(d)
                         alg.set_h(heuristic='ub0')
-
                     elif args.algorithm == 'BFSNheap':
                         # no efficient
                         alg = filter_search.InheritBFS(model)
