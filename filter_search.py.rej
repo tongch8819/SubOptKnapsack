@@ -1,0 +1,14 @@
+diff a/filter_search.py b/filter_search.py	(rejected hunks)
+@@ -1083,12 +1083,6 @@
+         self.time_for_stage_0 = 0
+         self.time_for_stage_1 = 0
+ 
+-        self.start_time = 0
+-        self.TLE = False
+-        self.time_limit = 10000
+-
+-        self.ub_global = 0
+-
+     def set_h(self, heuristic):
+         if heuristic == 'ub0':
+             self.lbd = self.lbd0
