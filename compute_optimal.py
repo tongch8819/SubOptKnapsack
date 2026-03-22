@@ -11,7 +11,6 @@ import filter_search
 import id_aster
 import model_factory
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--task", default='', help="task name")
@@ -27,7 +26,7 @@ if __name__ == "__main__":
 
     # ub_list = [args.heuristic]
 
-    ub_list = ['ub0']
+    ub_list = ['ub2']
     d_list = ['d']
 
     alpha = float(args.alpha)
@@ -36,8 +35,8 @@ if __name__ == "__main__":
     stop_seed = 1
 
     interval = 1
-    num_points = 10
-    start_point = 6
+    num_points = 25
+    start_point = 10
     end_point = start_point + (num_points - 1) * interval
     bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
@@ -136,6 +135,9 @@ if __name__ == "__main__":
                         alg = filter_search.BFSTC(model)
                         alg.heap_class = 'simple'
                         alg.set_h(heuristic='ub0')
+                    elif args.algorithm == 'ILP':
+                        alg = filter_search.ILP(model)
+                        alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha
                     alg.setOpt(ub)
