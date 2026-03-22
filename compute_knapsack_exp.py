@@ -233,19 +233,19 @@ def compute_facebook_series(root_dir, skip_mode=False):
     for seed in range(start_seed, end_seed, seed_interval):
         start_time = time.time()
 
-        interval = 1
-        num_points = 15
-        start_point = 6
-        end_point = start_point + (num_points - 1) * interval
-        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
         s = f"-{n}"
-
-
-
         print(f"cost mode:{cost_mode}")
         model = FacebookGraphCoverage(
             budget=0, n=n, seed=seed, graph_path="./dataset/facebook", knapsack=knapsack, prepare_max_pair=False,
             print_curvature=False, cost_mode=cost_mode, construct_graph=True, graph_suffix=s)
+
+        total = np.sum([model.cost_of_singleton(e) for e in model.ground_set])
+        average = total/len(model.ground_set)
+        interval = average
+        num_points = 15
+        start_point = 6 * average
+        end_point = start_point + (num_points - 1) * interval
+        bds = np.linspace(start=start_point, stop=end_point, num=num_points)
 
         save_dir = os.path.join(root_dir, archive, "facebook", f"{n}", f"{seed}")
         if not os.path.exists(save_dir):
