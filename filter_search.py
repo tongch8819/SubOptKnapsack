@@ -1582,6 +1582,9 @@ class EfficientBFS(OptimalAlg):
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
 
+                if min(node.v.lbd_v, f_local) * self.alpha <= self.g(s_max):
+                    continue
+
                 if self.use_alpha:
                     if self.g(s_max) >= f_upper:
                         sol = s_max
@@ -1633,11 +1636,11 @@ class EfficientBFS(OptimalAlg):
                 self.push_heap(s=list(set(s) | {first_ele}), lbd_v=new_lbd, first_child=True,
                                heuristic_sequence=new_heuristic_sequence,
                                candidate=new_candidate,
-                               w=node.budget - self.model.cost_of_singleton(first_ele))
+                               w=node.budget - self.model.cost_of_singleton(first_ele), s_max_v=self.g(s_max))
 
             # push second child
             self.push_heap(s=s, lbd_v=new_lbd, first_child=False,
-                           candidate=new_candidate, w=node.budget)
+                           candidate=new_candidate, w=node.budget, s_max_v=self.g(s_max))
             open_list_count += 1
 
             t4 = time.time()
