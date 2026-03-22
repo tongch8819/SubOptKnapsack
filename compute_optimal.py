@@ -10,7 +10,6 @@ import data_correcting
 import filter_search
 import id_aster
 import model_factory
-from a_star import Astar
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -136,6 +135,9 @@ if __name__ == "__main__":
                         alg = filter_search.BFSTC(model)
                         alg.heap_class = 'simple'
                         alg.set_h(heuristic='ub0')
+                    elif args.algorithm == 'ILP':
+                        alg = filter_search.ILP(model)
+                        alg.set_h(heuristic=ub)
 
                     alg.alpha = alpha
                     alg.setOpt(ub)

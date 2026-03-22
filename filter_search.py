@@ -15,6 +15,10 @@ from optimizer import DominantOptimizer
 import math
 import random
 
+import numpy as np
+from scipy.optimize import milp, LinearConstraint, Bounds
+
+
 
 @total_ordering
 class AugmentedValue:
@@ -3726,5 +3730,102 @@ class AnytimeMCTS(OptimalAlg):
                'time': stop_time - self.start_time,
                'node_count': iteration_count,
                "open_list_count": "N/A for MCTS"}
+
+        return ret
+
+
+class ILP(OptimalAlg):
+    def __init__(self, model):
+        super().__init__(model)
+        self.elements = list(self.model.ground_set)
+        self.n = len(self.elements)
+
+    def optimize(self):
+        start_time = time.time()
+
+        # Setup MILP variables: y_0, y_1, ..., y_{n-1}, eta
+        # Objective: Maximize eta -> Minimize -eta
+        c = np.zeros(self.n + 1)
+        c[self.n] = -1.0
+
+        # Integrality: 1 for integer (binary), 0 for continuous (eta)
+        integrality = np.ones(self.n + 1)
+        integrality[self.n] = 0
+
+        # Bounds: y_i in [0, 1], eta in (-inf, inf)
+        lb = np.zeros(self.n + 1)
+        lb[self.n] = -np.inf
+        ub = np.ones(self.n + 1)
+        ub[self.n] = np.inf
+        bounds = Bounds(lb, ub)
+
+        # Base constraints matrix (A) and upper bounds (b_ub)
+        A = []
+        b_ub = []
+
+        # 1. Knapsack/Budget constraint: sum(cost_j * y_j) <= budget
+        A_budget = np.zeros(self.n + 1)
+        for idx, e in enumerate(self.elements):
+            A_budget[idx] = self.model.cost_of_singleton(e)
+        A.append(A_budget)
+        b_ub.append(self.model.budget)
+
+        # Initialize constraint pool with an empty set
+        Q = [set()]
+        node_count = 0
+
+        while True:
+            # Process the newest set added to Q and build its linear constraint
+            S_latest = Q[-1]
+            z_S = self.model.objective(list(S_latest))
+
+            # Constraint: eta - sum_{j in N \ S} rho_j(S) * y_j <= z(S)
+            A_row = np.zeros(self.n + 1)
+            A_row[self.n] = 1.0  # for eta
+
+            for idx, e in enumerate(self.elements):
+                if e not in S_latest:
+                    S_union_e = list(S_latest) + [e]
+                    rho = self.model.objective(S_union_e) - z_S
+                    A_row[idx] = -rho  # Move to LHS: -rho_j
+
+            A.append(A_row)
+            b_ub.append(z_S)
+
+            # Solve the relaxed MILP
+            constraints = LinearConstraint(A, ub=b_ub)
+            res = milp(c=c, constraints=constraints, integrality=integrality, bounds=bounds)
+            node_count += 1
+
+            if not res.success:
+                raise ValueError(f"MILP solver failed: {res.message}")
+
+            # Extract results
+            eta_p = -res.fun
+            y = res.x[:self.n]
+
+            # Map binary vector back to a subset R^p
+            R_p = set(self.elements[i] for i in range(self.n) if y[i] > 0.5)
+            z_R_p = self.model.objective(list(R_p))
+
+            # Termination check: if the upper bound matches the actual value
+            if self.alpha * eta_p <= z_R_p + 1e-6:  # 1e-6 tolerance for floating-point inaccuracies
+                sol = list(R_p)
+                break
+
+            # Otherwise, add R^p to the pool and generate a new constraint next iteration
+            Q.append(R_p)
+
+        stop_time = time.time()
+
+        ret = {
+            'S': sol,
+            'c(S)': self.model.cost_of_set(sol),
+            'f(S)': self.model.objective(sol),
+            'time': stop_time - start_time,
+            'node_count': node_count,
+            'open_list_count': len(Q),
+            'push_back_count': 0
+        }
 
         return ret
