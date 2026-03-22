@@ -1079,6 +1079,12 @@ class EfficientBranchAndBound(OptimalAlg):
         self.time_for_stage_0 = 0
         self.time_for_stage_1 = 0
 
+        self.start_time = 0
+        self.TLE = False
+        self.time_limit = 10000
+
+        self.ub_global = 0
+
     def set_h(self, heuristic):
         if heuristic == 'ub0':
             self.lbd = self.lbd0
@@ -1097,43 +1103,98 @@ class EfficientBranchAndBound(OptimalAlg):
             self.get_children = self.get_children_advance
 
     def greedy_add(self, t):
+        def density(ele, base_set):
+            return self.model.marginal_gain(ele, list(base_set)) / self.model.cost_of_singleton(ele)
+
         base = t.s
         sol = set(base)
         base_cost = self.model.cost_of_set(list(sol))
         remaining_elements = set(t.candidate)
         cur_cost = self.model.cost_of_set(list(sol))
 
-        f_local = self.g(sol) + self.lbd(base=sol, candidate=set(t.candidate) - set(sol),
-                                         budget=self.model.budget - base_cost)
+        opt = acclerated_upper_bounds.LazyPlainOptimizer(self.model)
+        opt.build(base=base, remaining=remaining_elements)
+
+        f_local = self.g(sol) + opt.solve(remaining_elements, t.budget)
         c = []
-        while len(remaining_elements):
-            u, max_density = None, -1.
-            for e in remaining_elements:
-                # e is an object
-                ds = self.model.density(e, list(sol))
-                if u is None or ds > max_density:
-                    u, max_density = e, ds
-            assert u is not None
-            if cur_cost + self.model.cost_of_singleton(u) <= self.model.budget:
-                # satisfy the knapsack constraint
+
+        # 1. Initialize the max heap for outer greedy loop
+        h = []
+        for e in remaining_elements:
+            # print(f"elapsed:{time.time() - self.start_time}")
+            if time.time() - self.start_time > self.time_limit:
+                self.TLE = True
+                return sol, f_local, c
+            heapq.heappush(h, (-density(e, base), e))
+
+        while h:
+            # print(f"elapsed2:{time.time() - self.start_time}")
+            if time.time() - self.start_time > self.time_limit:
+                self.TLE = True
+                return sol, f_local, c
+            _, u = heapq.heappop(h)
+            if cur_cost + self.model.cost_of_singleton(u) > t.budget:
+                # u does not satisfy the knapsack constraint
+                remaining_elements.remove(u)
+                continue
+
+            # 2. Evaluate the actual density
+            actual_density = density(u, list(sol))
+
+            if not h or actual_density >= -h[0][0]:
                 sol.add(u)
                 c.append(u)
+                remaining_elements.remove(u)
+                opt.update_base(sol)
+                f_temp = self.g(sol) + opt.solve(remaining_set=set(t.candidate) - set(sol),
+                                                 budget=t.budget)
+                if f_local is None or f_temp < f_local:
+                    f_local = f_temp
                 cur_cost += self.model.cost_of_singleton(u)
-
-            remaining_elements.remove(u)
-            # filter out violating elements
-            to_remove = set()
-            for v in remaining_elements:
-                if self.model.cost_of_singleton(v) + cur_cost > self.model.budget:
-                    to_remove.add(v)
-            remaining_elements -= to_remove
-
-            f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(t.candidate) - set(sol),
-                                            budget=self.model.budget - base_cost)
-            if f_local is None or f_temp < f_local:
-                f_local = f_temp
+            else:
+                heapq.heappush(h, (-actual_density, u))
 
         return list(sol), f_local, c
+
+    def get_children_advance(self, t: BranchAndBoundNode, c):
+        children = []
+        s = t.s
+
+        # 1. Instantiate and build the Lazy Optimizer
+        opt = acclerated_upper_bounds.LazyPlainOptimizer(self.model)
+        opt.build(base=set(s), remaining=set(t.candidate))
+
+        for i in range(0, len(c)):
+            base_set = set(s) | set(c[:i])
+            remaining_set = set(t.candidate) - set(c[:i + 1])
+            budget_i = t.budget - self.model.cost_of_set(c[:i])
+
+            temp = BranchAndBoundNode(list(base_set), list(remaining_set), budget_i)
+
+            # 2. Update base incrementally (O(1) overhead) and solve lazily
+            opt.update_base(base_set)
+            upper_bound_delta = opt.solve(remaining_set, budget_i)
+
+            current_f = self.model.objective(list(base_set))
+
+            if current_f + upper_bound_delta > self.lb_star:
+                children.append(temp)
+
+        # 3. Process the final child (including all elements of c)
+        base_set_final = set(s) | set(c)
+        remaining_set_final = set(t.candidate) - set(c)
+        budget_final = t.budget - self.model.cost_of_set(c)
+
+        temp = BranchAndBoundNode(list(base_set_final), list(remaining_set_final), budget_final)
+
+        opt.update_base(base_set_final)
+        upper_bound_delta_final = opt.solve(remaining_set_final, budget_final)
+        current_f_final = self.model.objective(list(base_set_final))
+
+        if current_f_final + upper_bound_delta_final > self.lb_star:
+            children.append(temp)
+
+        return children
 
     def get_children_basic(self, t: BranchAndBoundNode, c):
         children = []
@@ -1149,27 +1210,27 @@ class EfficientBranchAndBound(OptimalAlg):
 
         return children
 
-    def get_children_advance(self, t: BranchAndBoundNode, c):
-        children = []
-        s = t.s
-        for i in range(0, len(c)):
-            temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
-                                      t.budget - self.model.cost_of_set(c[:i]))
-
-            if self.model.objective(list(set(s) | set(c[:i]))) + self.lbd0(list(set(s) | set(c[:i])),
-                                                                           list(set(t.candidate) - set(c[:i + 1])),
-                                                                           t.budget - self.model.cost_of_set(
-                                                                               c[:i])) > self.lb_star:
-                children.append(temp)
-
-        temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
-                                  t.budget - self.model.cost_of_set(c))
-
-        if self.lbd0(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
-                     t.budget - self.model.cost_of_set(c)) > self.lb_star:
-            children.append(temp)
-
-        return children
+    # def get_children_advance(self, t: BranchAndBoundNode, c):
+    #     children = []
+    #     s = t.s
+    #     for i in range(0, len(c)):
+    #         temp = BranchAndBoundNode(list(set(s) | set(c[:i])), list(set(t.candidate) - set(c[:i + 1])),
+    #                                   t.budget - self.model.cost_of_set(c[:i]))
+    #
+    #         if self.model.objective(list(set(s) | set(c[:i]))) + self.lbd0(list(set(s) | set(c[:i])),
+    #                                                                        list(set(t.candidate) - set(c[:i + 1])),
+    #                                                                        t.budget - self.model.cost_of_set(
+    #                                                                            c[:i])) > self.lb_star:
+    #             children.append(temp)
+    #
+    #     temp = BranchAndBoundNode(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
+    #                               t.budget - self.model.cost_of_set(c))
+    #
+    #     if self.lbd0(list(set(s) | set(c)), list(set(t.candidate) - set(c)),
+    #                  t.budget - self.model.cost_of_set(c)) > self.lb_star:
+    #         children.append(temp)
+    #
+    #     return children
 
     def bab(self, t: BranchAndBoundNode):
         t0 = time.time()
@@ -1204,19 +1265,73 @@ class EfficientBranchAndBound(OptimalAlg):
         self.time_for_stage_1 += t2 - t1
         self.children_count += len(children)
 
+    def bab_stack(self, initial_node: BranchAndBoundNode):
+        # Use a list as a stack (LIFO)
+        stack = [initial_node]
+        while stack:
+            # Get the current node
+            t = stack.pop()
+
+            t0 = time.time()
+            # print(f"elas:{t0 -self.start_time}")
+            if t0 - self.start_time > self.time_limit:
+                self.TLE = True
+                return
+
+            self.node_count += 1
+
+            # 1. Pruning/Base Case Checks
+            if len(t.candidate) == 0:
+                continue
+
+            if self.is_on_the_edge(t):
+                continue
+
+            # 2. Local Greedy search and Lower Bound update
+            s_primal, f_local, c = self.greedy_add(t)
+
+            if self.TLE:
+                return
+
+            if self.g(s_primal) > self.lb_star:
+                self.lb_star = self.g(s_primal)
+                self.s_star = s_primal
+
+            # 3. Upper Bound Pruning
+            ub = f_local
+            if self.alpha * ub <= self.lb_star:
+                # Update timing before continuing to next node
+                self.time_for_stage_0 += time.time() - t0
+                continue
+
+            t1 = time.time()
+
+            # 4. Branching
+            children = self.get_children(t, c)
+            t2 = time.time()
+
+            # 5. Statistics and Scheduling
+            self.time_for_stage_0 += t1 - t0
+            self.time_for_stage_1 += t2 - t1
+            self.children_count += len(children)
+
+            # Add children to the stack to be processed in future iterations
+            # reverse the children list before adding to stack to maintain the order
+            for t_i in reversed(children):
+                stack.append(t_i)
+
     def optimize(self):
-        start_time = time.time()
-        self.bab(BranchAndBoundNode(self.s_star, self.model.ground_set, self.model.budget))
+        self.start_time = time.time()
+        self.bab_stack(BranchAndBoundNode(self.s_star, self.model.ground_set, self.model.budget))
         stop_time = time.time()
 
         ret = {
             'S': self.s_star,
             'c(S)': self.model.cost_of_set(self.s_star),
             'f(S)': self.model.objective(self.s_star),
-            'time': stop_time - start_time,
+            'time': stop_time - self.start_time,
             'node_count': self.node_count,
-            'stg0': self.time_for_stage_0,
-            'stg1': self.time_for_stage_1,
+            'TLE': self.TLE,
             'children_count': self.children_count
         }
 
@@ -1281,46 +1396,119 @@ class EfficientBFS(OptimalAlg):
 
         return None
 
-    def greedy_add(self, node: EfficientBFSHeapObj):
+    # def greedy_add(self, node: EfficientBFSHeapObj):
+    #     base = node.s
+    #     candidate = node.candidate
+    #     budget = node.budget
+    #
+    #     sol = set(base)
+    #     remaining_elements = set(candidate)
+    #     cur_cost = 0
+    #
+    #     f_local = None
+    #     heuristic_sequence = []
+    #     # print(f"//")
+    #     while len(remaining_elements):
+    #         u, max_density = None, -1.
+    #         for e in remaining_elements:
+    #             # e is an object
+    #             ds = self.model.density(e, list(sol))
+    #             if u is None or ds > max_density:
+    #                 u, max_density = e, ds
+    #
+    #         assert u is not None
+    #
+    #         if cur_cost + self.model.cost_of_singleton(u) <= budget:
+    #             # satisfy the knapsack constraint
+    #             sol.add(u)
+    #             heuristic_sequence.append(u)
+    #             cur_cost += self.model.cost_of_singleton(u)
+    #
+    #         # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
+    #         # if f_local is None or f_temp < f_local:
+    #         #     f_local = f_temp
+    #         #     # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
+    #
+    #         remaining_elements.remove(u)
+    #         # filter out violating elements
+    #         to_remove = set()
+    #         for v in remaining_elements:
+    #             if self.model.cost_of_singleton(v) + cur_cost > budget:
+    #                 to_remove.add(v)
+    #         remaining_elements -= to_remove
+    #
+    #     return list(sol), f_local, heuristic_sequence
+
+    def greedy_add(self, node):
+        def density(ele, base_set):
+            return self.model.marginal_gain(ele, list(base_set)) / self.model.cost_of_singleton(ele)
+
         base = node.s
         candidate = node.candidate
         budget = node.budget
 
         sol = set(base)
         remaining_elements = set(candidate)
-        cur_cost = 0
+        cur_cost = 0  # Tracks the cost of elements added ON TOP of the base
 
-        f_local = None
+        # Initialize the Lazy Optimizer
+        opt = acclerated_upper_bounds.LazySlicingOptimizer(self.model)
+        opt.build(base=base, remaining=remaining_elements)
+
+        # Initial upper bound
+        # Assuming node.budget represents the remaining capacity for the candidate set
+        f_local = self.g(sol) + opt.solve(remaining_elements, budget)
         heuristic_sequence = []
-        # print(f"//")
-        while len(remaining_elements):
-            u, max_density = None, -1.
-            for e in remaining_elements:
-                # e is an object
-                ds = self.model.density(e, list(sol))
-                if u is None or ds > max_density:
-                    u, max_density = e, ds
 
-            assert u is not None
+        # 1. Initialize max-heap for the outer greedy loop
+        h = []
+        tie_breaker = 0
+        for e in remaining_elements:
+            heapq.heappush(h, (-density(e, sol), tie_breaker, e))
+            tie_breaker += 1
 
-            if cur_cost + self.model.cost_of_singleton(u) <= budget:
-                # satisfy the knapsack constraint
+        while h:
+
+            # 2. Pop the element with the highest upper-bound density
+            neg_ds, _, u = heapq.heappop(h)
+
+            # 3. Lazy Budget Check: Discard instantly if it no longer fits the knapsack
+            cost_u = self.model.cost_of_singleton(u)
+            if cur_cost + cost_u > budget:
+                continue
+
+            # 4. Evaluate actual density against the dynamically updating solution set
+            actual_ds = density(u, sol)
+
+            # 5. Clean up stale/violating elements at the top of the heap
+            while h:
+                top_e = h[0][2]
+                if cur_cost + self.model.cost_of_singleton(top_e) > budget:
+                    heapq.heappop(h)
+                else:
+                    break
+
+            # 6. Check the lazy condition
+            if not h or actual_ds >= -h[0][0]:
+                # u is the true maximum element. Process it.
                 sol.add(u)
                 heuristic_sequence.append(u)
-                cur_cost += self.model.cost_of_singleton(u)
+                cur_cost += cost_u
 
-            # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
-            # if f_local is None or f_temp < f_local:
-            #     f_local = f_temp
-            #     # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
+                # --- LAZY OPTIMIZER UPPER BOUND ---
+                # Update base seamlessly without rebuilding the inner heap
+                opt.update_base(sol)
 
-            remaining_elements.remove(u)
-            # filter out violating elements
-            to_remove = set()
-            for v in remaining_elements:
-                if self.model.cost_of_singleton(v) + cur_cost > budget:
-                    to_remove.add(v)
-            remaining_elements -= to_remove
+                # Ensure the optimizer strictly uses the remaining budget (budget)
+                remaining_for_opt = set(node.candidate) - sol
+                f_temp = self.g(sol) + opt.solve(remaining_for_opt, budget)
+                if f_local is None or f_temp < f_local:
+                    f_local = f_temp
+
+            else:
+                # Push the element back into the heap with its newly calculated density
+                heapq.heappush(h, (-actual_ds, tie_breaker, u))
+                tie_breaker += 1
 
         return list(sol), f_local, heuristic_sequence
 
@@ -1469,11 +1657,13 @@ class BFSTC(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
         self.max_heap = None
-
         self.f = self.f_with_alpha
         self.h = None
-
         self.heap_class = 'simple'
+
+        self.start_time = 0
+        self.time_limit = 10000
+        self.TLE = False
 
     def build(self):
         if self.heap_class == 'tradition':
@@ -1484,7 +1674,7 @@ class BFSTC(OptimalAlg):
         self.max_heap.clear()
         self.h = self.inner_h
 
-    def greedy_add(self, s):
+    def greedy_add_plain(self, s):
         base = s
         candidate = set(self.model.ground_set) - set(base)
         budget = self.model.budget
@@ -1518,13 +1708,70 @@ class BFSTC(OptimalAlg):
 
         return list(sol)
 
+    def greedy_add(self, s):
+        base = s
+        candidate = set(self.model.ground_set) - set(base)
+        budget = self.model.budget
+
+        sol = set(base)
+        remaining_elements = set(candidate)
+        cur_cost = self.model.cost_of_set(list(sol))
+
+        # 1. Initialize max-heap with initial densities
+        h = []
+        tie_breaker = 0
+        for e in remaining_elements:
+            heapq.heappush(h, (-self.model.density(e, list(sol)), tie_breaker, e))
+            tie_breaker += 1
+
+        while h:
+            # 2. Pop the element with the highest upper-bound density
+            _, _, u = heapq.heappop(h)
+
+            if time.time() - self.start_time > self.time_limit:
+                self.TLE = True
+                break
+
+            cost_u = self.model.cost_of_singleton(u)
+
+            # 3. Lazy budget check: discard instantly if it exceeds remaining budget
+            if cur_cost + cost_u > budget:
+                continue
+
+            # 4. Evaluate actual density against the dynamically updating solution set
+            actual_density = self.model.density(u, list(sol))
+
+            # 5. Clean up stale/violating elements at the top of the heap
+            while h:
+                top_e = h[0][2]
+                if cur_cost + self.model.cost_of_singleton(top_e) > budget:
+                    heapq.heappop(h)
+                else:
+                    break
+
+            # 6. Check the lazy condition
+            if not h or actual_density >= -h[0][0]:
+                sol.add(u)
+                cur_cost += cost_u
+            else:
+                heapq.heappush(h, (-actual_density, tie_breaker, u))
+                tie_breaker += 1
+
+        return list(sol)
+
     def optimize(self):
-        start_time = time.time()
+        self.start_time = time.time()
 
         root = BaseHeapObj([], candidate=self.model.ground_set, budget=self.model.budget)
         root.v = self.f(root)
 
         s_max = self.greedy_add([])
+        if self.TLE:
+            ret = {'S': [], 'c(S)': 0, 'f(S)': 0, 'TLE': self.TLE,
+                   'time': time.time() - self.start_time, 'node_count': 0, "open_list_count": 0}
+
+            return ret
+
         g_upper = self.h(root)
         self.max_heap.push(root)
 
@@ -1535,6 +1782,10 @@ class BFSTC(OptimalAlg):
             node: BaseHeapObj = self.max_heap.pop()
             node_count += 1
 
+            if time.time() - self.start_time > self.time_limit:
+                self.TLE = True
+                break
+
             if self.h(node) == 0:
                 sol = node.s
                 break
@@ -1544,6 +1795,9 @@ class BFSTC(OptimalAlg):
             for i in node.candidate:
                 if self.model.cost_of_singleton(i) <= node.budget:
                     s_final = self.greedy_add(set(node.s) | {i})
+                    if self.TLE:
+                        break
+
                     if self.g(s_max) < self.g(s_final):
                         s_max = s_final
 
@@ -1562,8 +1816,8 @@ class BFSTC(OptimalAlg):
 
         assert sol is not None, "No solution found."
 
-        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
-               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
+        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol), 'TLE': self.TLE,
+               'time': stop_time - self.start_time, 'node_count': node_count, "open_list_count": open_list_count}
 
         return ret
 
@@ -2509,6 +2763,7 @@ class AnytimeEfficientBFSNoInherit(OptimalAlg):
 
         return ret
 
+
 class AnytimeEfficientBFS(OptimalAlg):
     def __init__(self, model: BaseTask):
         super().__init__(model)
@@ -2533,10 +2788,12 @@ class AnytimeEfficientBFS(OptimalAlg):
         self.s_max = []
 
     def report(self):
-        if self.report_mode == 'alpha':
-            self.af_plot.append(float(self.alpha))
-        elif self.report_mode == 'utility':
-            self.af_plot.append(float(self.g(list(self.s_max))))
+        # if self.report_mode == 'alpha':
+        #     self.af_plot.append(float(self.alpha))
+        # elif self.report_mode == 'utility':
+        #     self.af_plot.append(float(self.g(list(self.s_max))))
+
+        self.af_plot.append((float(self.g(list(self.s_max))), self.alpha))
 
     def build(self):
         if self.heap_class == 'tradition':
@@ -3726,5 +3983,120 @@ class AnytimeMCTS(OptimalAlg):
                'time': stop_time - self.start_time,
                'node_count': iteration_count,
                "open_list_count": "N/A for MCTS"}
+
+        return ret
+
+
+class AnytimeBFSTC(OptimalAlg):
+    def __init__(self, model: BaseTask):
+        super().__init__(model)
+        self.max_heap = None
+
+        self.f = self.f_with_alpha
+        self.h = None
+
+        self.heap_class = 'simple'
+
+        self.report_mode = ''
+        self.running_time = 0.0
+        self.report_interval = 0.0
+        self.start_time = 0.0
+
+        self.af_report = []
+
+    def report(self):
+        if self.report_mode == 'alpha':
+            self.af_report.append(self.alpha)
+        elif self.report_mode == 'utility':
+            self.af_report.append(self.s_m)
+
+    def build(self):
+        if self.heap_class == 'tradition':
+            self.max_heap = MaxHeap()
+        elif self.heap_class == 'simple':
+            self.max_heap = SimpleMaxHeap()
+
+        self.max_heap.clear()
+        self.h = self.inner_h
+
+    def greedy_add(self, s):
+        base = s
+        candidate = set(self.model.ground_set) - set(base)
+        budget = self.model.budget
+
+        sol = set(base)
+        remaining_elements = set(candidate)
+        cur_cost = self.model.cost_of_set(list(sol))
+
+        while len(remaining_elements):
+            u, max_density = None, -1.
+            for e in remaining_elements:
+                # e is an object
+                ds = self.model.density(e, list(sol))
+                if u is None or ds > max_density:
+                    u, max_density = e, ds
+
+            assert u is not None
+
+            if cur_cost + self.model.cost_of_singleton(u) <= budget:
+                # satisfy the knapsack constraint
+                sol.add(u)
+                cur_cost += self.model.cost_of_singleton(u)
+
+            remaining_elements.remove(u)
+            # filter out violating elements
+            to_remove = set()
+            for v in remaining_elements:
+                if self.model.cost_of_singleton(v) + cur_cost > budget:
+                    to_remove.add(v)
+            remaining_elements -= to_remove
+
+        return list(sol)
+
+    def optimize(self):
+        start_time = time.time()
+
+        root = BaseHeapObj([], candidate=self.model.ground_set, budget=self.model.budget)
+        root.v = self.f(root)
+
+        s_max = self.greedy_add([])
+        g_upper = self.h(root)
+        self.max_heap.push(root)
+
+        sol = s_max
+        node_count = 0
+        open_list_count = 0
+        while self.max_heap.size() > 0:
+            node: BaseHeapObj = self.max_heap.pop()
+            node_count += 1
+
+            if self.h(node) == 0:
+                sol = node.s
+                break
+
+            g_upper = min(g_upper, self.f(node) / self.alpha)
+
+            for i in node.candidate:
+                if self.model.cost_of_singleton(i) <= node.budget:
+                    s_final = self.greedy_add(set(node.s) | {i})
+                    if self.g(s_max) < self.g(s_final):
+                        s_max = s_final
+
+                    if self.g(s_max) / g_upper >= self.alpha:
+                        sol = s_max
+                        break
+
+                    new_node = BaseHeapObj(set(node.s) | {i}, candidate=set(node.candidate) - {i}, budget=node.budget - self.model.cost_of_singleton(i))
+                    new_node.v = self.f(new_node)
+
+                    self.max_heap.push(new_node)
+                    open_list_count += 1
+
+        stop_time = time.time()
+
+        assert sol is not None, "No solution found."
+
+        ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
+               'time': stop_time - start_time, 'node_count': node_count, "open_list_count": open_list_count}
 
         return ret

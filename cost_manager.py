@@ -1,3 +1,4 @@
+import math
 import random
 
 import numpy as np
@@ -12,8 +13,6 @@ class CostManager:
         self.minimal_cost = 1.6
         self.maximal_cost = 5.6
 
-        pass
-
     def set_mode(self, mode):
         self.mode = mode
 
@@ -22,7 +21,6 @@ class CostManager:
 
     def build(self):
         assert self.mode is not None
-
         if self.mode == 'normal':
             self.assign = self.assign_random
         elif self.mode == 'positive':
@@ -33,6 +31,8 @@ class CostManager:
             self.assign = self.assign_www1
         elif self.mode == 'www2':
             self.assign = self.assign_www2
+        elif self.mode == 'relative':
+            self.assign = self.assign_relative
         else:
             raise Exception(f"Mode {self.mode} does not exist.")
 
@@ -40,6 +40,18 @@ class CostManager:
 
     def assign_random(self):
         pass
+
+    def assign_relative(self):
+        n = len(self.model.ground_set)
+        costs = [0] * n
+        mu = 0.0
+        sigma = 0.1
+        beta = 0.3
+
+        for i in self.model.ground_set:
+            costs[i] = math.pow(self.model.objective(i), beta) + random.gauss(mu, sigma)
+
+        return costs
 
     def assign_positive(self):
         min_idx, min_v = None, 0
