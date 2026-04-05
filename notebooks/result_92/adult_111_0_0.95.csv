@@ -1,0 +1,11 @@
+﻿task,AF,algorithm,budget,heuristic,sorting,node_count,open_list_count,computational_time,f_S
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,6.0,ub2,d,9,15,31.524839878082275,7.206554549128117
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,7.0,ub2,d,41,53,81.8875503540039,7.206554549128117
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,8.0,ub2,d,27,41,91.94501519203186,8.120308338114878
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,9.0,ub2,d,80,101,249.92354106903076,8.270787166482998
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,10.0,ub2,d,100,131,437.3049111366272,8.655822627528229
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,11.0,ub2,d,1,1,19.68697237968445,8.783987100764925
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,12.0,ub2,d,1,1,19.926562547683716,8.97806831132171
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,13.0,ub2,d,1,1,21.16538119316101,9.04398504864179
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,14.0,ub2,d,1,1,20.353675365447998,9.15488859753139
+AdultIncomeFeatureSelection.pckl,0.95,EfficientBFS,15.0,ub2,d,1,1,21.376970052719116,9.15488859753139
