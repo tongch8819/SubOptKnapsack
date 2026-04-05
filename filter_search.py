@@ -1181,7 +1181,9 @@ class EfficientBranchAndBound(OptimalAlg):
 
             current_f = self.model.objective(list(base_set))
 
+            print(f"examing child {temp}, budget_i:{budget_i} candidate:{set(self.model.ground_set) - set(remaining_set)} lbd:{current_f + upper_bound_delta}")
             if current_f + upper_bound_delta > self.lb_star:
+                print("succeed")
                 children.append(temp)
 
         # 3. Process the final child (including all elements of c)
@@ -1195,7 +1197,9 @@ class EfficientBranchAndBound(OptimalAlg):
         upper_bound_delta_final = opt.solve(remaining_set_final, budget_final)
         current_f_final = self.model.objective(list(base_set_final))
 
+        print(f"examing child {temp}, lbd:{current_f_final + upper_bound_delta_final}")
         if current_f_final + upper_bound_delta_final > self.lb_star:
+            print("succeed")
             children.append(temp)
 
         return children
@@ -1275,6 +1279,7 @@ class EfficientBranchAndBound(OptimalAlg):
         while stack:
             # Get the current node
             t = stack.pop()
+            print(f"new node popped:{t}")
 
             t0 = time.time()
             # print(f"elas:{t0 -self.start_time}")
@@ -1301,8 +1306,14 @@ class EfficientBranchAndBound(OptimalAlg):
                 self.lb_star = self.g(s_primal)
                 self.s_star = s_primal
 
+            print(f"current lb_star:{self.lb_star}")
+
             # 3. Upper Bound Pruning
             ub = f_local
+            # if self.alpha * ub <= self.lb_star:
+            #     # Update timing before continuing to next node
+            #     self.time_for_stage_0 += time.time() - t0
+            #     continue
             if self.alpha * ub <= self.lb_star:
                 # Update timing before continuing to next node
                 self.time_for_stage_0 += time.time() - t0
@@ -1322,6 +1333,7 @@ class EfficientBranchAndBound(OptimalAlg):
             # Add children to the stack to be processed in future iterations
             # reverse the children list before adding to stack to maintain the order
             for t_i in reversed(children):
+                print(f"child {t_i} pushed")
                 stack.append(t_i)
 
     def optimize(self):
@@ -1384,6 +1396,7 @@ class EfficientBFS(OptimalAlg):
         final_v = new_g + new_h
 
         v = None
+        print(f"examing node {node.s}, {final_v}, budget:{w}, candidate:{set(self.model.ground_set) - set(candidate)}")
         if final_v >= s_max_v:
             if self.use_alpha:
                 lbd_v = min(new_g + self.alpha * new_h, lbd_v)
@@ -1395,53 +1408,11 @@ class EfficientBFS(OptimalAlg):
             node.v = v
 
             self.max_heap.push(node)
+            print(f"child {node.s}, {node.v.lbd_v} pushed")
 
             return node
 
         return None
-
-    # def greedy_add(self, node: EfficientBFSHeapObj):
-    #     base = node.s
-    #     candidate = node.candidate
-    #     budget = node.budget
-    #
-    #     sol = set(base)
-    #     remaining_elements = set(candidate)
-    #     cur_cost = 0
-    #
-    #     f_local = None
-    #     heuristic_sequence = []
-    #     # print(f"//")
-    #     while len(remaining_elements):
-    #         u, max_density = None, -1.
-    #         for e in remaining_elements:
-    #             # e is an object
-    #             ds = self.model.density(e, list(sol))
-    #             if u is None or ds > max_density:
-    #                 u, max_density = e, ds
-    #
-    #         assert u is not None
-    #
-    #         if cur_cost + self.model.cost_of_singleton(u) <= budget:
-    #             # satisfy the knapsack constraint
-    #             sol.add(u)
-    #             heuristic_sequence.append(u)
-    #             cur_cost += self.model.cost_of_singleton(u)
-    #
-    #         # f_temp = self.g(sol) + self.lbd(base=sol, candidate=set(node.candidate) - set(sol), budget=budget)
-    #         # if f_local is None or f_temp < f_local:
-    #         #     f_local = f_temp
-    #         #     # print(f"base:{base}, sol:{sol}, lbd:{f_temp}, c:{len(candidate)}, budget:{budget}")
-    #
-    #         remaining_elements.remove(u)
-    #         # filter out violating elements
-    #         to_remove = set()
-    #         for v in remaining_elements:
-    #             if self.model.cost_of_singleton(v) + cur_cost > budget:
-    #                 to_remove.add(v)
-    #         remaining_elements -= to_remove
-    #
-    #     return list(sol), f_local, heuristic_sequence
 
     def greedy_add(self, node):
         def density(ele, base_set):
@@ -1546,7 +1517,6 @@ class EfficientBFS(OptimalAlg):
             ret = {'S': sol, 'c(S)': self.model.cost_of_set(sol), 'f(S)': self.model.objective(sol),
                    'time': stop_time - start_time, 'node_count': 1, "open_list_count": 1,
                    "push_back_count": 0}
-
             return ret
 
         push_back_count = 0
@@ -1565,9 +1535,12 @@ class EfficientBFS(OptimalAlg):
             t0 = time.time()
 
             node: EfficientBFSHeapObj = self.max_heap.pop()
+
             node_count += 1
             s = node.s
             v = node.v
+
+            print(f"new node popped:{s}, {v.lbd_v}")
 
             t1 = time.time()
 
@@ -1581,6 +1554,7 @@ class EfficientBFS(OptimalAlg):
 
                 if self.g(s_final) > self.g(s_max):
                     s_max = s_final
+                    print(f"s_max updated:{s_max}, early pruning:{min(node.v.lbd_v, f_local) * self.alpha}")
 
                 if min(node.v.lbd_v, f_local) * self.alpha <= self.g(s_max):
                     continue
@@ -1591,7 +1565,6 @@ class EfficientBFS(OptimalAlg):
                         break
                 else:
                     if self.g(s_max) >= self.alpha * f_upper:
-                        # print(f"here, s:{s_max}, g:{self.g(s_max)}, f:{f_upper}")
                         sol = s_max
                         break
 
@@ -1613,20 +1586,16 @@ class EfficientBFS(OptimalAlg):
 
             time_for_stage_2 += t3 - t2
 
-            # print(f"vis:{node.visited}, f:{node.first_child}, s:{node.s}, is_on_the_edge:{self.is_on_the_edge(node)}, hs:{heuristic_sequence}, c:{len(node.candidate)}, c:{self.model.cost_of_set(node.s)}, w:{node.budget}")
-
             if self.is_on_the_edge(node):
                 continue
-
-            # for i in node.candidate:
-            #     if self.model.cost_of_singleton(i) + self.model.cost_of_set(node.s) <= node.budget:
-            #         print(f"i:{i}")
 
             # push first child
             first_ele = heuristic_sequence[0]
             new_candidate = list(set(node.candidate) - {first_ele})
             # new_lbd = min(node.v.lbd_v, f_local)
             new_lbd = node.v.lbd_v
+
+            print(f"current lb_star:{self.g(s_max)}, first ele:{first_ele}, density:{self.model.density(first_ele,s)}")
             if node.cost + self.model.cost_of_singleton(first_ele) <= self.model.budget:
                 open_list_count += 1
 
@@ -1656,7 +1625,6 @@ class EfficientBFS(OptimalAlg):
                "push_back_count": push_back_count, "stg0": time_for_stage_0, "stg1": time_for_stage_1,
                "stg2": time_for_stage_2, "stg3": time_for_stage_3,
                'children_count': children_count}
-
         return ret
 
 
@@ -1669,7 +1637,7 @@ class BFSTC(OptimalAlg):
         self.heap_class = 'simple'
 
         self.start_time = 0
-        self.time_limit = 10000
+        self.time_limit = 5000
         self.TLE = False
 
     def build(self):
@@ -1734,11 +1702,9 @@ class BFSTC(OptimalAlg):
         while h:
             # 2. Pop the element with the highest upper-bound density
             _, _, u = heapq.heappop(h)
-
             if time.time() - self.start_time > self.time_limit:
                 self.TLE = True
                 break
-
             cost_u = self.model.cost_of_singleton(u)
 
             # 3. Lazy budget check: discard instantly if it exceeds remaining budget
